@@ -23,6 +23,16 @@
     Ribs.Model = Backbone.Model.extend({
         _super: Backbone.Model,
 
+        get: function (attr) {
+            var path = attr.split('.');
+
+            if (path.length === 1) {
+                return _super(this, 'get', [attr]);
+            } else {
+                return this._getPath(path);
+            }
+        },
+
         set: function (key, val, options) {
             if (key == null) {
                 return this;
