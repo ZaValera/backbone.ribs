@@ -28,10 +28,11 @@
         var path = [],
             item = '',
             ch = str.charAt(0),
-            nch = str.charAt(1),
             pch;
 
         for (var i = 0, l = str.length; i < l; i++) {
+            nch = str.charAt(i + 1);
+
             if (ch === '.' && pch === '!') {
                 item += '.';
             } else if (ch === '.' && pch !== '!') {
@@ -43,7 +44,6 @@
 
             pch = ch;
             ch = nch;
-            nch = str.charAt(i + 1);
         }
 
         path.push(item);
@@ -87,7 +87,6 @@
                     if (path.length == 1) {
                         curattr = path[0];
                         _super(this, 'set', [curattr, attrs[curattr], options]);
-                        //Backbone.Model.prototype.set.call(this, curattr, attrs[curattr], options);
                     } else {
                         this._setPath(path, attrs[attr], options);
                     }
