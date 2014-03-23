@@ -1,5 +1,5 @@
 var Model = Backbone.Ribs.Model.extend(),
-    ar = [0,1,2],
+    ar = [0,1,{foo: 'bar'}],
     obj = {
         foo: 'bar',
         subObj: {
@@ -20,10 +20,6 @@ var Model = Backbone.Ribs.Model.extend(),
     });
 
 module('GET');
-test('Deep GET', function() {
-    equal(model.get('ar.1'), 1, 'Get Array Element');
-});
-
 test('Simple GET', function() {
     equal(model.get('ar'), ar, 'Get Array');
 
@@ -31,7 +27,7 @@ test('Simple GET', function() {
 
     equal(model.get('str'), 'testString', 'Get String');
 
-    equal(model.get('num'), 1234, 'Get Number');
+    equal(model.get('num'), 123, 'Get Number');
 
     equal(model.get('bool'), true, 'Get Boolean');
 
@@ -42,9 +38,14 @@ test('Simple GET', function() {
     equal(model.get('fn'), fn, 'Get Function');
 });
 
-module('SET');
-
-test('Deep SET', function() {
+test('Deep GET', function() {
     equal(model.get('ar.1'), 1, 'Get Array Element');
-});
 
+    equal(model.get('ar.2.foo'), 'bar', 'Get Object in Array Element');
+
+    equal(model.get('obj.foo'), 'bar', 'Get Object First Level');
+
+    equal(model.get('obj.subObj.subFoo'), 'subBar', 'Get Object Second Level');
+
+    equal(model.get('obj.subAr.1'), 1, 'Get Array in Object Element');
+});

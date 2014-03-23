@@ -20,11 +20,42 @@
         return self._super.prototype[method].apply(self, args);
     }
 
+    function _split(str) {
+        if (str.indexOf('!.') === -1) {
+            return str.split('.');
+        }
+
+        var path = [],
+            item = '',
+            ch = str.charAt(0),
+            nch = str.charAt(1),
+            pch;
+
+        for (var i = 0, l = str.length; i < l; i++) {
+            if (ch === '.' && pch === '!') {
+                item += '.';
+            } else if (ch === '.' && pch !== '!') {
+                path.push(item);
+                item = '';
+            } else if (ch !== '!' || nch !== '.'){
+                item += ch;
+            }
+
+            pch = ch;
+            ch = nch;
+            nch = str.charAt(i + 1);
+        }
+
+        path.push(item);
+
+        return path;
+    }
+
     Ribs.Model = Backbone.Model.extend({
         _super: Backbone.Model,
 
         get: function (attr) {
-            var path = attr.split('.');
+            var path = _split(attr);
 
             if (path.length === 1) {
                 return _super(this, 'get', [attr]);
@@ -52,7 +83,7 @@
 
             for (attr in attrs) {
                 if (attrs.hasOwnProperty(attr)) {
-                    path = attr.split('.');
+                    path = _split(attr);
                     if (path.length == 1) {
                         curattr = path[0];
                         _super(this, 'set', [curattr, attrs[curattr], options]);
