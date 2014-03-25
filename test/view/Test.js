@@ -12,10 +12,9 @@ define([
                 },
                 pokus: 2
             });
-            console.log(Backbone.Ribs);
 
             model.on('change:bogus.pokus', function () {
-                console.log('change:bogus.pokus');
+                console.dir(arguments);
             });
 
             model.on('change:bogus', function () {
@@ -30,8 +29,8 @@ define([
                 console.log('change:bogus.lokus');
             });
 
-            window.model.set('bogus.pokus', 10);
-            window.model.set('pokus', 20);
+            //window.model.set('bogus.pokus', 10);
+            //window.model.set('pokus', 20);
         }
 
     });

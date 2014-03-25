@@ -16,11 +16,11 @@
         version: '1.0.1'
     };
 
-    function _super(self, method, args) {
+    var _super = function (self, method, args) {
         return self._super.prototype[method].apply(self, args);
-    }
+    };
 
-    function _split(str) {
+    var _split = function (str) {
         if (str.indexOf('!.') === -1) {
             return str.split('.');
         }
@@ -49,7 +49,45 @@
         path.push(item);
 
         return path;
-    }
+    };
+
+    var getPath = function (path, obj) {
+        var p;
+
+        path = path.slice();
+
+        while (path.length) {
+            p = path.shift();
+
+            if (obj.hasOwnProperty(p)) {
+                obj = obj[p];
+            } else {
+                return undefined;
+            }
+        }
+
+        return obj;
+    };
+
+    var deletePath = function (path, obj) {
+        var p;
+
+        path = path.slice();
+
+        while (path.length) {
+            p = path.shift();
+
+            if (!path.length) {
+                delete obj[p];
+            } else {
+                if (obj.hasOwnProperty(p)) {
+                    obj = obj[p];
+                } else {
+                    break;
+                }
+            }
+        }
+    };
 
     Ribs.Model = Backbone.Model.extend({
         _super: Backbone.Model,
@@ -60,17 +98,23 @@
             if (path.length === 1) {
                 return _super(this, 'get', [attr]);
             } else {
-                return this._getPath(path);
+                return getPath(path, this.attributes);
             }
         },
 
         set: function (key, val, options) {
+            //copied from Backbone
             if (key == null) {
                 return this;
             }
 
-            var attrs = {},
-                curattr,
+            var attrs,
+                changes,
+                changing,
+                current,
+                prev,
+                silent,
+                unset,
                 path,
                 attr;
 
@@ -78,66 +122,108 @@
                 attrs = key;
                 options = val;
             } else {
+                attrs = {};
                 attrs[key] = val;
             }
 
+            options || (options = {});
+
+            if (!this._validate(attrs, options)) {
+                return false;
+            }
+
+            unset           = options.unset;
+            silent          = options.silent;
+            changes         = [];
+            changing        = this._changing;
+            this._changing  = true;
+
+            if (!changing) {
+                this._previousAttributes = _.clone(this.attributes);
+                this.changed = {};
+            }
+
+            current = this.attributes;
+            prev = this._previousAttributes;
+
+            if (this.idAttribute in attrs) this.id = attrs[this.idAttribute];
+            /////////////////////////////
+
+            //new from Ribs
             for (attr in attrs) {
                 if (attrs.hasOwnProperty(attr)) {
+                    val = attrs[attr];
                     path = _split(attr);
-                    if (path.length == 1) {
-                        curattr = path[0];
-                        _super(this, 'set', [curattr, attrs[curattr], options]);
+                    if (!_.isEqual(getPath(path, current), val)) {
+                        changes.push({
+                            path: path,
+                            attr: attr,
+                            val: val
+                        });
+                    }
+
+                    if (!_.isEqual(getPath(path, prev), val)) {
+                        this.changed[attr] = val;
                     } else {
-                        this._setPath(path, attrs[attr], options);
+                        delete this.changed[attr];
+                    }
+
+                    if (unset) {
+                        deletePath(path, current);
+                    } else {
+                        this._setPath(path, val);
                     }
                 }
             }
 
+            if (!silent) {
+                if (changes.length) {
+                    this._pending = options;
+                }
+
+                for (var i = 0, l = changes.length; i < l; i++) {
+                    this.trigger('change:' + changes[i].attr, this, changes[i].val, options);
+                    //ToDo: maybe trigger change all items in path
+                }
+            }
+            /////////////////////////////
+
+            //copied from Backbone
+            if (changing) {
+                return this;
+            }
+
+            if (!silent) {
+                while (this._pending) {
+                    options = this._pending;
+                    this._pending = false;
+                    this.trigger('change', this, options);
+                }
+            }
+            this._pending = false;
+            this._changing = false;
             return this;
         },
 
-        _setPath: function (path, val, options) {
-            var attr = path.join('.'),
-                pathCopy = path.slice(),
-                oldVal = this.attributes,
-                item;
+        _setPath: function (path, val) {
+            var attr = this.attributes,
+                p;
 
-            while (pathCopy.length) {
-                item = pathCopy.shift();
+            path = path.slice();
 
-                if (pathCopy.length) {
-                    if (!(oldVal instanceof Object && item in oldVal)) {
-                        oldVal[item] = {};
+            while (path.length) {
+                p = path.shift();
+
+                if (path.length) {
+                    if (!(attr.hasOwnProperty(p) && attr[p] instanceof Object)) {
+                        attr[p] = {};
                     }
 
-                    oldVal = oldVal[item];
+                    attr = attr[p];
                 } else {
-                    oldVal[item] = val;
+                    attr[p] = val;
                 }
             }
-
-            this._previousAttributes[attr] = this._getPath(path);
-
-            _super(this, 'set', [attr, val, options]);
-
-            delete this._previousAttributes[attr];
-            delete this.attributes[attr];
-        },
-
-        _getPath: function (path) {
-            var current = this.attributes;
-
-            for (var i = 0; i < path.length; i++) {
-                var item = path[i];
-
-                if (current instanceof Object && item in current) {
-                    current = current[item];
-                } else {
-                    return undefined;
-                }
-            }
-
-            return current;
         }
     });
 
