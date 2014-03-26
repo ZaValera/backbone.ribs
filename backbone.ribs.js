@@ -89,10 +89,50 @@
         }
     };
 
+    var Computed = function (data, model) {
+        if (typeof data === 'function') {
+            this.get = data;
+            return this;
+        }
+
+        this._deps = data.deps;
+        this._get = data.get;
+        this._model = model;
+
+        return this;
+    };
+
+    Computed.prototype.update = function () {
+        var deps = [];
+
+        if (this._deps instanceof Array) {
+            for (var i = 0; i < this._deps.length; i++) {
+                deps.push(this._model.get(this._deps[i]));
+            }
+        }
+
+        this.value = this._get.apply(this._model, deps);
+    };
+
+    Computed.prototype.get = function () {
+        return this.value;
+    };
+
     Ribs.Model = Backbone.Model.extend({
         _super: Backbone.Model,
 
+        constructor: function(attributes, options) {
+            this._computeds = {};
+            this._computedsDeps = {};
+            _super(this, 'constructor', arguments);
+            this.initComputeds();
+        },
+
         get: function (attr) {
+            if (attr in this._computeds) {
+                return this._computeds[attr].get();
+            }
+
             var path = _split(attr);
 
             if (path.length === 1) {
@@ -176,12 +216,26 @@
                 }
             }
 
+            var l = changes.length,
+                deps,
+                i, j;
+
+            for (i = 0; i < l; i++) {
+                attr = changes[i].attr;
+                deps = this._computedsDeps[attr];
+                if (deps) {
+                    for (j = 0; j < deps.length; j++) {
+                        this._computeds[deps[j]].update();
+                    }
+                }
+            }
+
             if (!silent) {
                 if (changes.length) {
                     this._pending = options;
                 }
 
-                for (var i = 0, l = changes.length; i < l; i++) {
+                for (i = 0; i < l; i++) {
                     this.trigger('change:' + changes[i].attr, this, changes[i].val, options);
                     //ToDo: maybe trigger change all items in path
                 }
@@ -224,6 +278,37 @@
                     attr[p] = val;
                 }
             }
+        },
+
+        initComputeds: function () {
+            var computeds = this.computeds;
+
+            for (var name in computeds) {
+                if (computeds.hasOwnProperty(name)) {
+                    this.addComputed(computeds[name], name);
+                    this._computeds[name].update();
+                }
+            }
+        },
+
+        addComputed: function (computed, name) {
+            var deps = computed.deps,
+                _computedsDeps = this._computedsDeps,
+                dep;
+
+            if (deps instanceof Array) {
+                for (var i = 0; i < deps.length; i++) {
+                    dep = deps[i];
+
+                    if (dep in _computedsDeps) {
+                        _computedsDeps.push(name);
+                    } else {
+                        _computedsDeps[dep] = [name];
+                    }
+                }
+            }
+
+            this._computeds[name] = new Computed(computed, this);
         }
     });
 
