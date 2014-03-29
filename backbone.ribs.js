@@ -62,7 +62,11 @@
             if (obj.hasOwnProperty(p)) {
                 obj = obj[p];
             } else {
-                return undefined;
+                if (path.length) {
+                    throw new Error('can\'t get "' + path.shift() + '" of "' + p + '", "' + p +'" is undefined');
+                } else {
+                    return undefined;
+                }
             }
         }
 
@@ -270,7 +274,9 @@
 
                 if (path.length) {
                     if (!(attr.hasOwnProperty(p) && attr[p] instanceof Object)) {
-                        attr[p] = {};
+                        //attr[p] = {};
+
+                        throw new Error('can\'t set anything to "' + p + '", typeof == "' + typeof attr[p] + '"');
                     }
 
                     attr = attr[p];
