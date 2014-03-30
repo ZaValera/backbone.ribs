@@ -95,23 +95,36 @@
 
     var Computed = function (data, model) {
         if (typeof data === 'function') {
-            this.get = data;
+            this.get = function () {return data.apply(model, arguments)};
+            this._simple = true;
             return this;
         }
 
         this._deps = data.deps;
         this._get = data.get;
+        this.set = function () {return data.set.apply(model, arguments)};
         this._model = model;
 
         return this;
     };
 
     Computed.prototype.update = function () {
-        var deps = [];
+        if (this._simple) {
+            return;
+        }
+
+        var deps = [],
+            val;
 
         if (this._deps instanceof Array) {
             for (var i = 0; i < this._deps.length; i++) {
-                deps.push(this._model.get(this._deps[i]));
+                try {
+                    val = this._model.get(this._deps[i]);
+                } catch (e) {
+                    this.value = undefined;
+                }
+
+                deps.push(val);
             }
         }
 
@@ -126,15 +139,19 @@
         _super: Backbone.Model,
 
         constructor: function(attributes, options) {
-            this._computeds = {};
-            this._computedsDeps = {};
+            this._ribs = {
+                computeds: {},
+                computedsDeps: {}
+            };
             _super(this, 'constructor', arguments);
             this.initComputeds();
         },
 
         get: function (attr) {
-            if (attr in this._computeds) {
-                return this._computeds[attr].get();
+            var computeds = this._ribs.computeds;
+
+            if (attr in computeds) {
+                return computeds[attr].get();
             }
 
             var path = _split(attr);
@@ -147,7 +164,6 @@
         },
 
         set: function (key, val, options) {
-            //copied from Backbone
             if (key == null) {
                 return this;
             }
@@ -170,6 +186,26 @@
                 attrs[key] = val;
             }
 
+            //new from Ribs
+            var computeds = this._ribs.computeds,
+                size = 0;
+
+            for (attr in attrs) {
+                if (attrs.hasOwnProperty(attr)) {
+                    if (attr in computeds) {
+                        computeds[attr].set(attrs[attr]);
+                        delete attrs[attr];
+                    } else {
+                        size++;
+                    }
+                }
+            }
+
+            if (!size) {
+                return this;
+            }
+            ////////////////////////
+
             options || (options = {});
 
             if (!this._validate(attrs, options)) {
@@ -191,11 +227,15 @@
             prev = this._previousAttributes;
 
             if (this.idAttribute in attrs) this.id = attrs[this.idAttribute];
-            /////////////////////////////
 
             //new from Ribs
             for (attr in attrs) {
                 if (attrs.hasOwnProperty(attr)) {
+                    if (attr in computeds) {
+                        computeds[attr].set(attrs[attr]);
+                        continue;
+                    }
+
                     val = attrs[attr];
                     path = _split(attr);
                     if (!_.isEqual(getPath(path, current), val)) {
@@ -221,15 +261,16 @@
             }
 
             var l = changes.length,
+                computedsDeps = this._ribs.computedsDeps,
                 deps,
                 i, j;
 
             for (i = 0; i < l; i++) {
                 attr = changes[i].attr;
-                deps = this._computedsDeps[attr];
+                deps = computedsDeps[attr];
                 if (deps) {
                     for (j = 0; j < deps.length; j++) {
-                        this._computeds[deps[j]].update();
+                        computeds[deps[j]].update();
                     }
                 }
             }
@@ -246,7 +287,6 @@
             }
             /////////////////////////////
 
-            //copied from Backbone
             if (changing) {
                 return this;
             }
@@ -292,29 +332,39 @@
             for (var name in computeds) {
                 if (computeds.hasOwnProperty(name)) {
                     this.addComputed(computeds[name], name);
-                    this._computeds[name].update();
+                    this._ribs.computeds[name].update();
                 }
             }
         },
 
         addComputed: function (computed, name) {
             var deps = computed.deps,
-                _computedsDeps = this._computedsDeps,
+                computedsDeps = this._ribs.computedsDeps,
+                depArr,
                 dep;
 
             if (deps instanceof Array) {
                 for (var i = 0; i < deps.length; i++) {
                     dep = deps[i];
+                    depArr = _split(dep);
+                    depArr[depArr.length - 1] = dep;
 
-                    if (dep in _computedsDeps) {
-                        _computedsDeps.push(name);
-                    } else {
-                        _computedsDeps[dep] = [name];
+                    for (var j = 0; j < depArr.length; j++) {
+                        dep = depArr[j];
+                        if (dep in computedsDeps) {
+                            if (computedsDeps[dep].indexOf(name) === -1) {
+                                computedsDeps[dep].push(name);
+                            }
+                        } else {
+                            computedsDeps[dep] = [name];
+                        }
                     }
+
+
                 }
             }
 
-            this._computeds[name] = new Computed(computed, this);
+            this._ribs.computeds[name] = new Computed(computed, this);
         }
     });
 

@@ -6,14 +6,9 @@ define([
     return Backbone.View.extend({
 
         initialize: function() {
-            var model = window.model = new TestModel({
-                bogus: {
-                    pokus: 1
-                },
-                pokus: 2
-            });
+            var model = window.model = new TestModel();
 
-            model.on('change:bogus.pokus', function () {
+            /*model.on('change:bogus.pokus', function () {
                 console.dir(arguments);
             });
 
@@ -27,7 +22,7 @@ define([
 
             model.on('change:bogus.lokus', function () {
                 console.log('change:bogus.lokus');
-            });
+            });*/
 
             //window.model.set('bogus.pokus', 10);
             //window.model.set('pokus', 20);

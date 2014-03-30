@@ -3,17 +3,24 @@ define([
 ], function (Backbone) {
 
     return Backbone.Ribs.Model.extend({
+        defaults: {
+            bar: 10
+        },
+
         computeds: {
-            foo: {
-                deps: ['bogus.pokus'],
+            barComp: {
+                deps: ['bar'],
                 get: function (bar) {
-                    return 'comp: ' + bar;
+                    return '$' + bar;
+                },
+                set: function (val) {
+                    this.set('bar', parseInt(val.slice(1)));
                 }
             }
         },
 
         initialize: function() {
-            this.set('bar', 'baaaaar');
+
         }
 
     });
