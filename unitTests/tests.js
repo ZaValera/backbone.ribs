@@ -38,8 +38,8 @@ $(function () {
         }),
         backboneModel = new Backbone.Model();
 
-    window.testModel = model;
-    window.testBackboneModel = backboneModel;
+    //window.testModel = model;
+    //window.testBackboneModel = backboneModel;
 
     module('GET');
     test('Simple GET', function () {
@@ -102,6 +102,81 @@ $(function () {
         equal(model.get('obj.!!.foo'), '!.bar2', 'Get Object ExclamationDot at first');
 
         equal(model.get('obj.foo!!.'), '!.bar3', 'Get Object ExclamationDot at last');
+    });
+
+    test('Computed GET', function () {
+        var compGetCounter,
+            model = new (Backbone.Ribs.Model.extend({
+                computeds: {
+                    compFoo1: function () {
+                        compGetCounter++;
+                        return 'computed:' + this.get('foo1');
+                    },
+
+                    compFoo2: {
+                        deps: ['foo2'],
+                        get: function (foo2) {
+                            compGetCounter++;
+                            return 'computed:' + foo2;
+                        }
+                    },
+
+                    compFoo3: {
+                        deps: ['foo3.subFoo.deepFoo'],
+                        get: function (deepFoo) {
+                            compGetCounter++;
+                            return 'computed:' + deepFoo;
+                        }
+                    }
+                },
+
+                defaults: {
+                    foo1: 'bar1',
+                    foo2: 'bar2',
+                    foo3: {
+                        subFoo: {
+                            deepFoo: 'bar3'
+                        }
+                    }
+                }
+            }));
+
+        compGetCounter = 0;
+        equal(model.get('compFoo1'), 'computed:bar1', 'Get Simple Computed first time');
+        model.set('foo1', 'bar11');
+        equal(model.get('compFoo1'), 'computed:bar11', 'Get Simple Computed after set');
+        equal(compGetCounter, 2, 'Is Computed was get twice');
+
+        compGetCounter = 0;
+        equal(model.get('compFoo2'), 'computed:bar2', 'Get Deps Computed first time');
+        equal(model.get('compFoo2'), 'computed:bar2', 'Get Deps Computed second time');
+        model.set('foo2', 'bar22');
+        equal(model.get('compFoo2'), 'computed:bar22', 'Get Deps Computed after set');
+        equal(compGetCounter, 1, 'Is Computed wasn\'t get');
+        model.set('foo2', 'bar222', {silent: true});
+        equal(model.get('compFoo2'), 'computed:bar222', 'Get Deps Computed after silent set');
+
+        equal(model.get('compFoo3'), 'computed:bar3', 'Get Deps Computed deep');
+        model.set('foo3', {
+            subFoo: {
+                deepFoo: 'bar33'
+            }
+        });
+        equal(model.get('compFoo3'), 'computed:bar33', 'Get Deps Computed deep after set');
+        model.set('foo3', 'bar333');
+        equal(model.get('compFoo3'), 'computed:undefined', 'Get Deps Computed deep after set up level');
+    });
+
+    /*module('SET');
+    test('Simple SET', function () {
 
     });
+
+    test('Deep SET', function () {
+
+    });
+
+    test('Computed SET', function () {
+
+    });*/
 });
