@@ -35,8 +35,7 @@ $(function () {
             nl: null,
             ndf: undefined,
             fn: fn
-        }),
-        backboneModel = new Backbone.Model();
+        });
 
     //window.testModel = model;
     //window.testBackboneModel = backboneModel;
@@ -167,16 +166,98 @@ $(function () {
         equal(model.get('compFoo3'), 'computed:undefined', 'Get Deps Computed deep after set up level');
     });
 
-    /*module('SET');
+    module('SET');
     test('Simple SET', function () {
+        var model = new (Backbone.Ribs.Model.extend({
+            defaults: {
+                foo1: 'bar1'
+            }
+        }));
 
+        model.set('foo1', 'bar11');
+
+        equal(model.attributes.foo1, 'bar11', 'Set field');
+        equal(model._previousAttributes.foo1, 'bar1', 'Set field _previousAttributes');
+        equal(model.changed.foo1, 'bar11', 'Set field changed');
+
+        model.set('foo2', 'bar22');
+
+        equal(model.attributes.foo2, 'bar22', 'Set new field');
+        equal(model._previousAttributes.foo2, undefined, 'Set new field _previousAttributes');
+        equal(model.changed.foo2, 'bar22', 'Set new field changed');
+
+        model.set({foo1: 'bar111', foo3: 'bar33'});
+
+        equal(model.attributes.foo1, 'bar111', 'Set object field');
+        equal(model._previousAttributes.foo1, 'bar11', 'Set object field _previousAttributes');
+        equal(model.changed.foo1, 'bar111', 'Set object field changed');
+
+        equal(model.attributes.foo3, 'bar33', 'Set object new field');
+        equal(model._previousAttributes.foo3, undefined, 'Set object new field _previousAttributes');
+        equal(model.changed.foo3, 'bar33', 'Set object new field changed');
+
+        var flag = false;
+
+        model.on('change:foo1', function (model, val) {flag = val;});
+        model.set('foo1', 'bar1');
+        equal(flag, 'bar1', 'onchange');
+
+        flag = false;
+
+        model.set('foo1', 'bar11', {silent: true});
+        equal(flag, false, 'onchange silent');
+
+        model.set('foo1', 'bar111', {unset: true});
+
+        equal(model.attributes.foo1, undefined, 'Unset field');
+        equal(model._previousAttributes.foo1, 'bar11', 'Unset field _previousAttributes');
+        equal(model.changed.foo1, 'bar111', 'Unset field changed');
     });
 
     test('Deep SET', function () {
+        var model = new (Backbone.Ribs.Model.extend({
+            defaults: {
+                foo: {bar: 'bar1'}
+            }
+        }));
 
+        model.set('foo.bar', 'bar11');
+
+        equal(model.attributes.foo.bar, 'bar11', 'Set field');
+        equal(model._previousAttributes.foo.bar, 'bar11', 'Set field _previousAttributes');
+        equal(model.changed['foo.bar'], 'bar11', 'Set field changed');
+
+        model.set('foo.bar2', 'bar2');
+
+        equal(model.attributes.foo.bar2, 'bar2', 'Set new field');
+        equal(model._previousAttributes.foo.bar2, 'bar2', 'Set new field _previousAttributes');
+        equal(model.changed['foo.bar2'], 'bar2', 'Set new field changed');
+
+        /*model.set({foo1: 'bar111', foo3: 'bar33'});
+
+        equal(model.attributes.foo1, 'bar111', 'Set object field');
+        equal(model._previousAttributes.foo1, 'bar11', 'Set object field _previousAttributes');
+        equal(model.changed.foo1, 'bar111', 'Set object field changed');
+
+        equal(model.attributes.foo3, 'bar33', 'Set object new field');
+        equal(model._previousAttributes.foo3, undefined, 'Set object new field _previousAttributes');
+        equal(model.changed.foo3, 'bar33', 'Set object new field changed');
+
+        var flag = false;
+
+        model.on('change:foo1', function (model, val) {flag = val;});
+        model.set('foo1', 'bar1');
+        equal(flag, 'bar1', 'onchange');
+
+        flag = false;
+
+        model.set('foo1', 'bar11', {silent: true});
+        equal(flag, false, 'onchange silent');
+
+        model.set('foo1', 'bar111', {unset: true});
+
+        equal(model.attributes.foo1, undefined, 'Unset field');
+        equal(model._previousAttributes.foo1, 'bar11', 'Unset field _previousAttributes');
+        equal(model.changed.foo1, 'bar111', 'Unset field changed');*/
     });
-
-    test('Computed SET', function () {
-
-    });*/
 });
