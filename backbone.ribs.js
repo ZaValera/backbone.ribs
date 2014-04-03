@@ -186,26 +186,6 @@
                 attrs[key] = val;
             }
 
-            //new from Ribs
-            var computeds = this._ribs.computeds,
-                size = 0;
-
-            for (attr in attrs) {
-                if (attrs.hasOwnProperty(attr)) {
-                    if (attr in computeds) {
-                        computeds[attr].set(attrs[attr]);
-                        delete attrs[attr];
-                    } else {
-                        size++;
-                    }
-                }
-            }
-
-            if (!size) {
-                return this;
-            }
-            ////////////////////////
-
             options || (options = {});
 
             if (!this._validate(attrs, options)) {
@@ -217,6 +197,24 @@
             changes         = [];
             changing        = this._changing;
             this._changing  = true;
+
+            //new from Ribs
+            var computeds = this._ribs.computeds,
+                computedsAttrs = {},
+                newAttrs;
+
+            for (attr in attrs) {
+                if (attrs.hasOwnProperty(attr)) {
+                    if (attr in computeds) {
+                        newAttrs = computeds[attr].set(attrs[attr]);
+                        computedsAttrs[attr] = attrs[attr];
+                        delete attrs[attr];
+
+                        _.extend(attrs, newAttrs);
+                    }
+                }
+            }
+            ////////////////////////
 
             if (!changing) {
                 this._previousAttributes = _.clone(this.attributes);
@@ -231,11 +229,6 @@
             //new from Ribs
             for (attr in attrs) {
                 if (attrs.hasOwnProperty(attr)) {
-                    if (attr in computeds) {
-                        computeds[attr].set(attrs[attr]);
-                        continue;
-                    }
-
                     val = attrs[attr];
                     path = _split(attr);
                     if (!_.isEqual(getPath(path, current), val)) {
@@ -256,6 +249,24 @@
                         deletePath(path, current);
                     } else {
                         this._setPath(path, val);
+                    }
+                }
+            }
+
+            for (attr in computedsAttrs) {
+                if (computedsAttrs.hasOwnProperty(attr)) {
+                    val = computedsAttrs[attr];
+
+                    path = _split(attr);
+                    if (!_.isEqual(computeds[attr].value, val)) {
+                        changes.push({
+                            attr: attr,
+                            val: val
+                        });
+                    }
+
+                    if (unset) {
+                        removeComputed(attr);
                     }
                 }
             }
@@ -316,7 +327,7 @@
                     if (!(attr.hasOwnProperty(p) && attr[p] instanceof Object)) {
                         //attr[p] = {};
 
-                        throw new Error('can\'t set anything to "' + p + '", typeof == "' + typeof attr[p] + '"');
+                        throw new Error('set: can\'t set anything to "' + p + '", typeof == "' + typeof attr[p] + '"');
                     }
 
                     attr = attr[p];
@@ -338,6 +349,10 @@
         },
 
         addComputed: function (computed, name) {
+            if (name in this.attributes) {
+                throw new Error('addComputed: computed name "' + name + '" is already used');
+            }
+
             var deps = computed.deps,
                 computedsDeps = this._ribs.computedsDeps,
                 depArr,
@@ -365,6 +380,30 @@
             }
 
             this._ribs.computeds[name] = new Computed(computed, this);
+        },
+
+        removeComputed: function (name) {
+            var computedsDeps = this._ribs.computedsDeps,
+                dep,
+                attr,
+                index;
+
+            for (attr in computedsDeps) {
+                if (computedsDeps.hasOwnProperty(attr)) {
+                    dep = computedsDeps[attr];
+                    index = dep.indexOf(name);
+
+                    if (index !== -1) {
+                        dep.splice(index, 1);
+                    }
+
+                    if (!dep.length) {
+                        delete computedsDeps[attr];
+                    }
+                }
+            }
+
+            delete this._ribs.computeds[name];
         }
     });
 

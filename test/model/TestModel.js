@@ -8,13 +8,15 @@ define([
         },
 
         computeds: {
-            barComp: {
+            bar: {
                 deps: ['bar'],
                 get: function (bar) {
                     return '$' + bar;
                 },
                 set: function (val) {
-                    this.set('bar', parseInt(val.slice(1)));
+                    return {
+                        bar:  parseInt(val.slice(1))
+                    }
                 }
             }
         },
