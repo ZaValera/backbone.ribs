@@ -116,12 +116,14 @@
         var deps = [],
             val;
 
+        this._previous = this.value;
+
         if (this._deps instanceof Array) {
             for (var i = 0; i < this._deps.length; i++) {
                 try {
                     val = this._model.get(this._deps[i]);
                 } catch (e) {
-                    this.value = undefined;
+                    val = undefined;
                 }
 
                 deps.push(val);
@@ -218,6 +220,14 @@
 
             if (!changing) {
                 this._previousAttributes = _.clone(this.attributes);
+                //new from Ribs
+                for (attr in computeds) {
+                    if (computeds.hasOwnProperty(attr)) {
+                        this._previousAttributes[attr] = computeds[attr].value;
+                    }
+                }
+                ////////////////////////
+
                 this.changed = {};
             }
 
@@ -253,16 +263,48 @@
                 }
             }
 
+            //Update computeds, which depend on changed attributes
+            var l = changes.length,
+                computedsDeps = this._ribs.computedsDeps,
+                computedsToUpdate = [],
+                deps,
+                dep,
+                i, j;
+
+            for (i = 0; i < l; i++) {
+                attr = changes[i].attr;
+                deps = computedsDeps[attr];
+                if (deps) {
+                    for (j = 0; j < deps.length; j++) {
+                        dep = deps[j];
+                        if (computedsToUpdate.indexOf(dep) === -1) {
+                            computedsToUpdate.push(dep);
+                        }
+                    }
+                }
+            }
+
+            for (i = 0; i < computedsToUpdate.length; i++) {
+                computeds[computedsToUpdate[i]].update();
+            }
+            ////////////////////////////////////////////////////////
+
             for (attr in computedsAttrs) {
                 if (computedsAttrs.hasOwnProperty(attr)) {
-                    val = computedsAttrs[attr];
+                    val = computeds[attr].value;
 
                     path = _split(attr);
-                    if (!_.isEqual(computeds[attr].value, val)) {
+                    if (!_.isEqual(computeds[attr]._previous, val)) {
                         changes.push({
                             attr: attr,
                             val: val
                         });
+                    }
+
+                    if (!_.isEqual(getPath(path, prev), val)) {
+                        this.changed[attr] = val;
+                    } else {
+                        delete this.changed[attr];
                     }
 
                     if (unset) {
@@ -271,23 +313,10 @@
                 }
             }
 
-            var l = changes.length,
-                computedsDeps = this._ribs.computedsDeps,
-                deps,
-                i, j;
-
-            for (i = 0; i < l; i++) {
-                attr = changes[i].attr;
-                deps = computedsDeps[attr];
-                if (deps) {
-                    for (j = 0; j < deps.length; j++) {
-                        computeds[deps[j]].update();
-                    }
-                }
-            }
-
             if (!silent) {
-                if (changes.length) {
+                l = changes.length;
+
+                if (l) {
                     this._pending = options;
                 }
 

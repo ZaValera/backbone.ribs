@@ -1,11 +1,4 @@
-﻿(function() {
-    window.bgs = {
-        views: {},
-        models: {}
-    };
-})();
-
-require.config({
+﻿require.config({
     paths: {
         jquery: 'vendor/jquery-1.9.0.min',
         underscore: 'vendor/lodash.min',
@@ -22,10 +15,38 @@ require.config({
 });
 
 require([
-    'test/view/Test',
-    'ribs'
-], function(Test) {
+    'ribs',
+    'epoxy'
+], function() {
     $(document).ready(function() {
-        window.bgs.views.test = new Test();
+        var extend = {
+            defaults: {
+                bar: 10,
+                foo: 20
+            },
+
+            computeds: {
+                barComp: {
+                    deps: ['bar', 'foo'],
+                    get: function (bar, foo) {
+                        return bar + '-' + foo;
+                    },
+                    set: function (val) {
+                        val = val.split('-');
+
+                        return {
+                            bar:  parseInt(val[0]),
+                            foo: parseInt(val[1])
+                        }
+                    }
+                }
+            }
+        };
+
+
+        var model = window.model = new (Backbone.Ribs.Model.extend(_.cloneDeep(extend)));
+
+        var epModel = window.epModel = new (Backbone.Epoxy.Model.extend(_.cloneDeep(extend)));
+
     });
 });
