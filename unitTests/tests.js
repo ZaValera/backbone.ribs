@@ -174,39 +174,45 @@ $(function () {
             }
         }));
 
+        //Сетим существующее поле
         model.set('foo1', 'bar11');
 
         equal(model.attributes.foo1, 'bar11', 'Set field');
         equal(model._previousAttributes.foo1, 'bar1', 'Set field _previousAttributes');
         equal(model.changed.foo1, 'bar11', 'Set field changed');
 
+        //Сетим новое поле
         model.set('foo2', 'bar22');
 
         equal(model.attributes.foo2, 'bar22', 'Set new field');
         equal(model._previousAttributes.foo2, undefined, 'Set new field _previousAttributes');
         equal(model.changed.foo2, 'bar22', 'Set new field changed');
 
-        model.set({foo1: 'bar111', foo3: 'bar33'});
+        //Сети два поля одновременно (объект)
+        model.set({foo1: 'bar111', foo3: 'bar333'});
 
         equal(model.attributes.foo1, 'bar111', 'Set object field');
         equal(model._previousAttributes.foo1, 'bar11', 'Set object field _previousAttributes');
         equal(model.changed.foo1, 'bar111', 'Set object field changed');
 
-        equal(model.attributes.foo3, 'bar33', 'Set object new field');
+        equal(model.attributes.foo3, 'bar333', 'Set object new field');
         equal(model._previousAttributes.foo3, undefined, 'Set object new field _previousAttributes');
-        equal(model.changed.foo3, 'bar33', 'Set object new field changed');
+        equal(model.changed.foo3, 'bar333', 'Set object new field changed');
 
+        //Работа обработчика onchange
         var flag = false;
 
         model.on('change:foo1', function (model, val) {flag = val;});
         model.set('foo1', 'bar1');
         equal(flag, 'bar1', 'onchange');
 
+        //Работа обработчика onchange с {silent: true}
         flag = false;
 
         model.set('foo1', 'bar11', {silent: true});
         equal(flag, false, 'onchange silent');
 
+        //Работа флага {unset: true}
         model.set('foo1', 'bar111', {unset: true});
 
         equal(model.attributes.foo1, undefined, 'Unset field');
@@ -221,43 +227,45 @@ $(function () {
             }
         }));
 
+        //Сетим существующее поле
         model.set('foo.bar', 'bar11');
 
         equal(model.attributes.foo.bar, 'bar11', 'Set field');
         equal(model._previousAttributes.foo.bar, 'bar11', 'Set field _previousAttributes');
         equal(model.changed['foo.bar'], 'bar11', 'Set field changed');
 
+        //Сетим новое поле
         model.set('foo.bar2', 'bar2');
 
         equal(model.attributes.foo.bar2, 'bar2', 'Set new field');
         equal(model._previousAttributes.foo.bar2, 'bar2', 'Set new field _previousAttributes');
         equal(model.changed['foo.bar2'], 'bar2', 'Set new field changed');
 
-        /*model.set({foo1: 'bar111', foo3: 'bar33'});
+        model.set({'foo.bar': 'bar111', 'foo.bar3': 'bar333'});
 
-        equal(model.attributes.foo1, 'bar111', 'Set object field');
-        equal(model._previousAttributes.foo1, 'bar11', 'Set object field _previousAttributes');
-        equal(model.changed.foo1, 'bar111', 'Set object field changed');
+        equal(model.attributes.foo.bar, 'bar111', 'Set object field');
+        equal(model._previousAttributes.foo.bar, 'bar111', 'Set object field _previousAttributes');
+        equal(model.changed['foo.bar'], 'bar111', 'Set object field changed');
 
-        equal(model.attributes.foo3, 'bar33', 'Set object new field');
-        equal(model._previousAttributes.foo3, undefined, 'Set object new field _previousAttributes');
-        equal(model.changed.foo3, 'bar33', 'Set object new field changed');
+        equal(model.attributes.foo.bar3, 'bar333', 'Set object new field');
+        equal(model._previousAttributes.foo.bar3, 'bar333', 'Set object new field _previousAttributes');
+        equal(model.changed['foo.bar3'], 'bar333', 'Set object new field changed');
 
         var flag = false;
 
-        model.on('change:foo1', function (model, val) {flag = val;});
-        model.set('foo1', 'bar1');
+        model.on('change:foo.bar', function (model, val) {flag = val;});
+        model.set('foo.bar', 'bar1');
         equal(flag, 'bar1', 'onchange');
 
         flag = false;
 
-        model.set('foo1', 'bar11', {silent: true});
+        model.set('foo.bar', 'bar11', {silent: true});
         equal(flag, false, 'onchange silent');
 
-        model.set('foo1', 'bar111', {unset: true});
+        model.set('foo.bar', 'bar111', {unset: true});
 
-        equal(model.attributes.foo1, undefined, 'Unset field');
-        equal(model._previousAttributes.foo1, 'bar11', 'Unset field _previousAttributes');
-        equal(model.changed.foo1, 'bar111', 'Unset field changed');*/
+        equal(model.attributes.foo.bar, undefined, 'Unset field');
+        equal(model._previousAttributes.foo.bar, undefined, 'Unset field _previousAttributes');
+        equal(model.changed['foo.bar'], 'bar111', 'Unset field changed');
     });
 });
