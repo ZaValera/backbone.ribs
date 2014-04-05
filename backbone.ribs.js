@@ -170,15 +170,7 @@
                 return this;
             }
 
-            var attrs,
-                changes,
-                changing,
-                current,
-                prev,
-                silent,
-                unset,
-                path,
-                attr;
+            var attrs,changes,changing,current,prev,silent,unset,path,attr;
 
             if (typeof key === 'object') {
                 attrs = key;
@@ -202,6 +194,7 @@
 
             //new from Ribs
             var computeds = this._ribs.computeds,
+                realAttrs = _.clone(attrs),
                 computedsAttrs = {},
                 newAttrs;
 
@@ -255,7 +248,7 @@
                         delete this.changed[attr];
                     }
 
-                    if (unset) {
+                    if (unset && (attr in realAttrs)) {
                         deletePath(path, current);
                     } else {
                         this._setPath(path, val);
@@ -308,7 +301,7 @@
                     }
 
                     if (unset) {
-                        removeComputed(attr);
+                        this.removeComputed(attr);
                     }
                 }
             }

@@ -48,5 +48,7 @@ require([
 
         var epModel = window.epModel = new (Backbone.Epoxy.Model.extend(_.cloneDeep(extend)));
 
+        var bModel = window.bModel = new (Backbone.Model.extend(_.cloneDeep(extend)));
+
     });
 });
