@@ -278,28 +278,27 @@
             }
 
             for (i = 0; i < computedsToUpdate.length; i++) {
-                computeds[computedsToUpdate[i]].update();
+                attr = computedsToUpdate[i];
+                computeds[attr].update();
+                val = computeds[attr].value;
+
+                if (!_.isEqual(computeds[attr]._previous, val)) {
+                    changes.push({
+                        attr: attr,
+                        val: val
+                    });
+                }
+
+                if (!_.isEqual(prev[attr], val)) {
+                    this.changed[attr] = val;
+                } else {
+                    delete this.changed[attr];
+                }
             }
             ////////////////////////////////////////////////////////
 
             for (attr in computedsAttrs) {
                 if (computedsAttrs.hasOwnProperty(attr)) {
-                    val = computeds[attr].value;
-
-                    path = _split(attr);
-                    if (!_.isEqual(computeds[attr]._previous, val)) {
-                        changes.push({
-                            attr: attr,
-                            val: val
-                        });
-                    }
-
-                    if (!_.isEqual(getPath(path, prev), val)) {
-                        this.changed[attr] = val;
-                    } else {
-                        delete this.changed[attr];
-                    }
-
                     if (unset) {
                         this.removeComputed(attr);
                     }
@@ -364,13 +363,12 @@
 
             for (var name in computeds) {
                 if (computeds.hasOwnProperty(name)) {
-                    this.addComputed(computeds[name], name);
-                    this._ribs.computeds[name].update();
+                    this.addComputed(name, computeds[name]);
                 }
             }
         },
 
-        addComputed: function (computed, name) {
+        addComputed: function (name, computed) {
             if (name in this.attributes) {
                 throw new Error('addComputed: computed name "' + name + '" is already used');
             }
@@ -402,6 +400,8 @@
             }
 
             this._ribs.computeds[name] = new Computed(computed, this);
+            this._ribs.computeds[name].update();
+            return this;
         },
 
         removeComputed: function (name) {
@@ -426,6 +426,7 @@
             }
 
             delete this._ribs.computeds[name];
+            return this;
         }
     });
 

@@ -289,6 +289,21 @@ $(function () {
                             foo2: parseInt(val[1])
                         }
                     }
+                },
+
+                barComp2: {
+                    deps: ['foo2', 'foo1'],
+                    get: function (foo2, foo1) {
+                        return foo2 + '-' + foo1;
+                    },
+                    set: function (val) {
+                        val = val.split('-');
+
+                        return {
+                            foo1:  parseInt(val[1]),
+                            foo2: parseInt(val[0])
+                        }
+                    }
                 }
             },
 
@@ -307,25 +322,25 @@ $(function () {
         model.set('barComp', '30-40');
         deepEqual(model.attributes, {foo1: 30, foo2: 40}, 'Set deps');
         equal(model.get('barComp'), '30-40', 'Get updated computed');
-        deepEqual(model._previousAttributes, {foo1: 10, foo2: 20, barComp: '10-20'}, '_previousAttributes');
-        deepEqual(model.changed, {foo1: 30, foo2: 40, barComp: '30-40'}, 'changed');
+        deepEqual(model._previousAttributes, {foo1: 10, foo2: 20, barComp: '10-20', barComp2: '20-10'}, '_previousAttributes');
+        deepEqual(model.changed, {foo1: 30, foo2: 40, barComp: '30-40', barComp2: '40-30'}, 'changed');
         equal(counter, 3, 'onchange');
 
         counter = 0;
         model.set('barComp', '50-60', {silent: true});
         deepEqual(model.attributes, {foo1: 50, foo2: 60}, 'Set deps silent');
         equal(model.get('barComp'), '50-60', 'Get updated computed silent');
-        deepEqual(model._previousAttributes, {foo1: 30, foo2: 40, barComp: '30-40'}, '_previousAttributes silent');
-        deepEqual(model.changed, {foo1: 50, foo2: 60, barComp: '50-60'}, 'changed silent');
+        deepEqual(model._previousAttributes, {foo1: 30, foo2: 40, barComp: '30-40', barComp2: '40-30'}, '_previousAttributes silent');
+        deepEqual(model.changed, {foo1: 50, foo2: 60, barComp: '50-60', barComp2: '60-50'}, 'changed silent');
         equal(counter, 0, 'onchange silent');
 
         model.set('barComp', '70-80', {unset: true});
         deepEqual(model.attributes, {foo1: 70, foo2: 80}, 'Set deps unset');
         equal(model.get('barComp'), undefined, 'Get updated computed unset');
-        deepEqual(model._ribs.computeds, {}, 'computeds unset');
-        deepEqual(model._ribs.computedsDeps, {}, 'computedsDeps unset');
-        deepEqual(model._previousAttributes, {foo1: 50, foo2: 60, barComp: '50-60'}, '_previousAttributes unset');
-        deepEqual(model.changed, {foo1: 70, foo2: 80, barComp: '70-80'}, 'changed unset');
+        deepEqual(model._ribs.computeds.barComp, undefined, 'computeds unset');
+        deepEqual(model._ribs.computedsDeps, {foo1: ['barComp2'], foo2: ['barComp2']}, 'computedsDeps unset');
+        deepEqual(model._previousAttributes, {foo1: 50, foo2: 60, barComp: '50-60', barComp2: '60-50'}, '_previousAttributes unset');
+        deepEqual(model.changed, {foo1: 70, foo2: 80, barComp: '70-80', barComp2: '80-70'}, 'changed unset');
         equal(counter, 3, 'onchange unset');
     })
 });
