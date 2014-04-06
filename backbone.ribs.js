@@ -38,7 +38,7 @@
             } else if (ch === '.' && pch !== '!') {
                 path.push(item);
                 item = '';
-            } else if (ch !== '!' || nch !== '.'){
+            } else if (ch !== '!' || nch !== '.') {
                 item += ch;
             }
 
@@ -51,10 +51,24 @@
         return path;
     };
 
+    var _join = function (path) {
+        var newPath = [];
+
+        for (i = 0; i < path.length; i++) {
+            newPath.push(path[i].replace('.', '!.'));
+        }
+
+        return newPath.join('.');
+    };
+
     var getPath = function (path, obj) {
         var p;
 
-        path = path.slice();
+        if (typeof path === 'string') {
+            path = _split(path);
+        } else {
+            path = path.slice();
+        }
 
         while (path.length) {
             p = path.shift();
@@ -91,6 +105,27 @@
                 }
             }
         }
+    };
+
+    var parseBinding = function (binding) {
+        var bindings = binding.split(';'),
+            res = [];
+
+        for (var i = 0; i < bindings.length; i++) {
+            var bind = bindings[i].split(':');
+
+            var type = bind[0],
+                path = _split(bind[1]),
+                model = path.shift();
+
+            res.push({
+                type: type,
+                model: model,
+                path: path
+            });
+        }
+
+        return res;
     };
 
     var Computed = function (data, model) {
@@ -137,6 +172,12 @@
         return this.value;
     };
 
+    var handlers = {
+        text: function (text) {
+            this.text(text);
+        }
+    };
+
     Ribs.Model = Backbone.Model.extend({
         _super: Backbone.Model,
 
@@ -145,7 +186,30 @@
                 computeds: {},
                 computedsDeps: {}
             };
-            _super(this, 'constructor', arguments);
+
+            var attrs = attributes || {};
+            options || (options = {});
+            this.cid = _.uniqueId('c');
+            this.attributes = {};
+            if (options.collection) this.collection = options.collection;
+            if (options.parse) attrs = this.parse(attrs, options) || {};
+            attrs = _.defaults({}, attrs, _.result(this, 'defaults'));
+
+            var escapedAttrs = {};
+
+            for (var attr in attrs) {
+                if (attrs.hasOwnProperty(attr)) {
+                    escapedAttrs[attr.replace('.', '!.')] = attrs[attr];
+                }
+            }
+
+            this.set(escapedAttrs, options);
+            this.changed = {};
+            this.initialize.apply(this, arguments);
+
+
+
+
             this.initComputeds();
         },
 
@@ -159,7 +223,7 @@
             var path = _split(attr);
 
             if (path.length === 1) {
-                return _super(this, 'get', [attr]);
+                return _super(this, 'get', [path[0]]);
             } else {
                 return getPath(path, this.attributes);
             }
@@ -427,6 +491,57 @@
 
             delete this._ribs.computeds[name];
             return this;
+        }
+    });
+
+    Ribs.View = Backbone.View.extend({
+        _super: Backbone.View,
+
+        constructor: function(attributes, options) {
+            this._ribs = {
+                bindings: {},
+                bindingsDeps: {}
+            };
+            _super(this, 'constructor', arguments);
+            this.initBindings();
+        },
+
+        initBindings: function () {
+            var bindings = this.bindings;
+
+            for (var s in bindings) {
+                if (bindings.hasOwnProperty(s)) {
+                    this.addBinding(s, bindings[s]);
+                }
+            }
+        },
+
+        addBinding: function (selector, binding) {
+            var $el;
+
+            if (selector === 'el') {
+                $el = this.$el;
+            } else {
+                $el = this.$(selector);
+            }
+
+            bindings = parseBinding(binding);
+
+            for (var i = 0; i < bindings.length; i++) {
+                var item = bindings[i],
+                    joinedPath = _join(item.path),
+                    handler = handlers[item.type];
+
+                this[item.model].on('change:' + joinedPath, (function (handler) {return function (model, attr) {
+                    handler.call($el, attr);
+                }})(handler));
+
+                handler.call($el, this[item.model].get(joinedPath));
+            }
+        },
+
+        removeBinding: function () {
+
         }
     });
 

@@ -1,5 +1,9 @@
 $(function () {
-    var Model = Backbone.Ribs.Model.extend(),
+    var Model = Backbone.Ribs.Model.extend({
+            defaults: {
+                'foo1.foo1': 'bar1'
+            }
+        }),
         ar = [0, 1, {foo: 'bar1'}],
         obj = {
             '': {
@@ -34,7 +38,8 @@ $(function () {
             bool: true,
             nl: null,
             ndf: undefined,
-            fn: fn
+            fn: fn,
+            'foo2.foo2': 'bar2'
         });
 
     //window.testModel = model;
@@ -62,6 +67,10 @@ $(function () {
     });
 
     test('Deep GET', function () {
+        equal(model.get('foo1!.foo1'), 'bar1', 'Get Default Element with comma');
+
+        equal(model.get('foo2!.foo2'), 'bar2', 'Get Element with comma');
+
         equal(model.get('ar.1'), 1, 'Get Array Element');
 
         equal(model.get('ar.2.foo'), 'bar1', 'Get Object in Array Element');

@@ -50,5 +50,21 @@ require([
 
         var bModel = window.bModel = new (Backbone.Model.extend(_.cloneDeep(extend)));
 
+        var BindingView = Backbone.Ribs.View.extend({
+            bindings: {
+                '.bind-span': 'text:model.foo'
+            },
+
+            initialize: function () {
+                this.setElement('.content');
+
+                this.model = window.bindModel = new Backbone.Ribs.Model({
+                    'foo': 'bar'
+                });
+            }
+        });
+
+        var view = new BindingView();
+
     });
 });
