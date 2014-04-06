@@ -128,9 +128,14 @@
         return res;
     };
 
-    var Computed = function (data, model) {
+    var Computed = function (data, name, model) {
+        this.name = name;
+
         if (typeof data === 'function') {
             this.get = function () {return data.apply(model, arguments)};
+            this.set = function () {
+                throw new Error('set: computed "' + name + '" has no set method');
+            };
             this._simple = true;
             return this;
         }
@@ -463,7 +468,7 @@
                 }
             }
 
-            this._ribs.computeds[name] = new Computed(computed, this);
+            this._ribs.computeds[name] = new Computed(computed, name, this);
             this._ribs.computeds[name].update();
             return this;
         },

@@ -26,6 +26,9 @@ require([
             },
 
             computeds: {
+                simpleComp: function () {
+                    return 'simple';
+                },
                 barComp: {
                     deps: ['bar', 'foo'],
                     get: function (bar, foo) {
