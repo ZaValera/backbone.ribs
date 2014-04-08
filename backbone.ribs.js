@@ -177,6 +177,41 @@
         return this.value;
     };
 
+    var Binding = function (attrs) {
+        _.extend(this, attrs);
+
+        this.bind();
+    };
+
+    var bindString = 'type:model.attr,events:["keyup"]';
+
+    Binding.prototype.bind = function () {
+        var self = this;
+
+        if (this.get) {
+            this.onchange = function (model, value) {
+                this.get.call(self, value);
+            };
+
+            this.model.on('change:' + this.attr, this.onchange);
+
+            this.onchange(this.model, this.model.get(this.attr));
+        }
+
+        if (this.set) {
+            this.handler = function () {
+                this.set.call(self, this.attr);
+            };
+
+            this.$el.on(this.event, this.handler);
+        }
+    };
+
+    Binding.prototype.unbind = function () {
+        this.$el.off(this.event, this.handler);
+        this.model.off('change:' + this.attr, this.onchange);
+    };
+
     var handlers = {
         text: function (text) {
             this.text(text);
@@ -504,7 +539,7 @@
 
         constructor: function(attributes, options) {
             this._ribs = {
-                bindings: {},
+                bindings: [],
                 bindingsDeps: {}
             };
             _super(this, 'constructor', arguments);
@@ -536,6 +571,13 @@
                 var item = bindings[i],
                     joinedPath = _join(item.path),
                     handler = handlers[item.type];
+
+                this._ribs.bindings.push(new Binding({
+                    $el: $el,
+                    model: this[item.model],
+                    attr: joinedPath,
+                    event: 'keyup'
+                }));
 
                 this[item.model].on('change:' + joinedPath, (function (handler) {return function (model, attr) {
                     handler.call($el, attr);

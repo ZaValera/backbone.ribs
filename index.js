@@ -69,5 +69,53 @@ require([
 
         var view = new BindingView();
 
+
+
+
+
+
+        /*var Binding = function ($el, model, get, set) {
+            var self = this;
+
+            this.$el = $el;
+            this.model = model;
+
+            this.onchange = function (model, value) {
+                get.call(self, value);
+            };
+
+            this.handler = function () {
+                console.log('tada');
+                set.call(self, 'bar');
+            };
+
+            model.on('change:bar', this.onchange);
+            $el.on('keyup', this.handler);
+        };
+
+        Binding.prototype.unbind = function () {
+            this.$el.off('keyup', this.handler);
+            this.model.off('change:bar', this.onchange);
+        };
+
+        var binding = window.binding = new Binding($('.bind-input'), model,
+            function (value) {
+                this.$el.val(value);
+            },
+            function (attr) {
+                this.model.set(attr, this.$el.val());
+            }
+        );*/
+
+
+
+
+
+
+
+
+
+
+
     });
 });
