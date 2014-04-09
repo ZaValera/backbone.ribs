@@ -107,25 +107,33 @@
         }
     };
 
-    var parseBinding = function (binding) {
-        var bindings = binding.split(';'),
-            res = [];
+    var parseBinding = function (str) {
+        try {
+        return JSON.parse(('{' + str + '}').replace(/([\w\.]+)/ig,'"$1"'));
+        } catch (e) {
+            throw new Error('wrong binding format "' + str + '"');
+        }
+    };
 
-        for (var i = 0; i < bindings.length; i++) {
-            var bind = bindings[i].split(':');
+    var parseModelAttr = function (ModelAttr) {
+        var attrs = ModelAttr.match(/^(?:\!\.|[^.])+/),
+            model,
+            attr;
 
-            var type = bind[0],
-                path = _split(bind[1]),
-                model = path.shift();
-
-            res.push({
-                type: type,
-                model: model,
-                path: path
-            });
+        try {
+            model = attrs[0];
+            attr = ModelAttr.slice(model.length + 1);
+            if (!attr.length) {
+                throw '';
+            }
+        } catch (e) {
+            throw new Error('wrong binging "' + ModelAttr + '"');
         }
 
-        return res;
+        return {
+            model: model,
+            attr: attr
+        }
     };
 
     var Computed = function (data, name, model) {
@@ -177,44 +185,91 @@
         return this.value;
     };
 
-    var Binding = function (attrs) {
-        _.extend(this, attrs);
-
-        this.bind();
-    };
-
-    var bindString = 'type:model.attr,events:["keyup"]';
-
-    Binding.prototype.bind = function () {
-        var self = this;
-
-        if (this.get) {
-            this.onchange = function (model, value) {
-                this.get.call(self, value);
-            };
-
-            this.model.on('change:' + this.attr, this.onchange);
-
-            this.onchange(this.model, this.model.get(this.attr));
+    var Binding = function (view, $el, bindings) {
+        this.$el = $el;
+        this.view = view;
+        if (bindings.events) {
+            this.events = bindings.events;
+            delete bindings.events;
         }
 
-        if (this.set) {
-            this.handler = function () {
-                this.set.call(self, this.attr);
-            };
+        var handlers = this.handlers = [],
+            handler;
 
-            this.$el.on(this.event, this.handler);
+        for (var type in bindings) {
+            if (bindings.hasOwnProperty(type)) {
+                HANDLERS[type].call(this, bindings[type]);
+            }
+        }
+
+        for (var i = 0; i < handlers.length; i++) {
+            handler = handlers[i];
+            handler.set.call(this, null, this.view[handler.model].get(handler.attr));
         }
     };
 
     Binding.prototype.unbind = function () {
-        this.$el.off(this.event, this.handler);
-        this.model.off('change:' + this.attr, this.onchange);
+        var handlers = this.handlers,
+            handler;
+
+        for (var i = 0; i < handlers.length; i++) {
+            handler = handlers[i];
+            if (handler.get) {
+                this.$el.off(handler.events, handler.get);
+            }
+
+            this.view[handler.model].off('change:' + handler.attr, handler.set);
+        }
     };
 
-    var handlers = {
-        text: function (text) {
-            this.text(text);
+    var HANDLERS = {
+        text: function (binding) {
+            binding = parseModelAttr(binding);
+
+            var self = this,
+                model = binding.model,
+                attr = binding.attr;
+
+            var set = function (model, value) {
+                self.$el.text(value);
+            };
+
+            this.handlers.push({
+                set: set,
+                model: model,
+                attr: attr
+            });
+
+            this.view[model].on('change:' + attr, set);
+        },
+        value: function (binding) {
+            binding = parseModelAttr(binding);
+
+            var events = this.events || ['change'],
+                self = this,
+                model = binding.model,
+                attr = binding.attr;
+
+            events = events.join(' ');
+
+            var set = function (model, value) {
+                self.$el.val(value);
+            };
+
+            var get = function () {
+                self.view[model].set(attr, self.$el.val());
+            };
+
+            this.handlers.push({
+                set: set,
+                get: get,
+                model: model,
+                attr: attr,
+                events: events
+            });
+
+            this.view[model].on('change:' + attr, set);
+            this.$el.on(events, get);
         }
     };
 
@@ -539,8 +594,7 @@
 
         constructor: function(attributes, options) {
             this._ribs = {
-                bindings: [],
-                bindingsDeps: {}
+                bindings: []
             };
             _super(this, 'constructor', arguments);
             this.initBindings();
@@ -565,30 +619,19 @@
                 $el = this.$(selector);
             }
 
-            bindings = parseBinding(binding);
+            binding = parseBinding(binding);
 
-            for (var i = 0; i < bindings.length; i++) {
-                var item = bindings[i],
-                    joinedPath = _join(item.path),
-                    handler = handlers[item.type];
-
-                this._ribs.bindings.push(new Binding({
-                    $el: $el,
-                    model: this[item.model],
-                    attr: joinedPath,
-                    event: 'keyup'
-                }));
-
-                this[item.model].on('change:' + joinedPath, (function (handler) {return function (model, attr) {
-                    handler.call($el, attr);
-                }})(handler));
-
-                handler.call($el, this[item.model].get(joinedPath));
-            }
+            this._ribs.bindings.push(new Binding(this, $el, binding));
         },
 
-        removeBinding: function () {
+        removeBindings: function () {
+            var bindings = this._ribs.bindings;
 
+            for (var i = 0; i < bindings.length; i++) {
+                bindings[i].unbind();
+            }
+
+            this._ribs.bindings = [];
         }
     });
 

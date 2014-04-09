@@ -55,7 +55,8 @@ require([
 
         var BindingView = Backbone.Ribs.View.extend({
             bindings: {
-                '.bind-span': 'text:model.foo'
+                '.bind-span': 'text:model.foo',
+                '.bind-input': 'value:model.foo,events:[keyup,change]'
             },
 
             initialize: function () {
@@ -67,7 +68,7 @@ require([
             }
         });
 
-        var view = new BindingView();
+        var view = window.bindView = new BindingView();
 
 
 
