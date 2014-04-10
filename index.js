@@ -55,7 +55,7 @@ require([
 
         var BindingView = Backbone.Ribs.View.extend({
             bindings: {
-                '.bind-span': 'text:model.foo',
+                '.bind-span': 'text:model.foo,css:{color:model.col,font-weight:model.weight},attr:{data-type:model.type},classes:{active:model.active,passive:model.passive}',
                 '.bind-input': 'value:model.foo,events:[keyup,change]'
             },
 
@@ -63,7 +63,12 @@ require([
                 this.setElement('.content');
 
                 this.model = window.bindModel = new Backbone.Ribs.Model({
-                    'foo': 'bar'
+                    'foo': 'bar',
+                    'col': 'red',
+                    'weight': 900,
+                    'type': 'asdf',
+                    active: true,
+                    passive: false
                 });
             }
         });

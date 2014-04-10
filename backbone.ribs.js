@@ -109,7 +109,7 @@
 
     var parseBinding = function (str) {
         try {
-        return JSON.parse(('{' + str + '}').replace(/([\w\.]+)/ig,'"$1"'));
+            return JSON.parse(('{' + str + '}').replace(/([^\{\}\[\]\,\:]+)/ig,'"$1"'));
         } catch (e) {
             throw new Error('wrong binding format "' + str + '"');
         }
@@ -188,23 +188,20 @@
     var Binding = function (view, $el, bindings) {
         this.$el = $el;
         this.view = view;
+
         if (bindings.events) {
-            this.events = bindings.events;
+            this.events = bindings.events.join(' ');
             delete bindings.events;
+        } else {
+            this.events = 'change';
         }
 
-        var handlers = this.handlers = [],
-            handler;
+        this.handlers = [];
 
         for (var type in bindings) {
             if (bindings.hasOwnProperty(type)) {
                 HANDLERS[type].call(this, bindings[type]);
             }
-        }
-
-        for (var i = 0; i < handlers.length; i++) {
-            handler = handlers[i];
-            handler.set.call(this, null, this.view[handler.model].get(handler.attr));
         }
     };
 
@@ -240,17 +237,17 @@
                 attr: attr
             });
 
+            this.$el.text(this.view[model].get(attr));
+
             this.view[model].on('change:' + attr, set);
         },
         value: function (binding) {
             binding = parseModelAttr(binding);
 
-            var events = this.events || ['change'],
+            var events = this.events,
                 self = this,
                 model = binding.model,
                 attr = binding.attr;
-
-            events = events.join(' ');
 
             var set = function (model, value) {
                 self.$el.val(value);
@@ -268,8 +265,103 @@
                 events: events
             });
 
+            this.$el.val(this.view[model].get(attr));
+
             this.view[model].on('change:' + attr, set);
             this.$el.on(events, get);
+        },
+        css: function (binding) {
+            var self = this,
+                curStyle,
+                model,
+                attr,
+                set;
+
+            for (var style in binding) {
+                if (binding.hasOwnProperty(style)) {
+                    curStyle = parseModelAttr(binding[style]);
+                    model = curStyle.model;
+                    attr = curStyle.attr;
+
+                    set = (function (style) {
+                        return function (model, value) {
+                            self.$el.css(style, value);
+                        }
+                    })(style);
+
+                    this.handlers.push({
+                        set: set,
+                        model: model,
+                        attr: attr
+                    });
+
+                    this.$el.css(style, this.view[model].get(attr));
+
+                    this.view[model].on('change:' + attr, set);
+                }
+            }
+        },
+        attr: function (binding) {
+            var self = this,
+                curAttr,
+                model,
+                attr,
+                set;
+
+            for (var attrName in binding) {
+                if (binding.hasOwnProperty(attrName)) {
+                    curAttr = parseModelAttr(binding[attrName]);
+                    model = curAttr.model;
+                    attr = curAttr.attr;
+
+                    set = (function (attrName) {
+                        return function (model, value) {
+                            self.$el.attr(attrName, value);
+                        }
+                    })(attrName);
+
+                    this.handlers.push({
+                        set: set,
+                        model: model,
+                        attr: attr
+                    });
+
+                    this.$el.attr(attrName, this.view[model].get(attr));
+
+                    this.view[model].on('change:' + attr, set);
+                }
+            }
+        },
+        classes: function (binding) {
+            var self = this,
+                curClass,
+                model,
+                attr,
+                set;
+
+            for (var clas in binding) {
+                if (binding.hasOwnProperty(clas)) {
+                    curClass = parseModelAttr(binding[clas]);
+                    model = curClass.model;
+                    attr = curClass.attr;
+
+                    set = (function (clas) {
+                        return function (model, value) {
+                            self.$el.toggleClass(clas, !!value);
+                        }
+                    })(clas);
+
+                    this.handlers.push({
+                        set: set,
+                        model: model,
+                        attr: attr
+                    });
+
+                    this.$el.toggleClass(clas, !!this.view[model].get(attr));
+
+                    this.view[model].on('change:' + attr, set);
+                }
+            }
         }
     };
 
