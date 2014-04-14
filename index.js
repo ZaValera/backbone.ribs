@@ -55,8 +55,10 @@ require([
 
         var BindingView = Backbone.Ribs.View.extend({
             bindings: {
-                '.bind-span': 'text:model.foo,css:{color:model.col,font-weight:model.weight},attr:{data-type:model.type},classes:{active:model.active,passive:model.passive}',
-                '.bind-input': 'value:model.foo,events:[keyup,change]'
+                '.bind-span': 'text:model.foo,css:{color:model.col,font-weight:model.weight},attr:{data-type:model.type},classes:{active:model.active,passive:model.passive},toggle:model.active',
+                '.bind-input': 'value:model.foo,events:[keyup,change]',
+                '.bind-textarea': 'value:model.text',
+                '.bind-checkbox': 'value:model.ch'
             },
 
             initialize: function () {
@@ -67,6 +69,8 @@ require([
                     'col': 'red',
                     'weight': 900,
                     'type': 'asdf',
+                    ch: ['la1', 'la3'],
+                    text: '2l4hl12h4l12h4',
                     active: true,
                     passive: false
                 });

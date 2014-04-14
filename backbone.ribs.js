@@ -198,9 +198,21 @@
 
         this.handlers = [];
 
+        var binding;
+
         for (var type in bindings) {
             if (bindings.hasOwnProperty(type)) {
-                HANDLERS[type].call(this, bindings[type]);
+                binding = bindings[type];
+
+                if (typeof binding === 'string') {
+                    this.addHandler(type, binding);
+                } else {
+                    for (var attr in binding) {
+                        if (binding.hasOwnProperty(attr)) {
+                            this.addHandler(type, binding[attr], attr);
+                        }
+                    }
+                }
             }
         }
     };
@@ -219,148 +231,94 @@
         }
     };
 
-    var HANDLERS = {
-        text: function (binding) {
-            binding = parseModelAttr(binding);
+    Binding.prototype.addHandler = function (type, binding, bindAttr) {
+        binding = parseModelAttr(binding);
 
-            var self = this,
-                model = binding.model,
-                attr = binding.attr;
+        var set = handlers[type],
+            get;
 
-            var set = function (model, value) {
-                self.$el.text(value);
-            };
+        if (typeof set !== 'function') {
+            get = set.get;
+            set = set.set;
+        }
 
-            this.handlers.push({
-                set: set,
+        var self = this,
+            model = binding.model,
+            attr = binding.attr,
+            handler = {
                 model: model,
                 attr: attr
-            });
+            };
 
-            this.$el.text(this.view[model].get(attr));
+        var setter = function (model, attr) {
+            set.call(self, attr, bindAttr);
+        };
 
-            this.view[model].on('change:' + attr, set);
-        },
-        value: function (binding) {
-            binding = parseModelAttr(binding);
+        set.call(this, this.view[model].get(attr), bindAttr);
 
+        this.view[model].on('change:' + attr, setter);
+
+        if (get) {
             var events = this.events,
-                self = this,
-                model = binding.model,
-                attr = binding.attr;
+                getter = function () {
+                    self.view[model].set(attr, get.call(self));
+                };
 
-            var set = function (model, value) {
-                self.$el.val(value);
-            };
+            this.$el.on(events, getter);
 
-            var get = function () {
-                self.view[model].set(attr, self.$el.val());
-            };
+            handler.events = events;
+            handler.get = getter;
+        }
 
-            this.handlers.push({
-                set: set,
-                get: get,
-                model: model,
-                attr: attr,
-                events: events
-            });
+        handler.set = setter;
+        this.handlers.push(handler);
+    };
 
-            this.$el.val(this.view[model].get(attr));
-
-            this.view[model].on('change:' + attr, set);
-            this.$el.on(events, get);
+    var handlers = {
+        text: function (value) {
+            this.$el.text(value);
         },
-        css: function (binding) {
-            var self = this,
-                curStyle,
-                model,
-                attr,
-                set;
 
-            for (var style in binding) {
-                if (binding.hasOwnProperty(style)) {
-                    curStyle = parseModelAttr(binding[style]);
-                    model = curStyle.model;
-                    attr = curStyle.attr;
-
-                    set = (function (style) {
-                        return function (model, value) {
-                            self.$el.css(style, value);
-                        }
-                    })(style);
-
-                    this.handlers.push({
-                        set: set,
-                        model: model,
-                        attr: attr
-                    });
-
-                    this.$el.css(style, this.view[model].get(attr));
-
-                    this.view[model].on('change:' + attr, set);
-                }
+        value: {
+            set: function (value) {
+                this.$el.val(value);
+            },
+            get: function () {
+                return this.$el.val();
             }
         },
-        attr: function (binding) {
-            var self = this,
-                curAttr,
-                model,
-                attr,
-                set;
 
-            for (var attrName in binding) {
-                if (binding.hasOwnProperty(attrName)) {
-                    curAttr = parseModelAttr(binding[attrName]);
-                    model = curAttr.model;
-                    attr = curAttr.attr;
-
-                    set = (function (attrName) {
-                        return function (model, value) {
-                            self.$el.attr(attrName, value);
-                        }
-                    })(attrName);
-
-                    this.handlers.push({
-                        set: set,
-                        model: model,
-                        attr: attr
-                    });
-
-                    this.$el.attr(attrName, this.view[model].get(attr));
-
-                    this.view[model].on('change:' + attr, set);
-                }
-            }
+        css: function (value, style) {
+            this.$el.css(style, value);
         },
-        classes: function (binding) {
-            var self = this,
-                curClass,
-                model,
-                attr,
-                set;
 
-            for (var clas in binding) {
-                if (binding.hasOwnProperty(clas)) {
-                    curClass = parseModelAttr(binding[clas]);
-                    model = curClass.model;
-                    attr = curClass.attr;
+        attr: function (value, attr) {
+            this.$el.attr(attr, value);
+        },
 
-                    set = (function (clas) {
-                        return function (model, value) {
-                            self.$el.toggleClass(clas, !!value);
-                        }
-                    })(clas);
+        classes: function (value, cl) {
+            this.$el.toggleClass(cl, !!value);
+        },
 
-                    this.handlers.push({
-                        set: set,
-                        model: model,
-                        attr: attr
-                    });
+        toggle: function (value) {
+            this.$el.toggle(!!value);
+        },
 
-                    this.$el.toggleClass(clas, !!this.view[model].get(attr));
+        checked: {
+            set: function (value) {
+                this.$el.prop('checked', false);
 
-                    this.view[model].on('change:' + attr, set);
+                if (value instanceof Array) {
+                    for (var i = 0; i < value.length; i++) {
+                        //var item = value[i];
+                        this.$el.filter('[value="' + value[i] + '"]').prop('checked', true);
+                    }
                 }
+
+                this.$el.val(value);
+            },
+            get: function () {
+                return [];
             }
         }
     };
