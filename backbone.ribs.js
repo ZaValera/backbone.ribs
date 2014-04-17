@@ -116,6 +116,18 @@
     };
 
     var parseModelAttr = function (ModelAttr) {
+        var parsed = ModelAttr.match(/^([^\(]+)\(([^\)]+)\)/),
+            filter;
+
+        if (parsed) {
+            filter = parsed[1];
+            ModelAttr = parsed[2];
+        }
+
+        if (filter && !filters.hasOwnProperty(filter)) {
+            throw new Error('unknown filter "' + filter + '"');
+        }
+
         var attrs = ModelAttr.match(/^(?:\!\.|[^.])+/),
             model,
             attr;
@@ -132,7 +144,8 @@
 
         return {
             model: model,
-            attr: attr
+            attr: attr,
+            filter: filter
         }
     };
 
@@ -185,9 +198,11 @@
         return this.value;
     };
 
-    var Binding = function (view, $el, bindings) {
-        this.$el = $el;
+    var Binding = function (view, selector, bindings) {
+        this.selector = selector;
         this.view = view;
+
+        this._setEl();
 
         if (bindings.events) {
             this.events = bindings.events.join(' ');
@@ -245,16 +260,26 @@
         var self = this,
             model = binding.model,
             attr = binding.attr,
+            modelAttr = this.view[model].get(attr),
+            filter = binding.filter,
             handler = {
                 model: model,
                 attr: attr
             };
 
         var setter = function (model, attr) {
+            if (filter) {
+                attr = filters[filter](attr);
+            }
+
             set.call(self, attr, bindAttr);
         };
 
-        set.call(this, this.view[model].get(attr), bindAttr);
+        if (filter) {
+            modelAttr = filters[filter](modelAttr);
+        }
+
+        set.call(this, modelAttr, bindAttr);
 
         this.view[model].on('change:' + attr, setter);
 
@@ -272,6 +297,22 @@
 
         handler.set = setter;
         this.handlers.push(handler);
+    };
+
+    Binding.prototype._setEl = function () {
+        var selector = this.selector;
+
+        if (selector === 'el') {
+            this.$el = this.view.$el;
+        } else {
+            this.$el = this.view.$(selector);
+        }
+    };
+
+    var filters = {
+        not: function (val) {
+            return !val;
+        }
     };
 
     var handlers = {
@@ -300,8 +341,20 @@
             this.$el.toggleClass(cl, !!value);
         },
 
+        html: function (value) {
+            this.$el.html(value);
+        },
+
         toggle: function (value) {
             this.$el.toggle(!!value);
+        },
+
+        disabled: function (value) {
+            this.$el.prop('disabled', !!value);
+        },
+
+        enabled: function (value) {
+            this.$el.prop('disabled', !value);
         },
 
         checked: {
@@ -310,15 +363,34 @@
 
                 if (value instanceof Array) {
                     for (var i = 0; i < value.length; i++) {
-                        //var item = value[i];
                         this.$el.filter('[value="' + value[i] + '"]').prop('checked', true);
                     }
+                } else if (typeof value === 'string') {
+                    this.$el.filter('[value="' + value + '"]').prop('checked', true);
+                } else {
+                    this.$el.prop('checked', !!value);
                 }
-
-                this.$el.val(value);
             },
+
             get: function () {
-                return [];
+                var type = this.$el.attr('type'),
+                    checkedEl = this.$el.filter(':checked');
+
+                if (type === 'checkbox') {
+                    var checked = [];
+
+                    if (this.$el.length === 1) {
+                        return !!checkedEl.length;
+                    } else {
+                        checkedEl.each(function (i, el) {
+                            checked.push($(el).val());
+                        });
+
+                        return checked;
+                    }
+                } else {
+                    return checkedEl.val();
+                }
             }
         }
     };
@@ -647,10 +719,15 @@
                 bindings: []
             };
             _super(this, 'constructor', arguments);
-            this.initBindings();
+
+            if (!this._ribs.preventBindings) {
+                this.applyBindings();
+            }
         },
 
-        initBindings: function () {
+        applyBindings: function () {
+            this.removeBindings();
+
             var bindings = this.bindings;
 
             for (var s in bindings) {
@@ -661,17 +738,9 @@
         },
 
         addBinding: function (selector, binding) {
-            var $el;
-
-            if (selector === 'el') {
-                $el = this.$el;
-            } else {
-                $el = this.$(selector);
-            }
-
             binding = parseBinding(binding);
 
-            this._ribs.bindings.push(new Binding(this, $el, binding));
+            this._ribs.bindings.push(new Binding(this, selector, binding));
         },
 
         removeBindings: function () {
@@ -682,6 +751,18 @@
             }
 
             this._ribs.bindings = [];
+        },
+
+        preventBindings: function () {
+            this._ribs.preventBindings = true;
+        },
+
+        updateBindings: function () {
+            var bindings = this._ribs.bindings;
+
+            for (var i = 0; i < bindings.length; i++) {
+                bindings[i]._setEl();
+            }
         }
     });
 
