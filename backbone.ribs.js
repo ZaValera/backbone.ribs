@@ -51,16 +51,6 @@
         return path;
     };
 
-    var _join = function (path) {
-        var newPath = [];
-
-        for (i = 0; i < path.length; i++) {
-            newPath.push(path[i].replace('.', '!.'));
-        }
-
-        return newPath.join('.');
-    };
-
     var getPath = function (path, obj) {
         var p;
 
@@ -716,8 +706,11 @@
 
         constructor: function(attributes, options) {
             this._ribs = {
-                bindings: []
+                _bindings: this.bindings || {},
+                bindings: [],
+                collections: {}
             };
+
             _super(this, 'constructor', arguments);
 
             if (!this._ribs.preventBindings) {
@@ -728,28 +721,56 @@
         applyBindings: function () {
             this.removeBindings();
 
-            var bindings = this.bindings;
+            var _bindings = this._ribs._bindings;
 
-            for (var s in bindings) {
-                if (bindings.hasOwnProperty(s)) {
-                    this.addBinding(s, bindings[s]);
+            for (var s in _bindings) {
+                if (_bindings.hasOwnProperty(s)) {
+                    this.addBinding(s, _bindings[s]);
                 }
             }
         },
 
-        addBinding: function (selector, binding) {
-            binding = parseBinding(binding);
+        addBinding: function (selector, bindings) {
+            var _bindings = this._ribs._bindings;
 
-            this._ribs.bindings.push(new Binding(this, selector, binding));
+            if (!_bindings.hasOwnProperty(selector)) {
+                _bindings[selector] = bindings;
+            }
+
+            bindings = parseBinding(bindings);
+
+            if (bindings.collection) {
+                var colBind = bindings.collection;
+
+                this.applyCollection(this.$el, this[colBind.col], this[colBind.view]);
+                delete bindings.collection;
+            }
+
+            this._ribs.bindings.push(new Binding(this, selector, bindings));
         },
 
         removeBindings: function () {
-            var bindings = this._ribs.bindings;
+            var bindings = this._ribs.bindings,
+                collections = this._ribs.collections;
 
             for (var i = 0; i < bindings.length; i++) {
                 bindings[i].unbind();
             }
 
+            for (var col in collections) {
+                if (collections.hasOwnProperty(col)) {
+                    col = collections[col];
+                    col.collection.off(null, null, this);
+
+                    for (var v in col.views) {
+                        if (col.views.hasOwnProperty(v)) {
+                            col.views[v].remove();
+                        }
+                    }
+                }
+            }
+
+            this._ribs.collections = {};
             this._ribs.bindings = [];
         },
 
@@ -762,6 +783,79 @@
 
             for (var i = 0; i < bindings.length; i++) {
                 bindings[i]._setEl();
+            }
+        },
+
+        applyCollection: function (selector, collection, View, data) {
+            var $el = selector instanceof $ ? selector : this.$(selector);
+
+            collection.cid = _.uniqueId('col');
+
+            this._ribs.collections[collection.cid] = {
+                collection: collection,
+                $el: $el,
+                View: View,
+                data: data || {},
+                views: {}
+            };
+
+            for (var i = 0; i < collection.length; i++) {
+                this._addView(collection.at(i), collection);
+            }
+
+            collection.on('sort', this._onSort, this);
+            collection.on('add', this._addView, this);
+            collection.on('remove', this._removeView, this);
+            collection.on('reset', this._onReset, this);
+        },
+
+        _addView: function (model, collection) {
+            var curCollection = this._ribs.collections[collection.cid],
+                view = new curCollection.View(_.extend(curCollection.data, {model: model, collection: collection}));
+
+            curCollection.views[model.cid] = view;
+            curCollection.$el.append(view.$el);
+        },
+
+        _removeView: function (model, collection) {
+            var curCollection = this._ribs.collections[collection.cid],
+                view = curCollection.views[model.cid];
+
+            view.remove();
+
+            delete curCollection.views[model.cid];
+        },
+
+        _onSort: function (collection) {
+            var curCollection = this._ribs.collections[collection.cid],
+                views = curCollection.views;
+
+            for (var view in views) {
+                if (views.hasOwnProperty(view)) {
+                    views[view].$el.detach();
+                }
+            }
+
+            for (var i = 0; i < collection.length; i++) {
+                curCollection.$el.append(views[collection.at(i).cid].$el);
+            }
+        },
+
+        _onReset: function (collection) {
+            var curCollection = this._ribs.collections[collection.cid],
+                views = curCollection.views;
+
+            for (var view in views) {
+                if (views.hasOwnProperty(view)) {
+                    view = views[view];
+                    view.remove();
+                }
+            }
+
+            curCollection.views = {};
+
+            for (var i = 0; i < collection.length; i++) {
+                this._addView(collection.at(i), collection);
             }
         }
     });

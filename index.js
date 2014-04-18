@@ -53,7 +53,7 @@ require([
 
         var bModel = window.bModel = new (Backbone.Model.extend(_.cloneDeep(extend)));
 
-        var BindingView = Backbone.Ribs.View.extend({
+        /*var BindingView = Backbone.Ribs.View.extend({
             bindings: {
                 //'.bind-span': 'text:model.foo,css:{color:model.col,font-weight:model.weight},attr:{data-type:model.type},classes:{active:model.active,passive:model.passive},toggle:model.active',
                 '.bind-span': 'classes:{active:not(model.active),passive:model.passive},toggle:not(model.active)',
@@ -82,9 +82,47 @@ require([
             }
         });
 
-        var view = window.bindView = new BindingView();
+        var view = window.bindView = new BindingView();*/
 
-        //view.updateBindings();
+        var ItemView = Backbone.View.extend({
+
+            initialize: function () {
+                this.setElement('<div class="item-view">' + this.model.get('a') + '</div>');
+            }
+        });
+
+
+
+        var CollectionView = Backbone.Ribs.View.extend({
+
+            bindings: {
+                'el': 'collection:{col:col2,view:ItemView},css:{color:model.col}'
+            },
+
+            initialize: function () {
+                this.col2 = new Backbone.Collection([{a: 2},{a: 4},{a: 3}]);
+
+                this.ItemView = ItemView;
+
+                this.model = new Backbone.Model({col: 'red'});
+
+                this.col2.comparator = 'a';
+
+                window.col = this.col2;
+
+                this.setElement('<div class="col-view"></div>');
+
+                //this.applyCollection(this.$el, collection, ItemView);
+
+                $('body').append(this.$el);
+            }
+        });
+
+
+
+        var colView = window.colView = new CollectionView();
+
+        //colView.removeBindings();
 
 
 
