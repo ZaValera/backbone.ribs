@@ -47,7 +47,7 @@ require([
         };
 
 
-        var model = window.model = new (Backbone.Ribs.Model.extend(_.cloneDeep(extend)));
+        /*var model = window.model = new (Backbone.Ribs.Model.extend(_.cloneDeep(extend)));
 
         var epModel = window.epModel = new (Backbone.Epoxy.Model.extend(_.cloneDeep(extend)));
 
@@ -91,7 +91,7 @@ require([
             }
         });
 
-        var view = window.bindView = new BindingView();
+        var view = window.bindView = new BindingView();*/
 
         /*var ItemView = Backbone.View.extend({
 
@@ -171,6 +171,27 @@ require([
             }
         );*/
 
+
+        var model = new Backbone.Ribs.Model({
+            foo: {
+                bar: 'test',
+                deepFoo: {
+                    deepBar: 'deepTest'
+                }
+            },
+            'foo.bar': 'dot'
+        });
+
+        window.model = model;
+
+        model.on('change:foo.bar', function () {console.log('tada');});
+        model.on('change:foo!.bar', function () {console.log('ta!!!da');});
+
+        console.log(model.get('foo.bar')); //"test"
+
+        console.log(model.get('foo.deepFoo.deepBar')); //"deepTest"
+
+        console.log(model.get('foo!.bar')); //"dot"
 
 
 
