@@ -53,15 +53,22 @@ require([
 
         var bModel = window.bModel = new (Backbone.Model.extend(_.cloneDeep(extend)));
 
-        /*var BindingView = Backbone.Ribs.View.extend({
+        var BindingView = Backbone.Ribs.View.extend({
             bindings: {
                 //'.bind-span': 'text:model.foo,css:{color:model.col,font-weight:model.weight},attr:{data-type:model.type},classes:{active:model.active,passive:model.passive},toggle:model.active',
-                '.bind-span': 'classes:{active:not(model.active),passive:model.passive},toggle:not(model.active)',
-                '.bind-input': 'value:model.foo,events:[keyup,change]',
-                '.bind-textarea': 'value:model.text',
-                '.bind-checkbox': 'checked:model.ch',
-                '.bind-checkbox-single': 'checked:model.chs,enabled:model.active',
-                '.bind-radio': 'checked:model.rad,disabled:model.active'
+                //'.bind-span': 'classes:{active:not(model.active),passive:model.passive},toggle:not(model.active)',
+                '.bind-span': 'text:summ(model.num1,model.num2),css:{color:model.col,font-weight:model.weight}'
+                //'.bind-input': 'value:model.foo,events:[keyup,change]',
+                //'.bind-textarea': 'value:model.text',
+                //'.bind-checkbox': 'checked:model.ch',
+                //'.bind-checkbox-single': 'checked:model.chs,enabled:model.active',
+                //'.bind-radio': 'checked:model.rad,disabled:model.active'
+            },
+
+            filters: {
+                summ: function (a, b) {
+                    return a + b;
+                }
             },
 
             initialize: function () {
@@ -77,14 +84,16 @@ require([
                     rad: 'la2',
                     text: '2l4hl12h4l12h4',
                     active: true,
-                    passive: false
+                    passive: false,
+                    num1: '15',
+                    num2: '13'
                 });
             }
         });
 
-        var view = window.bindView = new BindingView();*/
+        var view = window.bindView = new BindingView();
 
-        var ItemView = Backbone.View.extend({
+        /*var ItemView = Backbone.View.extend({
 
             initialize: function () {
                 this.setElement('<div class="item-view">' + this.model.get('a') + '</div>');
@@ -120,7 +129,7 @@ require([
 
 
 
-        var colView = window.colView = new CollectionView();
+        var colView = window.colView = new CollectionView();*/
 
         //colView.removeBindings();
 

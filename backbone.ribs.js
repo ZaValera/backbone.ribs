@@ -99,44 +99,85 @@
 
     var parseBinding = function (str) {
         try {
-            return JSON.parse(('{' + str + '}').replace(/([^\{\}\[\]\,\:]+)/ig,'"$1"'));
+            var newStr = '',
+                substr,
+                openBr = str.indexOf('(') + 1,
+                closeBr = str.indexOf(')') + 1;
+
+            if (openBr) {
+                while (str.length) {
+                    openBr = str.indexOf('(') + 1;
+                    closeBr = str.indexOf(')') + 1 || str.length;
+
+                    newStr += str.slice(0, openBr);
+                    substr = str.slice(openBr, closeBr);
+                    if (openBr) {
+                        newStr += substr.replace(',', ' ');
+                    } else {
+                        newStr += substr;
+                    }
+
+                    str = str.slice(closeBr);
+                }
+            } else {
+                newStr = str;
+            }
+
+            return JSON.parse(('{' + newStr + '}').replace(/([^\{\}\[\]\,\:]+)/ig,'"$1"'));
         } catch (e) {
             throw new Error('wrong binding format "' + str + '"');
         }
     };
 
-    var parseModelAttr = function (ModelAttr) {
-        var parsed = ModelAttr.match(/^([^\(]+)\(([^\)]+)\)/),
+    var parseModelAttr = function (modelAttrs) {
+        var parsed = modelAttrs.match(/^([^\(]+)\(([^\)]+)\)/),
+            res = {
+                paths: []
+            },
+            paths,
+            path,
+            model,
+            attr,
             filter;
 
         if (parsed) {
             filter = parsed[1];
-            ModelAttr = parsed[2];
+            paths = parsed[2].split(' ');
+        } else {
+            paths = modelAttrs.split(' ');
         }
+
+        res.filter = filter;
 
         if (filter && !filters.hasOwnProperty(filter)) {
             throw new Error('unknown filter "' + filter + '"');
         }
 
-        var attrs = ModelAttr.match(/^(?:\!\.|[^.])+/),
-            model,
-            attr;
+        if (!filter && paths.length > 1) {
+            throw new Error('wrong binging "' + modelAttrs + '"');
+        }
 
-        try {
-            model = attrs[0];
-            attr = ModelAttr.slice(model.length + 1);
-            if (!attr.length) {
-                throw '';
+        for (var i = 0; i < paths.length; i++) {
+            path = paths[i];
+            parsed = path.match(/^(?:\!\.|[^.])+/);
+
+            try {
+                model = parsed[0];
+                attr = paths[i].slice(model.length + 1);
+                if (!attr.length) {
+                    throw '';
+                }
+            } catch (e) {
+                throw new Error('wrong binging "' + modelAttrs + '"');
             }
-        } catch (e) {
-            throw new Error('wrong binging "' + ModelAttr + '"');
+
+            res.paths.push({
+                model: model,
+                attr: attr
+            });
         }
 
-        return {
-            model: model,
-            attr: attr,
-            filter: filter
-        }
+        return res;
     };
 
     var Computed = function (data, name, model) {
@@ -224,22 +265,41 @@
 
     Binding.prototype.unbind = function () {
         var handlers = this.handlers,
-            handler;
+            paths,
+            path,
+            handler,
+            i,j;
 
-        for (var i = 0; i < handlers.length; i++) {
+        for (i = 0; i < handlers.length; i++) {
             handler = handlers[i];
             if (handler.get) {
                 this.$el.off(handler.events, handler.get);
             }
 
-            this.view[handler.model].off('change:' + handler.attr, handler.set);
+            paths = handler.paths;
+
+            for (j = 0; j < paths.length; j++) {
+                path = paths[j];
+                this.view[path.model].off('change:' + path.attr, handler.set);
+
+            }
         }
     };
 
     Binding.prototype.addHandler = function (type, binding, bindAttr) {
         binding = parseModelAttr(binding);
 
-        var set = handlers[type],
+        var paths = binding.paths,
+            attrs = [],
+            self = this,
+            path,
+            model,
+            attr,
+            modelAttr,
+            handler = {
+                paths: paths
+            },
+            set = handlers[type],
             get;
 
         if (typeof set !== 'function') {
@@ -247,31 +307,45 @@
             set = set.set;
         }
 
-        var self = this,
-            model = binding.model,
-            attr = binding.attr,
-            modelAttr = this.view[model].get(attr),
-            filter = binding.filter,
-            handler = {
-                model: model,
-                attr: attr
-            };
+        if (binding.filter) {
+            var filter = filters[binding.filter];
+        }
 
-        var setter = function (model, attr) {
+        var setter = function () {
+            var attrs = [],
+                attr,
+                path;
+
+            for (var i = 0; i < paths.length; i++) {
+                path = paths[i];
+                attrs.push(self.view[path.model].get(path.attr));
+            }
+
             if (filter) {
-                attr = filters[filter](attr);
+                attr = filter.apply(null, attrs);
+            } else {
+                attr = attrs[0];
             }
 
             set.call(self, attr, bindAttr);
         };
 
+        for (var i = 0; i < paths.length; i++) {
+            path = paths[i];
+            model = path.model;
+            attr = path.attr;
+            attrs.push(this.view[model].get(attr));
+
+            this.view[model].on('change:' + attr, setter);
+        }
+
         if (filter) {
-            modelAttr = filters[filter](modelAttr);
+            modelAttr = filter.apply(null, attrs);
+        } else {
+            modelAttr = attrs[0];
         }
 
         set.call(this, modelAttr, bindAttr);
-
-        this.view[model].on('change:' + attr, setter);
 
         if (get) {
             var events = this.events,
@@ -710,6 +784,10 @@
                 bindings: [],
                 collections: {}
             };
+
+            if (this.filters) {
+                _.extend(filters, this.filters);
+            }
 
             _super(this, 'constructor', arguments);
 
