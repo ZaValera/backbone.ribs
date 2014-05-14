@@ -13,7 +13,7 @@
 
 }(this, function(_, Backbone) {
     var Ribs = Backbone.Ribs = {
-        version: '0.0.5'
+        version: '1.0.1'
     };
 
     var _super = function (self, method, args) {
@@ -874,9 +874,7 @@
                 $el: $el,
                 View: View,
                 data: data || {},
-                views: {},
-                length: 0,
-                addedModels: []
+                views: {}
             };
 
             for (var i = 0; i < collection.length; i++) {
@@ -890,31 +888,11 @@
         },
 
         _addView: function (model, collection) {
-            console.log(collection.length);
             var curCollection = this._ribs.collections[collection.cid],
-                addedModels = curCollection.addedModels;
+                view = new curCollection.View(_.extend(curCollection.data, {model: model, collection: collection}));
 
-            addedModels.push(model);
-
-            if (curCollection.length + addedModels.length !== collection.length) {
-                return;
-            }
-
-            var fragment = document.createDocumentFragment();
-
-            for (var i = 0; i < addedModels.length; i++) {
-                model = addedModels[i];
-
-                var view = new curCollection.View(_.extend(curCollection.data, {model: model, collection: collection}));
-
-                curCollection.views[model.cid] = view;
-                fragment.appendChild(view.$el[0]);
-            }
-
-            curCollection.addedModels = [];
-            curCollection.length = collection.length;
-
-            curCollection.$el.append(fragment);
+            curCollection.views[model.cid] = view;
+            curCollection.$el.append(view.$el);
         },
 
         _removeView: function (model, collection) {
@@ -936,13 +914,9 @@
                 }
             }
 
-            var fragment = document.createDocumentFragment();
-
             for (var i = 0; i < collection.length; i++) {
-                fragment.appendChild(views[collection.at(i).cid].$el[0]);
+                curCollection.$el.append(views[collection.at(i).cid].$el);
             }
-
-            curCollection.$el.append(fragment);
         },
 
         _onReset: function (collection) {
