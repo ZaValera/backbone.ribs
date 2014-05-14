@@ -93,7 +93,7 @@ require([
 
         var view = window.bindView = new BindingView();*/
 
-        /*var ItemView = Backbone.View.extend({
+        var ItemView = Backbone.View.extend({
 
             initialize: function () {
                 this.setElement('<div class="item-view">' + this.model.get('a') + '</div>');
@@ -129,7 +129,7 @@ require([
 
 
 
-        var colView = window.colView = new CollectionView();*/
+        var colView = window.colView = new CollectionView();
 
         //colView.removeBindings();
 
@@ -172,7 +172,7 @@ require([
         );*/
 
 
-        var model = new Backbone.Ribs.Model({
+        /*var model = new Backbone.Ribs.Model({
             foo: {
                 bar: 'test',
                 deepFoo: {
@@ -191,7 +191,7 @@ require([
 
         console.log(model.get('foo.deepFoo.deepBar')); //"deepTest"
 
-        console.log(model.get('foo!.bar')); //"dot"
+        console.log(model.get('foo!.bar')); //"dot"*/
 
 
 
@@ -204,3 +204,61 @@ require([
 
     });
 });
+
+/*
+var BindingView = Backbone.Ribs.View.extend({
+    bindings: {
+        'el': 'toggle:model.visible',
+        '.bind-text':'text:model.foo',
+        '.bind-value':'value:model.bar',
+        '.bind-css':'css:{color:model.col,font-weight:model.weight}',
+        '.bind-attr':'attr:{data-type:model.type}',
+        '.bind-classes':'classes:{bind-classes_active:model.active',
+        '.bind-html':'html:model.template',
+        '.bind-disabled':'disabled:model.disabled',
+        '.bind-enabled':'enabled:model.enabled',
+        '.bind-checked':'checked:model.checkedItems',
+        '.bind-with-filter':'text:summ(model.num1,model.num2)'
+    },
+
+    filters: {
+        summ: function (a, b) {
+            return a + b;
+        }
+    },
+
+    initialize: function () {
+        this.setElement('.bind');
+
+        this.model = window.bindModel = new Backbone.Ribs.Model({
+            visible: true,
+            foo: 'foo',
+            bar: 123,
+            col: 'red',
+            weight: 900,
+            type: 'someType',
+            active: true,
+            template: '<div class="bind-template">fooBar</div>',
+            disabled: true,
+            enabled: true,
+            checked: [1, 2, 3],
+            num1: 15,
+            num2: 13
+        });
+    }
+});
+
+var bindingView = new BindingView();
+
+
+Backbone.Ribs.View.extend({
+    bindings: {
+
+    },
+
+    initialize: function () {
+        this.preventBindings();
+    }
+});
+
+var bindingView = new BindingView();*/
