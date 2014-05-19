@@ -267,8 +267,10 @@
         var handlers = this.handlers,
             paths,
             path,
+            attrArray,
+            ch,
             handler,
-            i,j;
+            i, j, k;
 
         for (i = 0; i < handlers.length; i++) {
             handler = handlers[i];
@@ -280,8 +282,13 @@
 
             for (j = 0; j < paths.length; j++) {
                 path = paths[j];
-                this.view[path.model].off('change:' + path.attr, handler.set);
+                attrArray = _split(path.attr);
+                ch = '';
 
+                for (k = 0; k < attrArray.length; k++) {
+                    ch += attrArray[k];
+                    this.view[path.model].off('change:' + ch, handler.set);
+                }
             }
         }
     };
@@ -295,6 +302,8 @@
             path,
             model,
             attr,
+            attrArray,
+            ch,
             modelAttr,
             handler = {
                 paths: paths
@@ -335,8 +344,13 @@
             model = path.model;
             attr = path.attr;
             attrs.push(this.view[model].get(attr));
+            attrArray = _split(attr);
+            ch = '';
 
-            this.view[model].on('change:' + attr, setter);
+            for (var j = 0; j < attrArray.length; j++) {
+                ch += attrArray[j];
+                this.view[model].on('change:' + ch, setter);
+            }
         }
 
         if (filter) {
@@ -821,7 +835,7 @@
                 var colBind = bindings.collection;
 
                 this.applyCollection(this.$el, this[colBind.col], this[colBind.view]);
-                delete bindings.collection;
+                bindings.collection = undefined;
             }
 
             this._ribs.bindings.push(new Binding(this, selector, bindings));

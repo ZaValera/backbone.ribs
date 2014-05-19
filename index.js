@@ -47,7 +47,7 @@ require([
         };
 
 
-        /*var model = window.model = new (Backbone.Ribs.Model.extend(_.cloneDeep(extend)));
+        var model = window.model = new (Backbone.Ribs.Model.extend(_.cloneDeep(extend)));
 
         var epModel = window.epModel = new (Backbone.Epoxy.Model.extend(_.cloneDeep(extend)));
 
@@ -57,12 +57,13 @@ require([
             bindings: {
                 //'.bind-span': 'text:model.foo,css:{color:model.col,font-weight:model.weight},attr:{data-type:model.type},classes:{active:model.active,passive:model.passive},toggle:model.active',
                 //'.bind-span': 'classes:{active:not(model.active),passive:model.passive},toggle:not(model.active)',
-                '.bind-span': 'text:summ(model.num1,model.num2),css:{color:model.col,font-weight:model.weight}'
+                //'.bind-span': 'text:summ(model.num1,model.num2),css:{color:model.col,font-weight:model.weight}'
                 //'.bind-input': 'value:model.foo,events:[keyup,change]',
                 //'.bind-textarea': 'value:model.text',
                 //'.bind-checkbox': 'checked:model.ch',
                 //'.bind-checkbox-single': 'checked:model.chs,enabled:model.active',
                 //'.bind-radio': 'checked:model.rad,disabled:model.active'
+                '.bind-span': 'text:model.foo.bar'
             },
 
             filters: {
@@ -75,7 +76,9 @@ require([
                 this.setElement('.content');
 
                 this.model = window.bindModel = new Backbone.Ribs.Model({
-                    'foo': 'bar',
+                    foo: {
+                        bar: 456
+                    },
                     'col': 'red',
                     'weight': 900,
                     'type': 'asdf',
@@ -91,7 +94,7 @@ require([
             }
         });
 
-        var view = window.bindView = new BindingView();*/
+        var view = window.bindView = new BindingView();
 
         /*var ItemView = Backbone.View.extend({
 
@@ -131,67 +134,38 @@ require([
 
         var colView = window.colView = new CollectionView();*/
 
-        //colView.removeBindings();
 
-
-
-
-
-
-        /*var Binding = function ($el, model, get, set) {
-            var self = this;
-
-            this.$el = $el;
-            this.model = model;
-
-            this.onchange = function (model, value) {
-                get.call(self, value);
-            };
-
-            this.handler = function () {
-                console.log('tada');
-                set.call(self, 'bar');
-            };
-
-            model.on('change:bar', this.onchange);
-            $el.on('keyup', this.handler);
-        };
-
-        Binding.prototype.unbind = function () {
-            this.$el.off('keyup', this.handler);
-            this.model.off('change:bar', this.onchange);
-        };
-
-        var binding = window.binding = new Binding($('.bind-input'), model,
-            function (value) {
-                this.$el.val(value);
-            },
-            function (attr) {
-                this.model.set(attr, this.$el.val());
-            }
-        );*/
-
-
-        var model = new Backbone.Ribs.Model({
-            foo: {
-                bar: 'test',
-                deepFoo: {
-                    deepBar: 'deepTest'
+        /*var Model = Backbone.Ribs.Model.extend({
+            computeds: {
+                a: {
+                    deps: ['foo.bar'],
+                    get: function (a) {
+                        return 'comp ' + a;
+                    }
                 }
             },
-            'foo.bar': 'dot'
+
+            defaults: {
+                foo: {
+                    bar: 'test',
+                    deepFoo: {
+                        deepBar: 'deepTest'
+                    }
+                },
+                'foo.bar': 'dot'
+            }
         });
 
-        window.model = model;
+        window.model = new Model();*/
 
-        model.on('change:foo.bar', function () {console.log('tada');});
+        /*model.on('change:foo.bar', function () {console.log('tada');});
         model.on('change:foo!.bar', function () {console.log('ta!!!da');});
 
         console.log(model.get('foo.bar')); //"test"
 
         console.log(model.get('foo.deepFoo.deepBar')); //"deepTest"
 
-        console.log(model.get('foo!.bar')); //"dot"
+        console.log(model.get('foo!.bar')); //"dot"*/
 
 
 
