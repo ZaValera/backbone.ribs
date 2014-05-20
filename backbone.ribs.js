@@ -13,7 +13,7 @@
 
 }(this, function(_, Backbone) {
     var Ribs = Backbone.Ribs = {
-        version: '1.0.1'
+        version: '0.0.5'
     };
 
     var _super = function (self, method, args) {
@@ -509,6 +509,10 @@
         },
 
         get: function (attr) {
+            if (typeof attr !== 'string') {
+                return undefined;
+            }
+
             var computeds = this._ribs.computeds;
 
             if (attr in computeds) {
