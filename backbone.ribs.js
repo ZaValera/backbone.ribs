@@ -348,6 +348,10 @@
             ch = '';
 
             for (var j = 0; j < attrArray.length; j++) {
+                if (ch) {
+                    ch += '.';
+                }
+
                 ch += attrArray[j];
                 this.view[model].on('change:' + ch, setter);
             }
