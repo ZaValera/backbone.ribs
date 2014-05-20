@@ -47,6 +47,8 @@ $(function () {
 
     module('GET');
     test('Simple GET', function () {
+        equal(model.get(), undefined, 'Get undefined');
+
         equal(model.get('ar'), ar, 'Get Array');
 
         equal(model.get('obj'), obj, 'Get Object');
@@ -351,5 +353,64 @@ $(function () {
         deepEqual(model._previousAttributes, {foo1: 50, foo2: 60, barComp: '50-60', barComp2: '60-50'}, '_previousAttributes unset');
         deepEqual(model.changed, {foo1: 70, foo2: 80, barComp: '70-80', barComp2: '80-70'}, 'changed unset');
         equal(counter, 3, 'onchange unset');
+    });
+
+    module('Bindings');
+    test('Bindings', function () {
+        var BindingView = Backbone.Ribs.View.extend({
+            bindings: {
+                '.bind-toggle1': 'toggle:model.toggle1',
+                '.bind-toggle2': 'toggle:model.toggle2',
+                '.bind-text':'text:model.foo',
+                '.bind-value':'value:model.bar',
+                '.bind-css':'css:{color:model.col,font-weight:model.weight}',
+                '.bind-attr':'attr:{data-type:model.type}',
+                '.bind-classes':'classes:{bind-classes_active:model.active}',
+                '.bind-html':'html:model.template',
+                '.bind-disabled1':'disabled:model.disabled1',
+                '.bind-enabled1':'enabled:model.enabled1',
+                '.bind-disabled2':'disabled:model.disabled2',
+                '.bind-enabled2':'enabled:model.enabled2',
+                '.bind-single-checked':'checked:model.singleChecked',
+                '.bind-mlt-checked':'checked:model.checked',
+                '.bind-radio-checked':'checked:model.radio',
+                '.bind-with-filter':'text:summ(model.num1,model.num2)'
+            },
+
+            filters: {
+                summ: function (a, b) {
+                    return a + b;
+                }
+            },
+
+            initialize: function () {
+                this.setElement('.bind');
+
+                this.model = new Backbone.Ribs.Model({
+                    toggle1: true,
+                    toggle2: false,
+                    foo: 'foo',
+                    bar: 123,
+                    col: 'red',
+                    weight: 900,
+                    type: 'someType',
+                    active: true,
+                    template: '<div class="bind-template">fooBar</div>',
+                    disabled1: true,
+                    enabled1: false,
+                    disabled2: false,
+                    enabled2: true,
+                    singleChecked: true,
+                    checked: ['second', 'third'],
+                    radio: 'second',
+                    num1: 15,
+                    num2: 13
+                });
+            }
+        });
+
+        var bindingView = new BindingView();
+
+        equal(123, 123, 'Get Empty name');
     })
 });
