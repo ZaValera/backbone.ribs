@@ -286,6 +286,10 @@
                 ch = '';
 
                 for (k = 0; k < attrArray.length; k++) {
+                    if (ch) {
+                        ch += '.';
+                    }
+                    
                     ch += attrArray[k];
                     this.view[path.model].off('change:' + ch, handler.set);
                 }
