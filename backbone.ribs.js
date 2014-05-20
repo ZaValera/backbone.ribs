@@ -443,10 +443,10 @@
                     for (var i = 0; i < value.length; i++) {
                         this.$el.filter('[value="' + value[i] + '"]').prop('checked', true);
                     }
-                } else if (typeof value === 'string') {
-                    this.$el.filter('[value="' + value + '"]').prop('checked', true);
+                } else if (typeof value === 'boolean') {
+                    this.$el.prop('checked', value);
                 } else {
-                    this.$el.prop('checked', !!value);
+                    this.$el.filter('[value="' + value + '"]').prop('checked', true);
                 }
             },
 
