@@ -838,7 +838,7 @@
             if (bindings.collection) {
                 var colBind = bindings.collection;
 
-                this.applyCollection(this.$el, this[colBind.col], this[colBind.view]);
+                this.applyCollection(selector, this[colBind.col], this[colBind.view]);
                 bindings.collection = undefined;
             }
 
