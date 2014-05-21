@@ -335,7 +335,7 @@
             }
 
             if (filter) {
-                attr = filter.apply(self, attrs);
+                attr = filter.apply(self.view, attrs);
             } else {
                 attr = attrs[0];
             }
@@ -362,7 +362,7 @@
         }
 
         if (filter) {
-            modelAttr = filter.apply(this, attrs);
+            modelAttr = filter.apply(this.view, attrs);
         } else {
             modelAttr = attrs[0];
         }
