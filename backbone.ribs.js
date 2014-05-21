@@ -891,7 +891,15 @@
         },
 
         applyCollection: function (selector, collection, View, data) {
-            var $el = selector instanceof $ ? selector : this.$(selector);
+            var $el;
+
+            if (selector instanceof $) {
+                $el = selector;
+            } else if (selector === 'el') {
+                $el = this.$el;
+            } else {
+                $el = this.$(selector);
+            }
 
             collection.cid = _.uniqueId('col');
 
