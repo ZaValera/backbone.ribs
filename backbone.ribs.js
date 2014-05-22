@@ -864,7 +864,11 @@
             for (var col in collections) {
                 if (collections.hasOwnProperty(col)) {
                     col = collections[col];
-                    col.collection.off(null, null, this);
+
+                    col.collection.off('sort', this._onSort, this);
+                    col.collection.off('add', this._addView, this);
+                    col.collection.off('remove', this._removeView, this);
+                    col.collection.off('reset', this._onReset, this);
 
                     for (var v in col.views) {
                         if (col.views.hasOwnProperty(v)) {

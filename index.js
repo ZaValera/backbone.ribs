@@ -47,7 +47,7 @@ require([
         };
 
 
-        var model = window.model = new (Backbone.Ribs.Model.extend(_.cloneDeep(extend)));
+        /*var model = window.model = new (Backbone.Ribs.Model.extend(_.cloneDeep(extend)));
 
         var epModel = window.epModel = new (Backbone.Epoxy.Model.extend(_.cloneDeep(extend)));
 
@@ -94,9 +94,9 @@ require([
             }
         });
 
-        var view = window.bindView = new BindingView();
+        var view = window.bindView = new BindingView();*/
 
-        /*var ItemView = Backbone.View.extend({
+        var ItemView = Backbone.View.extend({
 
             initialize: function () {
                 this.setElement('<div class="item-view">' + this.model.get('a') + '</div>');
@@ -112,7 +112,11 @@ require([
             },
 
             initialize: function () {
+                this.preventBindings();
+
                 this.col2 = new Backbone.Collection([{a: 2},{a: 4},{a: 3}]);
+
+
 
                 this.ItemView = ItemView;
 
@@ -127,12 +131,22 @@ require([
                 //this.applyCollection(this.$el, collection, ItemView);
 
                 $('body').append(this.$el);
+
+                this.applyCollection('el', this.col2, ItemView);
+
+                this.col2.on('change:a', this.tada, this);
+
+                this.applyBindings();
+            },
+
+            tada: function () {
+                console.log('tada');
             }
         });
 
 
 
-        var colView = window.colView = new CollectionView();*/
+        var colView = window.colView = new CollectionView();
 
 
         /*var Model = Backbone.Ribs.Model.extend({
