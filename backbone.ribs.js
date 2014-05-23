@@ -408,7 +408,11 @@
 
         value: {
             set: function (value) {
-                this.$el.val(value);
+                var v = this.$el.val();
+
+                if (v !== value) {
+                    this.$el.val(value);
+                }
             },
             get: function () {
                 return this.$el.val();
@@ -765,8 +769,6 @@
                             computedsDeps[dep] = [name];
                         }
                     }
-
-
                 }
             }
 
