@@ -408,9 +408,7 @@
 
         value: {
             set: function (value) {
-                var v = this.$el.val();
-
-                if (v !== value) {
+                if (this.$el.val() !== value) {
                     this.$el.val(value);
                 }
             },
