@@ -355,21 +355,44 @@ $(function () {
         equal(counter, 3, 'onchange unset');
     });
 
-    module('Bindings');
+    module('Simple Bindings');
     test('Bindings', function () {
+        var model = new Backbone.Ribs.Model({
+            toggle1: true,
+            toggle2: false,
+            foo: 'foo',
+            bar: 123,
+            color: 'red',
+            weight: 900,
+            type: 'someType',
+            id: 13,
+            active: true,
+            passive: false,
+            template: '<div class="bind-template">fooBar</div>',
+            disabled1: true,
+            disabled2: false,
+            enabled1: false,
+            enabled2: true,
+            singleChecked: true,
+            checked: ['second', 'third'],
+            radio: 'second',
+            num1: 15,
+            num2: 13
+        });
+
         var BindingView = Backbone.Ribs.View.extend({
             bindings: {
                 '.bind-toggle1': 'toggle:model.toggle1',
                 '.bind-toggle2': 'toggle:model.toggle2',
                 '.bind-text':'text:model.foo',
                 '.bind-value':'value:model.bar',
-                '.bind-css':'css:{color:model.col,font-weight:model.weight}',
-                '.bind-attr':'attr:{data-type:model.type}',
-                '.bind-classes':'classes:{bind-classes_active:model.active}',
+                '.bind-css':'css:{color:model.color,font-weight:model.weight}',
+                '.bind-attr':'attr:{data-type:model.type,data-id:model.id}',
+                '.bind-classes':'classes:{bind-classes_active:model.active,bind-classes_passive:model.passive}',
                 '.bind-html':'html:model.template',
                 '.bind-disabled1':'disabled:model.disabled1',
-                '.bind-enabled1':'enabled:model.enabled1',
                 '.bind-disabled2':'disabled:model.disabled2',
+                '.bind-enabled1':'enabled:model.enabled1',
                 '.bind-enabled2':'enabled:model.enabled2',
                 '.bind-single-checked':'checked:model.singleChecked',
                 '.bind-mlt-checked':'checked:model.checked',
@@ -386,31 +409,97 @@ $(function () {
             initialize: function () {
                 this.setElement('.bind');
 
-                this.model = new Backbone.Ribs.Model({
-                    toggle1: true,
-                    toggle2: false,
-                    foo: 'foo',
-                    bar: 123,
-                    col: 'red',
-                    weight: 900,
-                    type: 'someType',
-                    active: true,
-                    template: '<div class="bind-template">fooBar</div>',
-                    disabled1: true,
-                    enabled1: false,
-                    disabled2: false,
-                    enabled2: true,
-                    singleChecked: true,
-                    checked: ['second', 'third'],
-                    radio: 'second',
-                    num1: 15,
-                    num2: 13
-                });
+                this.model = model;
             }
         });
 
         var bindingView = new BindingView();
 
-        equal(123, 123, 'Get Empty name');
+        equal($('.bind-toggle1:visible').length, 1, 'ToggleTrue');
+        model.set('toggle1', false);
+        equal($('.bind-toggle1:hidden').length, 1, 'ToggleTrue changed');
+
+        equal($('.bind-toggle2:hidden').length, 1, 'ToggleFalse');
+        model.set('toggle2', true);
+        equal($('.bind-toggle2:visible').length, 1, 'ToggleFalse changed');
+
+        equal($('.bind-text').text(), 'foo', 'Text');
+        model.set('foo', 'newfoo');
+        equal($('.bind-text').text(), 'newfoo', 'Text changed');
+
+        equal($('.bind-value').val(), '123', 'Value');
+        model.set('bar', 321);
+        equal($('.bind-value').val(), '321', 'Value model changed');
+        $('.bind-value').val(333).change();
+        equal(model.get('bar'), '333', 'Value input changed');
+
+        equal($('.bind-css').attr('style'), 'color: red; font-weight: 900;', 'Css');
+        model.set('color', 'blue');
+        model.set('weight', 300);
+        equal($('.bind-css').attr('style'), 'color: blue; font-weight: 300;', 'Css changed');
+
+        equal($('.bind-attr').attr('data-type'), 'someType', 'Attr Type');
+        equal($('.bind-attr').attr('data-id'), '13', 'Attr Id');
+        model.set('type', 'someNewType');
+        model.set('id', '31');
+        equal($('.bind-attr').attr('data-type'), 'someNewType', 'Attr Type changed');
+        equal($('.bind-attr').attr('data-id'), '31', 'Attr Id changed');
+
+        equal($('.bind-classes').hasClass('bind-classes_active'), true, 'Classes Active');
+        equal($('.bind-classes').hasClass('bind-classes_passive'), false, 'Classes Passive');
+        model.set('active', false);
+        model.set('passive', true);
+        equal($('.bind-classes').hasClass('bind-classes_active'), false, 'Classes Active changed');
+        equal($('.bind-classes').hasClass('bind-classes_passive'), true, 'Classes Passive changed');
+
+        equal($('.bind-html').html(), '<div class="bind-template">fooBar</div>', 'Html');
+        model.set('template', '<span class="bind-template">newfooBar</span>');
+        equal($('.bind-html').html(), '<span class="bind-template">newfooBar</span>', 'Html changed');
+
+        equal($('.bind-disabled1').prop('disabled'), true, 'DisabledTrue');
+        model.set('disabled1', false);
+        equal($('.bind-disabled1').prop('disabled'), false, 'DisabledTrue changed');
+        equal($('.bind-disabled2').prop('disabled'), false, 'DisabledFalse');
+        model.set('disabled2', true);
+        equal($('.bind-disabled2').prop('disabled'), true, 'DisabledFalse changed');
+
+        equal($('.bind-enabled1').prop('disabled'), true, 'EnabledTrue');
+        model.set('enabled1', true);
+        equal($('.bind-enabled1').prop('disabled'), false, 'EnabledTrue changed');
+        equal($('.bind-enabled2').prop('disabled'), false, 'EnabledFalse');
+        model.set('enabled2', false);
+        equal($('.bind-enabled2').prop('disabled'), true, 'EnabledFalse changed');
+
+        equal($('.bind-single-checked').prop('checked'), true, 'SingleChecked');
+        model.set('singleChecked', false);
+        equal($('.bind-single-checked').prop('checked'), false, 'SingleChecked model changed');
+        $('.bind-single-checked').prop('checked', true).change();
+        equal(model.get('singleChecked'), true, 'SingleChecked checkbox changed');
+
+        equal($('.bind-mlt-checked[value="first"]').prop('checked'), false, 'MltChecked First');
+        equal($('.bind-mlt-checked[value="second"]').prop('checked'), true, 'MltChecked Second');
+        equal($('.bind-mlt-checked[value="third"]').prop('checked'), true, 'MltChecked Third');
+        model.set('checked', ['first']);
+        equal($('.bind-mlt-checked[value="first"]').prop('checked'), true, 'MltChecked First model changed');
+        equal($('.bind-mlt-checked[value="second"]').prop('checked'), false, 'MltChecked Second model changed');
+        equal($('.bind-mlt-checked[value="third"]').prop('checked'), false, 'MltChecked Third model changed');
+        $('.bind-mlt-checked[value="first"]').prop('checked', false).change();
+        $('.bind-mlt-checked[value="third"]').prop('checked', true).change();
+        deepEqual(model.get('checked'), ['third'], 'MltChecked checkbox changed');
+
+        equal($('.bind-radio-checked[value="first"]').prop('checked'), false, 'RadioChecked First');
+        equal($('.bind-radio-checked[value="second"]').prop('checked'), true, 'RadioChecked Second');
+        equal($('.bind-radio-checked[value="third"]').prop('checked'), false, 'RadioChecked Third');
+        model.set('radio', 'first');
+        equal($('.bind-radio-checked[value="first"]').prop('checked'), true, 'RadioChecked First model changed');
+        equal($('.bind-radio-checked[value="second"]').prop('checked'), false, 'RadioChecked Second model changed');
+        equal($('.bind-radio-checked[value="third"]').prop('checked'), false, 'RadioChecked Third model changed');
+        $('.bind-radio-checked[value="third"]').prop('checked', true).change();
+        equal(model.get('radio'), 'third', 'RadioChecked radio changed');
+
+        equal($('.bind-with-filter').text(), '28', 'Filter');
+        model.set('num1', 21);
+        model.set('num2', 35);
+        equal($('.bind-with-filter').text(), '56', 'Filter changed');
     })
 });
