@@ -355,8 +355,8 @@ $(function () {
         equal(counter, 3, 'onchange unset');
     });
 
-    module('Simple Bindings');
-    test('Bindings', function () {
+    module('Bindings');
+    test('Simple Bindings', function () {
         var model = new Backbone.Ribs.Model({
             toggle1: true,
             toggle2: false,
@@ -501,5 +501,40 @@ $(function () {
         model.set('num1', 21);
         model.set('num2', 35);
         equal($('.bind-with-filter').text(), '56', 'Filter changed');
-    })
+    });
+
+    test('Collection Bindings', function () {
+        var ItemView = Backbone.View.extend({
+
+            initialize: function () {
+                this.setElement('<div class="item-view">' + this.model.get('a') + '</div>');
+            }
+        });
+
+        var CollectionView = Backbone.Ribs.View.extend({
+
+            bindings: {
+                'el': 'collection:{col:collection,view:ItemView}'
+            },
+
+            ItemView: ItemView,
+
+            initialize: function () {
+                this.collection = new Backbone.Collection([{a: 2},{a: 6},{a: 4}]);
+                this.collection.comparator = 'a';
+                window.col = this.collection;
+                this.setElement('.bind-col');
+            }
+        });
+
+        var colView = window.colView = new CollectionView();
+
+        var $items = $('.bind-col').children('.item-view');
+
+        equal($items.length, 3, 'Init Coll Length');
+
+        equal($items.filter(':eq(0)').text(), 2, 'Init Sort 1');
+        equal($items.filter(':eq(1)').text(), 4, 'Init Sort 2');
+        equal($items.filter(':eq(2)').text(), 6, 'Init Sort 3');
+    });
 });

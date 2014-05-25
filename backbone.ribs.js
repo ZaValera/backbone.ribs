@@ -915,36 +915,21 @@
                 views: {}
             };
 
+            collection.sort();
+
             for (var i = 0; i < collection.length; i++) {
                 this._addView(collection.at(i), collection);
             }
 
-            collection.on('sort', this._onSort, this);
+            collection.on('sort', this.renderCollection, this);
             collection.on('add', this._addView, this);
             collection.on('remove', this._removeView, this);
             collection.on('reset', this._onReset, this);
         },
 
-        _addView: function (model, collection) {
-            var curCollection = this._ribs.collections[collection.cid],
-                view = new curCollection.View(_.extend(curCollection.data, {model: model, collection: collection}));
-
-            curCollection.views[model.cid] = view;
-            curCollection.$el.append(view.$el);
-        },
-
-        _removeView: function (model, collection) {
-            var curCollection = this._ribs.collections[collection.cid],
-                view = curCollection.views[model.cid];
-
-            view.remove();
-
-            delete curCollection.views[model.cid];
-        },
-
-        _onSort: function (collection) {
-            var curCollection = this._ribs.collections[collection.cid],
-                views = curCollection.views;
+        renderCollection: function (collection) {
+            var ribsCol = this._ribs.collections[collection.cid],
+                views = ribsCol.views;
 
             for (var view in views) {
                 if (views.hasOwnProperty(view)) {
@@ -953,13 +938,46 @@
             }
 
             for (var i = 0; i < collection.length; i++) {
-                curCollection.$el.append(views[collection.at(i).cid].$el);
+                ribsCol.$el.append(views[collection.at(i).cid].$el);
             }
         },
 
+        _addView: function (model, collection) {
+            var ribsCol = this._ribs.collections[collection.cid],
+                view = new ribsCol.View(_.extend(ribsCol.data, {model: model, collection: collection}));
+
+            ribsCol.views[model.cid] = view;
+
+            var index = collection.models.indexOf(model);
+
+            if (index) {
+                ribsCol.views[collection.at(index - 1).cid].$el.after(view.$el);
+            } else {
+                if (collection.length) {
+                    var nextView = ribsCol.views[collection.at(1).cid];
+
+                    if (nextView) {
+                        nextView.$el.before(view.$el);
+                    } else {
+                        ribsCol.$el.append(view.$el);
+                    }
+                } else {
+                    ribsCol.$el.append(view.$el);
+                }
+            }
+        },
+
+        _removeView: function (model, collection) {
+            var ribsCol = this._ribs.collections[collection.cid],
+                view = ribsCol.views[model.cid];
+
+            view.remove();
+            ribsCol.views[model.cid] = undefined;
+        },
+
         _onReset: function (collection) {
-            var curCollection = this._ribs.collections[collection.cid],
-                views = curCollection.views;
+            var ribsCol = this._ribs.collections[collection.cid],
+                views = ribsCol.views;
 
             for (var view in views) {
                 if (views.hasOwnProperty(view)) {
@@ -968,7 +986,7 @@
                 }
             }
 
-            curCollection.views = {};
+            ribsCol.views = {};
 
             for (var i = 0; i < collection.length; i++) {
                 this._addView(collection.at(i), collection);
