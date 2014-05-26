@@ -915,7 +915,9 @@
                 views: {}
             };
 
-            collection.sort();
+            if (collection.comparator) {
+                collection.sort();
+            }
 
             for (var i = 0; i < collection.length; i++) {
                 this._addView(collection.at(i), collection);
