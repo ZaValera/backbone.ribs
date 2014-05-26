@@ -265,8 +265,10 @@
 
     Binding.prototype.unbind = function () {
         var handlers = this.handlers,
+            col = [],
             paths,
             path,
+            model,
             attrArray,
             ch,
             handler,
@@ -283,7 +285,15 @@
             for (j = 0; j < paths.length; j++) {
                 path = paths[j];
                 attrArray = _split(path.attr);
+                model = path.model;
                 ch = '';
+
+                if (this.view[model] instanceof Backbone.Collection) {
+                    if (col.indexOf(model) === -1) {
+                        col.push(model);
+                        this.view[model].off('add remove reset', handler.set);
+                    }
+                }
 
                 for (k = 0; k < attrArray.length; k++) {
                     if (ch) {
@@ -291,7 +301,7 @@
                     }
                     
                     ch += attrArray[k];
-                    this.view[path.model].off('change:' + ch, handler.set);
+                    this.view[model].off('change:' + ch, handler.set);
                 }
             }
         }
@@ -302,6 +312,7 @@
 
         var paths = binding.paths,
             attrs = [],
+            col = [],
             self = this,
             path,
             model,
@@ -331,7 +342,12 @@
 
             for (var i = 0; i < paths.length; i++) {
                 path = paths[i];
-                attrs.push(self.view[path.model].get(path.attr));
+
+                if (self.view[path.model] instanceof Backbone.Collection) {
+                    attrs.push(self.view[path.model].pluck(path.attr));
+                } else {
+                    attrs.push(self.view[path.model].get(path.attr));
+                }
             }
 
             if (filter) {
@@ -347,9 +363,18 @@
             path = paths[i];
             model = path.model;
             attr = path.attr;
-            attrs.push(this.view[model].get(attr));
             attrArray = _split(attr);
             ch = '';
+
+            if (this.view[model] instanceof Backbone.Collection) {
+                attrs.push(this.view[model].pluck(attr));
+                if (col.indexOf(model) === -1) {
+                    col.push(model);
+                    this.view[model].on('add remove reset', setter);
+                }
+            } else {
+                attrs.push(this.view[model].get(attr));
+            }
 
             for (var j = 0; j < attrArray.length; j++) {
                 if (ch) {

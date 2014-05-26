@@ -376,8 +376,11 @@ $(function () {
             singleChecked: true,
             checked: ['second', 'third'],
             radio: 'second',
-            num1: 15,
-            num2: 13
+            num: 15
+        });
+
+        var model2 = new Backbone.Ribs.Model({
+            num: 13
         });
 
         var BindingView = Backbone.Ribs.View.extend({
@@ -397,12 +400,24 @@ $(function () {
                 '.bind-single-checked':'checked:model.singleChecked',
                 '.bind-mlt-checked':'checked:model.checked',
                 '.bind-radio-checked':'checked:model.radio',
-                '.bind-with-filter':'text:summ(model.num1,model.num2)'
+                '.bind-with-filter':'text:summ(model.num,model2.num)'/*,
+                '.bind-col-change':'text:colFilter(col.a)'*/
             },
 
             filters: {
                 summ: function (a, b) {
                     return a + b;
+                },
+
+                colFilter: function (collection) {
+                    var a = collection.pluck('a'),
+                        sum = 0;
+
+                    for (var i = 0; i < a.length; i++) {
+                        sum += a[i];
+                    }
+
+                    return sum;
                 }
             },
 
@@ -410,6 +425,9 @@ $(function () {
                 this.setElement('.bind');
 
                 this.model = model;
+                this.model2 = model2;
+
+                this.col = new Backbone.Collection([{a: 2},{a: 4},{a: 3}]);
             }
         });
 
@@ -498,8 +516,8 @@ $(function () {
         equal(model.get('radio'), 'third', 'RadioChecked radio changed');
 
         equal($('.bind-with-filter').text(), '28', 'Filter');
-        model.set('num1', 21);
-        model.set('num2', 35);
+        model.set('num', 21);
+        model2.set('num', 35);
         equal($('.bind-with-filter').text(), '56', 'Filter changed');
     });
 

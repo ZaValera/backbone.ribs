@@ -108,39 +108,31 @@ require([
         var CollectionView = Backbone.Ribs.View.extend({
 
             bindings: {
-                'el': 'collection:{col:col2,view:ItemView},css:{color:model.col}'
+                'el':'text:colFilter(col.a.b)'
+            },
+
+            filters: {
+                colFilter: function (a) {
+                    var sum = 0;
+
+                    for (var i = 0; i < a.length; i++) {
+                        sum += a[i];
+                    }
+
+                    return sum;
+                }
             },
 
             initialize: function () {
-                this.preventBindings();
+                this.col = new Backbone.Collection([
+                    new Backbone.Ribs.Model({a: {b: 3}}),
+                    new Backbone.Ribs.Model({a: {b: 5}}),
+                    new Backbone.Ribs.Model({a: {b: 8}})
+                ]);
 
-                this.col2 = new Backbone.Collection([{a: 2},{a: 4},{a: 3}]);
+                window.col = this.col;
 
-
-
-                this.ItemView = ItemView;
-
-                this.model = new Backbone.Model({col: 'red'});
-
-                this.col2.comparator = 'a';
-
-                window.col = this.col2;
-
-                this.setElement('<div class="col-view"></div>');
-
-                //this.applyCollection(this.$el, collection, ItemView);
-
-                $('body').append(this.$el);
-
-                this.applyCollection('el', this.col2, ItemView);
-
-                this.col2.on('change:a', this.tada, this);
-
-                this.applyBindings();
-            },
-
-            tada: function () {
-                console.log('tada');
+                this.setElement('.bind-col-change');
             }
         });
 
