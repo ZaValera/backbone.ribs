@@ -291,7 +291,7 @@
                 if (this.view[model] instanceof Backbone.Collection) {
                     if (col.indexOf(model) === -1) {
                         col.push(model);
-                        this.view[model].off('add remove reset', handler.set);
+                        this.view[model].off('add remove reset sort', handler.set);
                     }
                 }
 
@@ -370,7 +370,7 @@
                 attrs.push(this.view[model].pluck(attr));
                 if (col.indexOf(model) === -1) {
                     col.push(model);
-                    this.view[model].on('add remove reset', setter);
+                    this.view[model].on('add remove reset sort', setter);
                 }
             } else {
                 attrs.push(this.view[model].get(attr));
@@ -847,6 +847,10 @@
             }
         },
 
+        preventBindings: function () {
+            this._ribs.preventBindings = true;
+        },
+
         applyBindings: function () {
             this.removeBindings();
 
@@ -872,7 +876,7 @@
                 var colBind = bindings.collection;
 
                 this.applyCollection(selector, this[colBind.col], this[colBind.view]);
-                bindings.collection = undefined;
+                delete bindings.collection;
             }
 
             this._ribs.bindings.push(new Binding(this, selector, bindings));
@@ -886,18 +890,23 @@
                 bindings[i].unbind();
             }
 
-            for (var col in collections) {
-                if (collections.hasOwnProperty(col)) {
-                    col = collections[col];
+            for (var cols in collections) {
+                if (collections.hasOwnProperty(cols)) {
+                    cols = collections[cols];
 
-                    col.collection.off('sort', this._onSort, this);
-                    col.collection.off('add', this._addView, this);
-                    col.collection.off('remove', this._removeView, this);
-                    col.collection.off('reset', this._onReset, this);
+                    for (var ribsCol in cols) {
+                        if (cols.hasOwnProperty(ribsCol)) {
+                            ribsCol = cols[ribsCol];
+                            ribsCol.collection.off('sort', this.renderCollection, this);
+                            ribsCol.collection.off('add', this._onaddView, this);
+                            ribsCol.collection.off('remove', this._removeView, this);
+                            ribsCol.collection.off('reset', this._onReset, this);
 
-                    for (var v in col.views) {
-                        if (col.views.hasOwnProperty(v)) {
-                            col.views[v].remove();
+                            for (var v in ribsCol.views) {
+                                if (ribsCol.views.hasOwnProperty(v)) {
+                                    ribsCol.views[v].remove();
+                                }
+                            }
                         }
                     }
                 }
@@ -907,20 +916,23 @@
             this._ribs.bindings = [];
         },
 
-        preventBindings: function () {
-            this._ribs.preventBindings = true;
-        },
-
         updateBindings: function () {
-            var bindings = this._ribs.bindings;
+            var bindings = this._ribs.bindings,
+                binding;
 
             for (var i = 0; i < bindings.length; i++) {
-                bindings[i]._setEl();
+                binding = bindings[i];
+                binding._setEl();
+
+                for (var j = 0; j < binding.handlers.length; j++) {
+                    binding.handlers[j].set();
+                }
             }
         },
 
         applyCollection: function (selector, collection, View, data) {
-            var $el;
+            var col,
+                $el;
 
             if (selector instanceof $) {
                 $el = selector;
@@ -930,9 +942,28 @@
                 $el = this.$(selector);
             }
 
-            collection.cid = _.uniqueId('col');
+            selector = $el.selector;
 
-            this._ribs.collections[collection.cid] = {
+            if (collection.comparator) {
+                collection.sort();
+            }
+
+            if (!collection.cid) {
+                collection.cid = _.uniqueId('col');
+
+                collection.on('sort', this.renderCollection, this);
+                collection.on('add', this._onaddView, this);
+                collection.on('remove', this._removeView, this);
+                collection.on('reset', this._onReset, this);
+            }
+
+            col = this._ribs.collections[collection.cid];
+
+            if (!col) {
+                col = this._ribs.collections[collection.cid] = {};
+            }
+
+            col[selector] = {
                 collection: collection,
                 $el: $el,
                 View: View,
@@ -940,83 +971,133 @@
                 views: {}
             };
 
-            if (collection.comparator) {
-                collection.sort();
-            }
-
             for (var i = 0; i < collection.length; i++) {
-                this._addView(collection.at(i), collection);
+                this._addView(collection.at(i), collection, selector);
             }
-
-            collection.on('sort', this.renderCollection, this);
-            collection.on('add', this._addView, this);
-            collection.on('remove', this._removeView, this);
-            collection.on('reset', this._onReset, this);
         },
 
-        renderCollection: function (collection) {
-            var ribsCol = this._ribs.collections[collection.cid],
-                views = ribsCol.views;
+        renderCollection: function (collection, selector) {
+            var cols = this._ribs.collections[collection.cid],
+                $el,
+                ribsCol,
+                views,
+                view;
 
-            for (var view in views) {
-                if (views.hasOwnProperty(view)) {
-                    views[view].$el.detach();
+            if (selector instanceof $) {
+                $el = selector;
+            } else if (selector === 'el') {
+                $el = this.$el;
+            } else {
+                $el = this.$(selector);
+            }
+
+            selector = $el.selector;
+
+            for (var c in cols) {
+                if (cols.hasOwnProperty(c) && (!selector || c === selector)) {
+                    ribsCol = cols[c];
+                    if (!ribsCol) {
+                        throw new Error('can\'t render collection without binding');
+                    }
+
+                    views = ribsCol.views;
+
+                    for (view in views) {
+                        if (views.hasOwnProperty(view)) {
+                            views[view].$el.detach();
+                        }
+                    }
+
+                    for (var i = 0; i < collection.length; i++) {
+                        view = views[collection.at(i).cid];
+
+                        if (!view) {
+                            this._addView(collection.at(i), collection, c);
+                        } else {
+                            ribsCol.$el.append(view.$el);
+                        }
+                    }
                 }
             }
-
-            for (var i = 0; i < collection.length; i++) {
-                ribsCol.$el.append(views[collection.at(i).cid].$el);
-            }
         },
 
-        _addView: function (model, collection) {
-            var ribsCol = this._ribs.collections[collection.cid],
-                view = new ribsCol.View(_.extend(ribsCol.data, {model: model, collection: collection}));
+        _onaddView: function (model, collection) {
+            this._addView(model, collection);
+        },
 
-            ribsCol.views[model.cid] = view;
+        _addView: function (model, collection, selector) {
+            var cols = this._ribs.collections[collection.cid],
+                ribsCol,
+                view,
+                index;
 
-            var index = collection.models.indexOf(model);
+            for (var c in cols) {
+                if (cols.hasOwnProperty(c) && (!selector || c === selector)) {
+                    ribsCol = cols[c];
+                    view = new ribsCol.View(_.extend(ribsCol.data, {model: model, collection: collection}));
 
-            if (index) {
-                ribsCol.views[collection.at(index - 1).cid].$el.after(view.$el);
-            } else {
-                if (collection.length > 1) {
-                    var nextView = ribsCol.views[collection.at(1).cid];
+                    ribsCol.views[model.cid] = view;
 
-                    if (nextView) {
-                        nextView.$el.before(view.$el);
+                    index = collection.models.indexOf(model);
+
+                    if (index) {
+                        ribsCol.views[collection.at(index - 1).cid].$el.after(view.$el);
                     } else {
-                        ribsCol.$el.append(view.$el);
+                        if (collection.length > 1) {
+                            var nextView = ribsCol.views[collection.at(1).cid];
+
+                            if (nextView) {
+                                nextView.$el.before(view.$el);
+                            } else {
+                                ribsCol.$el.append(view.$el);
+                            }
+                        } else {
+                            ribsCol.$el.append(view.$el);
+                        }
                     }
-                } else {
-                    ribsCol.$el.append(view.$el);
                 }
             }
         },
 
         _removeView: function (model, collection) {
-            var ribsCol = this._ribs.collections[collection.cid],
-                view = ribsCol.views[model.cid];
+            var cols = this._ribs.collections[collection.cid],
+                ribsCol,
+                view;
 
-            view.remove();
-            ribsCol.views[model.cid] = undefined;
+            for (var c in cols) {
+                if (cols.hasOwnProperty(c)) {
+                    ribsCol = cols[c];
+                    view = ribsCol.views[model.cid];
+
+                    view.remove();
+                    delete ribsCol.views[model.cid];
+                }
+            }
         },
 
         _onReset: function (collection) {
-            var ribsCol = this._ribs.collections[collection.cid],
-                views = ribsCol.views;
+            var cols = this._ribs.collections[collection.cid],
+                ribsCol,
+                views;
 
-            for (var view in views) {
-                if (views.hasOwnProperty(view)) {
-                    view = views[view];
-                    view.remove();
+            for (var c in cols) {
+                if (cols.hasOwnProperty(c)) {
+                    ribsCol = cols[c];
+                    views = ribsCol.views;
+
+                    for (var view in views) {
+                        if (views.hasOwnProperty(view)) {
+                            view = views[view];
+                            view.remove();
+                        }
+                    }
+
+                    ribsCol.views = {};
+
+                    for (var i = 0; i < collection.length; i++) {
+                        this._addView(collection.at(i), collection);
+                    }
                 }
-            }
-
-            ribsCol.views = {};
-
-            for (var i = 0; i < collection.length; i++) {
-                this._addView(collection.at(i), collection);
             }
         }
     });

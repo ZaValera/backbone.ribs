@@ -363,11 +363,8 @@ $(function () {
             foo: 'foo',
             bar: 123,
             color: 'red',
-            weight: 900,
             type: 'someType',
-            id: 13,
             active: true,
-            passive: false,
             template: '<div class="bind-template">fooBar</div>',
             disabled1: true,
             disabled2: false,
@@ -380,8 +377,18 @@ $(function () {
         });
 
         var model2 = new Backbone.Ribs.Model({
-            num: 13
+            num: 13,
+            weight: 900,
+            id: 13,
+            passive: false
         });
+
+        var col = new Backbone.Collection([{a: 2},{a: 4},{a: 3}]);
+        var col2 = new Backbone.Collection([{b: 7},{b: 5},{b: 6}]);
+
+
+        /*var col  = new Backbone.Collection([{a: 3},{a: 4},{a: 5}]);
+        var col2 = new Backbone.Collection([{b: 2},{b: 3},{b: 7}]);*/
 
         var BindingView = Backbone.Ribs.View.extend({
             bindings: {
@@ -389,9 +396,9 @@ $(function () {
                 '.bind-toggle2': 'toggle:model.toggle2',
                 '.bind-text':'text:model.foo',
                 '.bind-value':'value:model.bar',
-                '.bind-css':'css:{color:model.color,font-weight:model.weight}',
-                '.bind-attr':'attr:{data-type:model.type,data-id:model.id}',
-                '.bind-classes':'classes:{bind-classes_active:model.active,bind-classes_passive:model.passive}',
+                '.bind-css':'css:{color:model.color,font-weight:model2.weight}',
+                '.bind-attr':'attr:{data-type:model.type,data-id:model2.id}',
+                '.bind-classes':'classes:{bind-classes_active:model.active,bind-classes_passive:model2.passive}',
                 '.bind-html':'html:model.template',
                 '.bind-disabled1':'disabled:model.disabled1',
                 '.bind-disabled2':'disabled:model.disabled2',
@@ -400,8 +407,8 @@ $(function () {
                 '.bind-single-checked':'checked:model.singleChecked',
                 '.bind-mlt-checked':'checked:model.checked',
                 '.bind-radio-checked':'checked:model.radio',
-                '.bind-with-filter':'text:summ(model.num,model2.num)'/*,
-                '.bind-col-change':'text:colFilter(col.a)'*/
+                '.bind-with-filter':'text:summ(model.num,model2.num)',
+                '.bind-col-filter':'text:colFilter(col.a,col2.b)'
             },
 
             filters: {
@@ -409,12 +416,12 @@ $(function () {
                     return a + b;
                 },
 
-                colFilter: function (collection) {
-                    var a = collection.pluck('a'),
-                        sum = 0;
+                colFilter: function (a, b) {
+                    var sum = 0,
+                        l = a.length > b.length ? a.length : b.length;
 
-                    for (var i = 0; i < a.length; i++) {
-                        sum += a[i];
+                    for (var i = 0; i < l; i++) {
+                        sum += (a[i] || 1)*(b[i] || 1);
                     }
 
                     return sum;
@@ -427,7 +434,8 @@ $(function () {
                 this.model = model;
                 this.model2 = model2;
 
-                this.col = new Backbone.Collection([{a: 2},{a: 4},{a: 3}]);
+                this.col = col;
+                this.col2 = col2;
             }
         });
 
@@ -453,20 +461,20 @@ $(function () {
 
         equal($('.bind-css').attr('style'), 'color: red; font-weight: 900;', 'Css');
         model.set('color', 'blue');
-        model.set('weight', 300);
+        model2.set('weight', 300);
         equal($('.bind-css').attr('style'), 'color: blue; font-weight: 300;', 'Css changed');
 
         equal($('.bind-attr').attr('data-type'), 'someType', 'Attr Type');
         equal($('.bind-attr').attr('data-id'), '13', 'Attr Id');
         model.set('type', 'someNewType');
-        model.set('id', '31');
+        model2.set('id', '31');
         equal($('.bind-attr').attr('data-type'), 'someNewType', 'Attr Type changed');
         equal($('.bind-attr').attr('data-id'), '31', 'Attr Id changed');
 
         equal($('.bind-classes').hasClass('bind-classes_active'), true, 'Classes Active');
         equal($('.bind-classes').hasClass('bind-classes_passive'), false, 'Classes Passive');
         model.set('active', false);
-        model.set('passive', true);
+        model2.set('passive', true);
         equal($('.bind-classes').hasClass('bind-classes_active'), false, 'Classes Active changed');
         equal($('.bind-classes').hasClass('bind-classes_passive'), true, 'Classes Passive changed');
 
@@ -519,9 +527,34 @@ $(function () {
         model.set('num', 21);
         model2.set('num', 35);
         equal($('.bind-with-filter').text(), '56', 'Filter changed');
+
+        equal($('.bind-col-filter').text(), '52', 'Col Filter');
+        col.at(1).set('a', 5);
+        col2.at(2).set('b', 2);
+        equal($('.bind-col-filter').text(), '45', 'Col Filter changed');
+        col.add({'a': 4});
+        equal($('.bind-col-filter').text(), '49', 'Col Filter add 1');
+        col2.add({'b': 3});
+        equal($('.bind-col-filter').text(), '57', 'Col Filter add 2');
+        col.remove(col.at(0));
+        equal($('.bind-col-filter').text(), '61', 'Col Filter remove 1');
+        col2.remove(col2.at(1));
+        equal($('.bind-col-filter').text(), '53', 'Col Filter remove 2');
+        col.comparator = 'a';
+        col.sort();
+        equal($('.bind-col-filter').text(), '44', 'Col Filter sort 1');
+        col2.comparator = 'b';
+        col2.sort();
+        equal($('.bind-col-filter').text(), '53', 'Col Filter sort 2');
+        col.reset();
+        equal($('.bind-col-filter').text(), '12', 'Col Filter reset 1');
+        col2.reset();
+        equal($('.bind-col-filter').text(), '0', 'Col Filter reset 2');
     });
 
     test('Collection Bindings', function () {
+        var col = new Backbone.Collection([{a: 2},{a: 6},{a: 4}]);
+
         var ItemView = Backbone.View.extend({
 
             initialize: function () {
@@ -538,21 +571,167 @@ $(function () {
             ItemView: ItemView,
 
             initialize: function () {
-                this.collection = new Backbone.Collection([{a: 2},{a: 6},{a: 4}]);
-                this.collection.comparator = 'a';
-                window.col = this.collection;
+                this.collection = col;
+                this.collection;
                 this.setElement('.bind-col');
             }
         });
 
         var colView = window.colView = new CollectionView();
 
-        var $items = $('.bind-col').children('.item-view');
+        var $items = colView.$el.children('.item-view');
 
         equal($items.length, 3, 'Init Coll Length');
 
-        equal($items.filter(':eq(0)').text(), 2, 'Init Sort 1');
-        equal($items.filter(':eq(1)').text(), 4, 'Init Sort 2');
-        equal($items.filter(':eq(2)').text(), 6, 'Init Sort 3');
+        equal($items.filter(':eq(0)').text(), 2, 'Init 1');
+        equal($items.filter(':eq(1)').text(), 6, 'Init 2');
+        equal($items.filter(':eq(2)').text(), 4, 'Init 3');
+
+        col.comparator = 'a';
+        col.sort();
+        $items = colView.$el.children('.item-view');
+        equal($items.filter(':eq(0)').text(), 2, 'Sort 1');
+        equal($items.filter(':eq(1)').text(), 4, 'Sort 2');
+        equal($items.filter(':eq(2)').text(), 6, 'Sort 3');
+
+        col.reset();
+        $items = colView.$el.children('.item-view');
+        equal($items.length, 0, 'Coll Length After reset');
+
+        col.add({a: 3});
+        col.comparator = undefined;
+        $items = colView.$el.children('.item-view');
+        equal($items.length, 1, 'Coll Length After add first');
+        equal($items.filter(':eq(0)').text(), 3, 'Add First');
+
+        col.add({a: 2});
+        $items = colView.$el.children('.item-view');
+        equal($items.length, 2, 'Coll Length After add second');
+        equal($items.filter(':eq(0)').text(), 3, 'Add Second 1');
+        equal($items.filter(':eq(1)').text(), 2, 'Add Second 2');
+
+        col.add({a: 4}, {at: 0});
+        $items = colView.$el.children('.item-view');
+        equal($items.length, 3, 'Coll Length After add at 0');
+        equal($items.filter(':eq(0)').text(), 4, 'Add at 0 1');
+        equal($items.filter(':eq(1)').text(), 3, 'Add at 0 2');
+        equal($items.filter(':eq(2)').text(), 2, 'Add at 0 3');
+
+        col.add({a: 5}, {at: 2});
+        $items = colView.$el.children('.item-view');
+        equal($items.length, 4, 'Coll Length After add at 2');
+        equal($items.filter(':eq(0)').text(), 4, 'Add at 2 1');
+        equal($items.filter(':eq(1)').text(), 3, 'Add at 2 2');
+        equal($items.filter(':eq(2)').text(), 5, 'Add at 2 3');
+        equal($items.filter(':eq(3)').text(), 2, 'Add at 2 4');
+
+        col.add({a: 6});
+        $items = colView.$el.children('.item-view');
+        equal($items.length, 5, 'Coll Length After add last');
+        equal($items.filter(':eq(0)').text(), 4, 'Add last 1');
+        equal($items.filter(':eq(1)').text(), 3, 'Add last 2');
+        equal($items.filter(':eq(2)').text(), 5, 'Add last 3');
+        equal($items.filter(':eq(3)').text(), 2, 'Add last 4');
+        equal($items.filter(':eq(4)').text(), 6, 'Add last 5');
+
+        col.remove(col.at(3));
+        $items = colView.$el.children('.item-view');
+        equal($items.length, 4, 'Coll Length After remove');
+        equal($items.filter(':eq(0)').text(), 4, 'Remove 1');
+        equal($items.filter(':eq(1)').text(), 3, 'Remove 2');
+        equal($items.filter(':eq(2)').text(), 5, 'Remove 3');
+        equal($items.filter(':eq(3)').text(), 6, 'Remove 4');
+
+        colView.removeBindings();
+        $items = colView.$el.children('.item-view');
+        equal($items.length, 0, 'Coll Length After removing bindings');
+
+        colView.applyBindings();
+        $items = colView.$el.children('.item-view');
+        equal($items.length, 4, 'Coll Length After applying bindings');
+    });
+
+    test('Bindings methods', function () {
+        var model = new Backbone.Ribs.Model({
+            foo: 'foo',
+            bar: 123
+        });
+
+        var col = window.col = new Backbone.Collection([{a: 2}]);
+
+        var ItemView = Backbone.View.extend({
+            initialize: function () {
+                this.setElement('<div class="item-view">' + this.model.get('a') + '</div>');
+            }
+        });
+
+        var BindingView = Backbone.Ribs.View.extend({
+            bindings: {
+                '.met-bind-text':'text:model.foo',
+                '.met-remove-bind-text':'text:model.foo',
+                '.met-bind-col': 'collection:{col:col,view:ItemView}'
+            },
+
+            initialize: function () {
+                this.preventBindings();
+                this.setElement('.met-bind');
+
+                this.model = model;
+                this.col = col;
+                this.ItemView = ItemView;
+            }
+        });
+
+        var bindingView = window.bindingView = new BindingView();
+
+        equal($('.met-bind-text').text(), '', 'Prevent simple binding');
+
+        var $items = bindingView.$('.met-bind-col').children('.item-view');
+        equal($items.length, 0, 'Prevent col binding');
+
+        bindingView.applyBindings();
+
+        equal($('.met-bind-text').text(), 'foo', 'Apply simple binding');
+
+        $items = bindingView.$('.met-bind-col').children('.item-view');
+        equal($items.length, 1, 'Apply col binding');
+
+        bindingView.addBinding('.met-add-bind-text','text:model.bar');
+        equal($('.met-add-bind-text').text(), '123', 'Add binding');
+
+        bindingView.$el.append('<span class="met-bind-text met-bind-text_added"></span>');
+        bindingView.updateBindings();
+        equal($('.met-bind-text_added').text(), 'foo', 'Update bindings');
+
+        bindingView.applyCollection('.met-apply-col', col, ItemView);
+        $items = bindingView.$('.met-apply-col').children('.item-view');
+        equal($items.length, 1, 'Apply collection');
+
+        col.add({a: 5}, {silent: true});
+        bindingView.renderCollection(col, bindingView.$('.met-apply-col'));
+        $items = bindingView.$('.met-apply-col').children('.item-view');
+        equal($items.length, 2, 'Render certain collection 1');
+        $items = bindingView.$('.met-bind-col').children('.item-view');
+        equal($items.length, 1, 'Render certain collection 2');
+
+        col.add({a: 3}, {silent: true});
+        bindingView.renderCollection(col);
+        $items = bindingView.$('.met-apply-col').children('.item-view');
+        equal($items.length, 3, 'Render all collections 1');
+        $items = bindingView.$('.met-bind-col').children('.item-view');
+        equal($items.length, 3, 'Render all collections 2');
+
+        bindingView.removeBindings();
+        col.add({a: 8});
+        col.reset([{a: 7}, {a: 9}, {a: 4}]);
+        col.remove(col.at(0));
+        col.comparator = 'a';
+        col.sort();
+        $items = bindingView.$('.met-apply-col').children('.item-view');
+        equal($items.length, 0, 'Remove col binding 1');
+        $items = bindingView.$('.met-bind-col').children('.item-view');
+        equal($items.length, 0, 'Remove col binding 2');
+        model.set('foo', 'remove');
+        equal($('.met-remove-bind-text').text(), 'foo', 'Remove simple binding');
     });
 });
