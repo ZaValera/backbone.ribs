@@ -980,7 +980,7 @@
             if (index) {
                 ribsCol.views[collection.at(index - 1).cid].$el.after(view.$el);
             } else {
-                if (collection.length) {
+                if (collection.length > 1) {
                     var nextView = ribsCol.views[collection.at(1).cid];
 
                     if (nextView) {
