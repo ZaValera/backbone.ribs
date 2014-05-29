@@ -355,6 +355,43 @@ $(function () {
         equal(counter, 3, 'onchange unset');
     });
 
+    test('Computed Methods', function () {
+        var model = new (Backbone.Ribs.Model.extend({
+            computeds: {
+                fooComp: {
+                    deps: ['barComp'],
+                    get: function (barComp) {
+                        return barComp;
+                    }
+                },
+                barComp: {
+                    deps: ['foo1', 'foo2'],
+                    get: function (foo1, foo2) {
+                        return foo1 + '-' + foo2;
+                    },
+                    set: function (val) {
+                        val = val.split('-');
+
+                        return {
+                            foo1:  parseInt(val[0]),
+                            foo2: parseInt(val[1])
+                        }
+                    }
+                }
+            },
+
+            defaults: {
+                foo1: 10,
+                foo2: 20
+            }
+        }));
+
+        //model.removeComputed('barComp');
+        //console.log(model.get('fooComp'));
+
+        equal(1, 1, 'Init 3');
+    });
+
     module('Bindings');
     test('Simple Bindings', function () {
         var model = new Backbone.Ribs.Model({

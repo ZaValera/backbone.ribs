@@ -535,12 +535,8 @@
 
             this.set(escapedAttrs, options);
             this.changed = {};
-            this.initialize.apply(this, arguments);
-
-
-
-
             this.initComputeds();
+            this.initialize.apply(this, arguments);
         },
 
         get: function (attr) {
