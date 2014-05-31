@@ -734,4 +734,56 @@ $(function () {
         model.set('foo', 'remove');
         equal($('.met-remove-bind-text').text(), 'foo', 'Remove simple binding');
     });
+
+    test('Computeds methods', function () {
+        var model = window.m2 =  new (Backbone.Ribs.Model.extend({
+            computeds: {
+                comp1: {
+                    deps: ['bar1'],
+                    get: function (bar1) {
+                        return bar1 * 10;
+                    }
+                },
+
+                comp2: {
+                    deps: ['comp1', 'comp3', 'comp4'],
+                    get: function (comp1, comp3, comp4) {
+                        return comp1 + ' ' + comp3 + ' ' + comp4;
+                    }
+                },
+
+                comp3: {
+                    deps: ['bar2'],
+                    get: function (bar2) {
+                        return bar2 * 10;
+                    }
+                },
+
+                comp4: function () {
+                    return 5;
+                }
+            },
+
+            defaults: {
+                bar1: 10,
+                bar2: 20
+            }
+        }));
+
+        equal(model.get('comp2'), '100 200 5', 'Computed deps other computeds');
+
+        model.set('bar2', 25);
+
+        equal(model.get('comp2'), '100 250 5', 'Set deps');
+
+        model.set('bar1', 15, {silent: true});
+        equal(model.get('comp1'), 100, 'Silent set deps');
+
+        model.trigger('change:bar1');
+        equal(model.get('comp1'), 150, 'Trigger after silent');
+
+        model.attributes.bar2 = 30;
+        model.trigger('change:bar2');
+        equal(model.get('comp3'), 300, 'Trigger after change attributes');
+    });
 });
