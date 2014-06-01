@@ -42,9 +42,6 @@ $(function () {
             'foo2.foo2': 'bar2'
         });
 
-    //window.testModel = model;
-    //window.testBackboneModel = backboneModel;
-
     module('GET');
     test('Simple GET', function () {
         equal(model.get(), undefined, 'Get undefined');
@@ -67,7 +64,6 @@ $(function () {
 
         equal(model.get(''), 'bar6', 'Get Empty name');
     });
-
     test('Deep GET', function () {
         equal(model.get('foo1!.foo1'), 'bar1', 'Get Default Element with comma');
 
@@ -114,69 +110,6 @@ $(function () {
         equal(model.get('obj.foo!!.'), '!.bar3', 'Get Object ExclamationDot at last');
     });
 
-    test('Computed GET', function () {
-        var compGetCounter,
-            model = new (Backbone.Ribs.Model.extend({
-                computeds: {
-                    compFoo1: function () {
-                        compGetCounter++;
-                        return 'computed:' + this.get('foo1');
-                    },
-
-                    compFoo2: {
-                        deps: ['foo2'],
-                        get: function (foo2) {
-                            compGetCounter++;
-                            return 'computed:' + foo2;
-                        }
-                    },
-
-                    compFoo3: {
-                        deps: ['foo3.subFoo.deepFoo'],
-                        get: function (deepFoo) {
-                            compGetCounter++;
-                            return 'computed:' + deepFoo;
-                        }
-                    }
-                },
-
-                defaults: {
-                    foo1: 'bar1',
-                    foo2: 'bar2',
-                    foo3: {
-                        subFoo: {
-                            deepFoo: 'bar3'
-                        }
-                    }
-                }
-            }));
-
-        compGetCounter = 0;
-        equal(model.get('compFoo1'), 'computed:bar1', 'Get Simple Computed first time');
-        model.set('foo1', 'bar11');
-        equal(model.get('compFoo1'), 'computed:bar11', 'Get Simple Computed after set');
-        equal(compGetCounter, 2, 'Is Computed was get twice');
-
-        compGetCounter = 0;
-        equal(model.get('compFoo2'), 'computed:bar2', 'Get Deps Computed first time');
-        equal(model.get('compFoo2'), 'computed:bar2', 'Get Deps Computed second time');
-        model.set('foo2', 'bar22');
-        equal(model.get('compFoo2'), 'computed:bar22', 'Get Deps Computed after set');
-        equal(compGetCounter, 1, 'Is Computed wasn\'t get');
-        model.set('foo2', 'bar222', {silent: true});
-        equal(model.get('compFoo2'), 'computed:bar222', 'Get Deps Computed after silent set');
-
-        equal(model.get('compFoo3'), 'computed:bar3', 'Get Deps Computed deep');
-        model.set('foo3', {
-            subFoo: {
-                deepFoo: 'bar33'
-            }
-        });
-        equal(model.get('compFoo3'), 'computed:bar33', 'Get Deps Computed deep after set');
-        model.set('foo3', 'bar333');
-        equal(model.get('compFoo3'), 'computed:undefined', 'Get Deps Computed deep after set up level');
-    });
-
     module('SET');
     test('Simple SET', function () {
         var model = new (Backbone.Ribs.Model.extend({
@@ -189,25 +122,25 @@ $(function () {
         model.set('foo1', 'bar11');
 
         equal(model.attributes.foo1, 'bar11', 'Set field');
-        equal(model._previousAttributes.foo1, 'bar1', 'Set field _previousAttributes');
+        equal(model.previous('foo1'), 'bar1', 'Set field previous');
         equal(model.changed.foo1, 'bar11', 'Set field changed');
 
         //Сетим новое поле
         model.set('foo2', 'bar22');
 
         equal(model.attributes.foo2, 'bar22', 'Set new field');
-        equal(model._previousAttributes.foo2, undefined, 'Set new field _previousAttributes');
+        equal(model.previous('foo2'), undefined, 'Set new field previous');
         equal(model.changed.foo2, 'bar22', 'Set new field changed');
 
         //Сети два поля одновременно (объект)
         model.set({foo1: 'bar111', foo3: 'bar333'});
 
         equal(model.attributes.foo1, 'bar111', 'Set object field');
-        equal(model._previousAttributes.foo1, 'bar11', 'Set object field _previousAttributes');
+        equal(model.previous('foo1'), 'bar11', 'Set object field previous');
         equal(model.changed.foo1, 'bar111', 'Set object field changed');
 
         equal(model.attributes.foo3, 'bar333', 'Set object new field');
-        equal(model._previousAttributes.foo3, undefined, 'Set object new field _previousAttributes');
+        equal(model.previous('foo3'), undefined, 'Set object new field previous');
         equal(model.changed.foo3, 'bar333', 'Set object new field changed');
 
         //Работа обработчика onchange
@@ -227,10 +160,9 @@ $(function () {
         model.set('foo1', 'bar111', {unset: true});
 
         equal(model.attributes.foo1, undefined, 'Unset field');
-        equal(model._previousAttributes.foo1, 'bar11', 'Unset field _previousAttributes');
+        equal(model.previous('foo1'), 'bar11', 'Unset field previous');
         equal(model.changed.foo1, 'bar111', 'Unset field changed');
     });
-
     test('Deep SET', function () {
         var model = new (Backbone.Ribs.Model.extend({
             defaults: {
@@ -242,25 +174,25 @@ $(function () {
         model.set('foo.bar', 'bar11');
 
         equal(model.attributes.foo.bar, 'bar11', 'Set field');
-        equal(model._previousAttributes.foo.bar, 'bar11', 'Set field _previousAttributes');
+        equal(model.previous('foo').bar, 'bar11', 'Set field previous');
         equal(model.changed['foo.bar'], 'bar11', 'Set field changed');
 
         //Сетим новое поле
         model.set('foo.bar2', 'bar2');
 
         equal(model.attributes.foo.bar2, 'bar2', 'Set new field');
-        equal(model._previousAttributes.foo.bar2, 'bar2', 'Set new field _previousAttributes');
+        equal(model.previous('foo').bar2, 'bar2', 'Set new field previous');
         equal(model.changed['foo.bar2'], 'bar2', 'Set new field changed');
 
-        //Сети два поля одновременно (объект)
+        //Сетим два поля одновременно (объект)
         model.set({'foo.bar': 'bar111', 'foo.bar3': 'bar333'});
 
         equal(model.attributes.foo.bar, 'bar111', 'Set object field');
-        equal(model._previousAttributes.foo.bar, 'bar111', 'Set object field _previousAttributes');
+        equal(model.previous('foo').bar, 'bar111', 'Set object field previous');
         equal(model.changed['foo.bar'], 'bar111', 'Set object field changed');
 
         equal(model.attributes.foo.bar3, 'bar333', 'Set object new field');
-        equal(model._previousAttributes.foo.bar3, 'bar333', 'Set object new field _previousAttributes');
+        equal(model.previous('foo').bar3, 'bar333', 'Set object new field previous');
         equal(model.changed['foo.bar3'], 'bar333', 'Set object new field changed');
 
         //Работа обработчика onchange
@@ -280,79 +212,294 @@ $(function () {
         model.set('foo.bar', 'bar111', {unset: true});
 
         deepEqual(model.attributes.foo, {bar2:'bar2', bar3: 'bar333'}, 'Unset field');
-        deepEqual(model._previousAttributes.foo, {bar2:'bar2', bar3: 'bar333'}, 'Unset field _previousAttributes');
+        deepEqual(model.previous('foo'), {bar2:'bar2', bar3: 'bar333'}, 'Unset field previous');
         equal(model.changed['foo.bar'], 'bar111', 'Unset field changed');
     });
 
-    test('Computed SET', function () {
+    module('Computeds');
+    test('Get', function () {
         var model = new (Backbone.Ribs.Model.extend({
             computeds: {
-                barComp: {
-                    deps: ['foo1', 'foo2'],
-                    get: function (foo1, foo2) {
-                        return foo1 + '-' + foo2;
+                comp1: {
+                    deps: ['bar1'],
+                    get: function (bar1) {
+                        return bar1 * 10;
+                    }
+                },
+
+                comp2: {
+                    deps: ['comp1', 'comp3', 'comp4', 'bar2'],
+                    get: function (comp1, comp3, comp4, bar2) {
+                        return comp1 + ' ' + comp3 + ' ' + comp4 + ' ' + bar2;
+                    }
+                },
+
+                comp3: {
+                    deps: ['bar2'],
+                    get: function (bar2) {
+                        return bar2 * 10;
+                    }
+                },
+
+                comp4: function () {
+                    return this.get('bar1')/10;
+                },
+
+                comp5: {
+                    deps: ['bar!.bar.subBar.deepBar'],
+                    get: function (deepBar) {
+                        return deepBar * 10;
+                    }
+                }
+            },
+
+            defaults: {
+                bar1: 10,
+                bar2: 20,
+                'bar.bar': {
+                    subBar: {
+                        deepBar: 50
+                    }
+                }
+            }
+        }));
+
+        equal(model.get('comp4'), 1, 'Get Simple Computed first time');
+        equal(model.get('comp2'), '100 200 1 20', 'Get Computed deps on other computed after init');
+        equal(model.get('comp1'), 100, 'Get Deps Computed after init');
+        equal(model.get('comp3'), 200, 'Get Deps Computed after init 2');
+
+        equal(model.previous('comp4'), undefined, 'Previous Simple Computed after init');
+        equal(model.previous('comp2'), undefined, 'Previous Computed deps on other computed after init');
+        equal(model.previous('comp1'), undefined, 'Previous Deps Computed after init');
+        equal(model.previous('comp3'), undefined, 'Previous Deps Computed after init 2');
+
+        model.set('bar1', 30);
+        equal(model.get('comp4'), 3, 'Get Simple Computed after set');
+        equal(model.get('comp1'), 300, 'Get Deps Computed after set');
+        equal(model.get('comp2'), '300 200 3 20', 'Get Computed deps on other computed after set');
+
+        model.set('bar2', 40, {silent: true});
+        equal(model.get('comp3'), 400, 'Get Deps Computed after silent set');
+
+        model.attributes.bar1 = 60;
+        model.trigger('change:bar1');
+        equal(model.get('comp1'), 600, 'Get Deps Computed after trigger after change attributes');
+
+        equal(model.get('comp5'), 500, 'Get Deps Computed deep');
+
+
+        model.set('bar!.bar.subBar.deepBar', 60);
+
+        equal(model.get('comp5'), 600, 'Get Deps Computed deep after set first level');
+
+        model.set('bar!.bar.subBar', {
+            deepBar: 70
+        });
+
+        equal(model.get('comp5'), 700, 'Get Deps Computed deep after set second level');
+
+        model.set('bar!.bar', {
+            subBar: {
+                deepBar: 80
+            }
+        });
+
+        equal(model.get('comp5'), 800, 'Get Deps Computed deep after set third level');
+    });
+    test('SET', function () {
+        var model = new (Backbone.Ribs.Model.extend({
+            computeds: {
+                comp1: {
+                    deps: ['bar1'],
+                    get: function (bar1) {
+                        return bar1 * 10;
                     },
                     set: function (val) {
-                        val = val.split('-');
-
                         return {
-                            foo1:  parseInt(val[0]),
-                            foo2: parseInt(val[1])
+                            bar1:  val/10
                         }
                     }
                 },
 
-                barComp2: {
-                    deps: ['foo2', 'foo1'],
-                    get: function (foo2, foo1) {
-                        return foo2 + '-' + foo1;
+                comp2: {
+                    deps: ['bar1', 'bar2'],
+                    get: function (bar1, bar2) {
+                        return bar1 + ' ' + bar2;
+                    },
+                    set: function (val) {
+                        val = val.split(' ');
+
+                        return {
+                            bar1:  parseInt(val[0]),
+                            bar2: parseInt(val[1])
+                        }
+                    }
+                },
+
+                comp3: {
+                    deps: ['bar2', 'comp2'],
+                    get: function (bar1, comp2) {
+                        return bar1 + '-' + comp2;
                     },
                     set: function (val) {
                         val = val.split('-');
 
                         return {
-                            foo1:  parseInt(val[1]),
-                            foo2: parseInt(val[0])
+                            bar1:  parseInt(val[0]),
+                            comp2: val[1]
                         }
                     }
                 }
             },
 
             defaults: {
-                foo1: 10,
-                foo2: 20
+                bar1: 10,
+                bar2: 20
             }
         }));
 
+        model.set('comp1', 300);
+
+        equal(model.get('comp1'), 300, 'Get updated computed');
+        equal(model.previous('comp1'), 100, 'Previous computed');
+        equal(model.get('bar1'), 30, 'Get deps');
+        equal(model.previous('bar1'), 10, 'Previous deps');
+        equal(model.get('comp2'), '30 20', 'Get computed deps');
+        equal(model.previous('comp2'), '10 20', 'Previous computed deps');
+
+        model.set('comp2', '40 50');
+
+        equal(model.get('comp2'), '40 50', 'Get updated computed 2');
+
+        equal(model.previous('comp2'), '30 20', 'Previous computed 2');
+
+        equal(model.get('bar1'), 40, 'Get deps 2');
+        equal(model.get('bar2'), 50, 'Get second deps 2');
+        equal(model.previous('bar1'), 30, 'Previous deps 2');
+        equal(model.previous('bar2'), 20, 'Previous second deps 2');
+        equal(model.get('comp1'), 400, 'Get computed deps 2');
+        equal(model.previous('comp1'), 300, 'Previous computed deps 2');
+        equal(model.get('comp3'), '50-40 50', 'Get another computed deps 2');
+
+        equal(model.previous('comp3'), '20-30 20', 'Previous computed deps 3');
+
+        model.set('comp3', '60-70 60');
+        equal(model.get('comp3'), '60-70 60', 'Get updated computed 3');
+        equal(model.previous('comp3'), '50-40 50', 'Previous updated computed 3');
+        equal(model.get('bar2'), 60, 'Get deps 3');
+        equal(model.previous('bar2'), 50, 'Previous deps 3');
+        equal(model.get('comp2'), '70 60', 'Get deps computed 3');
+        equal(model.previous('comp2'), '40 50', 'Previous deps computed 3');
+        equal(model.get('bar1'), 70, 'Get deps deps 3');
+        equal(model.previous('bar1'), 40, 'Previous deps deps 3');
+        equal(model.get('comp1'), 700, 'Get deps deps deps 3');
+        equal(model.previous('comp1'), 400, 'Previous deps deps deps 3');
+
         var counter = 0;
+        model.on('change:comp1', function () {counter++});
+        model.on('change:comp2', function () {counter++});
+        model.on('change:comp3', function () {counter++});
+        model.on('change:bar1', function () {counter++});
+        model.on('change:bar2', function () {counter++});
 
-        model.on('change:barComp', function () {counter++});
-        model.on('change:foo1', function () {counter++});
-        model.on('change:foo2', function () {counter++});
+        model.set('comp3', '80-90 80', {silent: true});
+        equal(model.get('comp3'), '80-90 80', 'Get updated computed after silent');
+        equal(model.previous('comp3'), '60-70 60', 'Previous updated computed after silent');
+        equal(model.get('bar2'), 80, 'Get deps after silent');
+        equal(model.previous('bar2'), 60, 'Previous deps after silent');
+        equal(model.get('comp2'), '90 80', 'Get deps computed after silent');
+        equal(model.previous('comp2'), '70 60', 'Previous deps computed after silent');
+        equal(model.get('bar1'), 90, 'Get deps deps after silent');
+        equal(model.previous('bar1'), 70, 'Previous deps deps after silent');
+        equal(model.get('comp1'), 900, 'Get deps deps deps after silent');
+        equal(model.previous('comp1'), 700, 'Previous deps deps deps after silent');
+        equal(counter, 0, 'Silent!!!');
 
-        model.set('barComp', '30-40');
-        deepEqual(model.attributes, {foo1: 30, foo2: 40}, 'Set deps');
-        equal(model.get('barComp'), '30-40', 'Get updated computed');
-        deepEqual(model._previousAttributes, {foo1: 10, foo2: 20, barComp: '10-20', barComp2: '20-10'}, '_previousAttributes');
-        deepEqual(model.changed, {foo1: 30, foo2: 40, barComp: '30-40', barComp2: '40-30'}, 'changed');
-        equal(counter, 3, 'onchange');
+        model.set('comp3', '100-110 100', {unset: true});
+        equal(model.get('comp3'), undefined, 'Get updated computed after unset');
+        equal(model.previous('comp3'), '80-90 80', 'Previous updated computed after unset');
+        equal(model.get('bar2'), 100, 'Get deps after unset');
+        equal(model.previous('bar2'), 80, 'Previous deps after unset');
+        equal(model.get('comp2'), '110 100', 'Get deps computed after unset');
+        equal(model.previous('comp2'), '90 80', 'Previous deps computed after unset');
+        equal(model.get('bar1'), 110, 'Get deps deps after unset');
+        equal(model.previous('bar1'), 90, 'Previous deps deps after unset');
+        equal(model.get('comp1'), 1100, 'Get deps deps deps after unset');
+        equal(model.previous('comp1'), 900, 'Previous deps deps deps after unset');
+    });
+    test('Methods', function () {
+        var model = new (Backbone.Ribs.Model.extend({
+            computeds: {
+                comp1: {
+                    deps: ['bar1'],
+                    get: function (bar1) {
+                        return bar1 * 10;
+                    }
+                },
 
-        counter = 0;
-        model.set('barComp', '50-60', {silent: true});
-        deepEqual(model.attributes, {foo1: 50, foo2: 60}, 'Set deps silent');
-        equal(model.get('barComp'), '50-60', 'Get updated computed silent');
-        deepEqual(model._previousAttributes, {foo1: 30, foo2: 40, barComp: '30-40', barComp2: '40-30'}, '_previousAttributes silent');
-        deepEqual(model.changed, {foo1: 50, foo2: 60, barComp: '50-60', barComp2: '60-50'}, 'changed silent');
-        equal(counter, 0, 'onchange silent');
+                comp2: function () {
+                    return 5;
+                }
+            },
 
-        model.set('barComp', '70-80', {unset: true});
-        deepEqual(model.attributes, {foo1: 70, foo2: 80}, 'Set deps unset');
-        equal(model.get('barComp'), undefined, 'Get updated computed unset');
-        deepEqual(model._ribs.computeds.barComp, undefined, 'computeds unset');
-        deepEqual(model._ribs.computedsDeps, {foo1: ['barComp2'], foo2: ['barComp2']}, 'computedsDeps unset');
-        deepEqual(model._previousAttributes, {foo1: 50, foo2: 60, barComp: '50-60', barComp2: '60-50'}, '_previousAttributes unset');
-        deepEqual(model.changed, {foo1: 70, foo2: 80, barComp: '70-80', barComp2: '80-70'}, 'changed unset');
-        equal(counter, 3, 'onchange unset');
+            defaults: {
+                bar1: 10,
+                bar2: 20
+            }
+        }));
+
+        model.addComputed('comp3', {
+            deps: ['bar2'],
+            get: function (bar2) {
+                return bar2/10;
+            }
+        });
+
+        equal(model.get('comp3'), '2', 'addComputed');
+        model.removeComputed('comp1');
+        model.set('bar1', 30);
+        equal(model.get('comp1'), undefined, 'removeComputed');
+        model.set('comp1', 40);
+        equal(model.attributes.comp1, 40, 'Set attr after removeComputed');
+        model.set('comp1', 50, {unset: true});
+        model.addComputed('comp1', {
+            deps: ['bar1'],
+            get: function (bar1) {
+                return bar1 * 10;
+            }
+        });
+        equal(model.get('comp1'), 300, 'addComputed after unset attr');
+
+        var error = '';
+
+        try {
+            model.addComputed('bar1', {
+                deps: ['bar2'],
+                get: function (bar2) {
+                    return bar2 * 10;
+                }
+            });
+        } catch (e) {
+            error = e.message;
+        }
+
+        equal(error, 'addComputed: computed name "bar1" is already used', 'addComputed - already used attr error');
+
+        error = '';
+
+        try {
+            model.addComputed('comp2', {
+                deps: ['bar2'],
+                get: function (bar2) {
+                    return bar2 * 10;
+                }
+            });
+        } catch (e) {
+            error = e.message;
+        }
+
+        equal(error, 'addComputed: computed name "comp2" is already used', 'addComputed - already used computed error');
     });
 
     module('Bindings');
@@ -577,7 +724,7 @@ $(function () {
             }
         });
 
-        var colView = window.colView = new CollectionView();
+        var colView = new CollectionView();
 
         var $items = colView.$el.children('.item-view');
 
@@ -657,7 +804,7 @@ $(function () {
             bar: 123
         });
 
-        var col = window.col = new Backbone.Collection([{a: 2}]);
+        var col = new Backbone.Collection([{a: 2}]);
 
         var ItemView = Backbone.View.extend({
             initialize: function () {
@@ -682,7 +829,7 @@ $(function () {
             }
         });
 
-        var bindingView = window.bindingView = new BindingView();
+        var bindingView = new BindingView();
 
         equal($('.met-bind-text').text(), '', 'Prevent simple binding');
 
@@ -733,57 +880,5 @@ $(function () {
         equal($items.length, 0, 'Remove col binding 2');
         model.set('foo', 'remove');
         equal($('.met-remove-bind-text').text(), 'foo', 'Remove simple binding');
-    });
-
-    test('Computeds methods', function () {
-        var model = window.m2 =  new (Backbone.Ribs.Model.extend({
-            computeds: {
-                comp1: {
-                    deps: ['bar1'],
-                    get: function (bar1) {
-                        return bar1 * 10;
-                    }
-                },
-
-                comp2: {
-                    deps: ['comp1', 'comp3', 'comp4'],
-                    get: function (comp1, comp3, comp4) {
-                        return comp1 + ' ' + comp3 + ' ' + comp4;
-                    }
-                },
-
-                comp3: {
-                    deps: ['bar2'],
-                    get: function (bar2) {
-                        return bar2 * 10;
-                    }
-                },
-
-                comp4: function () {
-                    return 5;
-                }
-            },
-
-            defaults: {
-                bar1: 10,
-                bar2: 20
-            }
-        }));
-
-        equal(model.get('comp2'), '100 200 5', 'Computed deps other computeds');
-
-        model.set('bar2', 25);
-
-        equal(model.get('comp2'), '100 250 5', 'Set deps');
-
-        model.set('bar1', 15, {silent: true});
-        equal(model.get('comp1'), 100, 'Silent set deps');
-
-        model.trigger('change:bar1');
-        equal(model.get('comp1'), 150, 'Trigger after silent');
-
-        model.attributes.bar2 = 30;
-        model.trigger('change:bar2');
-        equal(model.get('comp3'), 300, 'Trigger after change attributes');
     });
 });

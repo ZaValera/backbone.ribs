@@ -177,7 +177,49 @@ require([
 
 
 
+        var model = window.m2 =  new (Backbone.Ribs.Model.extend({
+            computeds: {
+                comp1: {
+                    deps: ['bar1'],
+                    get: function (bar1) {
+                        return bar1 * 10;
+                    },
+                    set: function (val) {
+                        return {
+                            bar1: val/10
+                        };
+                    }
+                },
 
+                comp2: {
+                    deps: ['comp1', 'comp3', 'comp4'],
+                    get: function (comp1, comp3, comp4) {
+                        return comp1 + ' ' + comp3 + ' ' + comp4;
+                    }
+                },
+
+                comp3: {
+                    deps: ['bar2'],
+                    get: function (bar2) {
+                        return bar2 * 10;
+                    },
+                    set: function (val) {
+                        return {
+                            bar2: val/10
+                        };
+                    }
+                },
+
+                comp4: function () {
+                    return 5;
+                }
+            },
+
+            defaults: {
+                bar1: 10,
+                bar2: 20
+            }
+        }));
 
 
 
