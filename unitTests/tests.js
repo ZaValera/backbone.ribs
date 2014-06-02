@@ -250,6 +250,13 @@ $(function () {
                     get: function (deepBar) {
                         return deepBar * 10;
                     }
+                },
+
+                comp6: {
+                    deps: ['bar3'],
+                    get: function (bar3) {
+                        return bar3.subBar * 10;
+                    }
                 }
             },
 
@@ -260,6 +267,9 @@ $(function () {
                     subBar: {
                         deepBar: 50
                     }
+                },
+                bar3: {
+                    subBar: 20
                 }
             }
         }));
@@ -306,6 +316,10 @@ $(function () {
         });
 
         equal(model.get('comp5'), 800, 'Get Deps Computed deep after set third level');
+
+        equal(model.get('comp6'), 200, 'Get Deep Deps');
+        model.set('bar3.subBar', 30);
+        equal(model.get('comp6'), 300, 'Get Deep Deps after set');
     });
     test('SET', function () {
         var model = new (Backbone.Ribs.Model.extend({

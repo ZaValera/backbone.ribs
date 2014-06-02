@@ -710,6 +710,21 @@
                 for (i = 0; i < l; i++) {
                     this.trigger('change:' + changes[i].attr, this, changes[i].val, options);
                     //ToDo: maybe trigger change all items in path
+
+
+                    /*path = changes[i].path;
+
+                    if (path) {
+                        _.map(path, function (p) {
+                            return p.replace('.', '!.');
+                        });
+
+                        while (path.length - 1) {
+                            path.length = path.length - 1;
+
+                            this.trigger('change:' + path.join('.'), this, undefined, options);
+                        }
+                    }*/
                 }
             } else {
                 //Обновляем computeds, который только что засетили
