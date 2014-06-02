@@ -318,7 +318,7 @@ $(function () {
         equal(model.get('comp5'), 800, 'Get Deps Computed deep after set third level');
 
         equal(model.get('comp6'), 200, 'Get Deep Deps');
-        model.set('bar3.subBar', 30);
+        model.set('bar3.subBar', 30, {bubble: true});
         equal(model.get('comp6'), 300, 'Get Deep Deps after set');
     });
     test('SET', function () {

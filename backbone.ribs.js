@@ -569,7 +569,7 @@
                 return this;
             }
 
-            var attrs,changes,changing,current,prev,silent,unset,path,attr,i,j,l;
+            var attrs,changes,changing,current,prev,silent,unset,path,escapedPath,attr,i,j,l;
 
             if (typeof key === 'object') {
                 attrs = key;
@@ -651,8 +651,15 @@
                     val = attrs[attr];
                     path = _split(attr);
                     if (!_.isEqual(getPath(path, current), val)) {
+                        escapedPath = path.slice();
+                        
+                        for (i = 0; i < escapedPath.length; i++) {
+                            escapedPath[i] = escapedPath[i].replace('.', '!.');
+                        }
+
                         changes.push({
                             path: path,
+                            escapedPath: escapedPath,
                             attr: attr,
                             val: val
                         });
@@ -680,8 +687,6 @@
                 }
             }
 
-
-
             var computedsDeps = this._ribs.computedsDeps,
                 computedsToUpdate = [],
                 deps,
@@ -690,9 +695,11 @@
             for (i = 0, l = changes.length; i < l; i++) {
                 attr = changes[i].attr;
                 deps = computedsDeps['change:' + attr];
+
                 if (deps) {
                     for (j = 0; j < deps.length; j++) {
                         dep = deps[j];
+
                         if (computedsToUpdate.indexOf(dep) === -1) {
                             computedsToUpdate.push(dep);
                         }
@@ -709,40 +716,23 @@
 
                 for (i = 0; i < l; i++) {
                     this.trigger('change:' + changes[i].attr, this, changes[i].val, options);
-                    //ToDo: maybe trigger change all items in path
 
+                    if (options.bubble) {
+                        escapedPath = changes[i].escapedPath.slice();
 
-                    /*path = changes[i].path;
+                        if (escapedPath.length) {
+                            while (escapedPath.length - 1) {
+                                escapedPath.length--;
 
-                    if (path) {
-                        _.map(path, function (p) {
-                            return p.replace('.', '!.');
-                        });
-
-                        while (path.length - 1) {
-                            path.length = path.length - 1;
-
-                            this.trigger('change:' + path.join('.'), this, undefined, options);
+                                this.trigger('change:' + escapedPath.join('.'), this, undefined, options);
+                            }
                         }
-                    }*/
-                }
-            } else {
-                //Обновляем computeds, который только что засетили
-                /*for (attr in computedsAttrs) {
-                    if (computedsAttrs.hasOwnProperty(attr)) {
-                        computeds[attr].update(options);
                     }
-                }*/
+                }
             }
 
-
-
             for (i = 0; i < computedsToUpdate.length; i++) {
-                attr = computedsToUpdate[i];
-
-                //if (!options.silent || attr in computedsAttrs) {
-                    computeds[attr].update(options);
-                //}
+                computeds[computedsToUpdate[i]].update(options);
             }
             /////////////////////////////
 
@@ -765,14 +755,14 @@
         trigger: function(name) {
             var computedsDeps = this._ribs.computedsDeps,
                 options = arguments[3],
-                i;
+                i, l;
 
             if (typeof name === 'string' && name in computedsDeps) {
                 var computeds = this._ribs.computeds,
                     deps = computedsDeps[name],
                     computed;
 
-                for (i = 0; i < deps.length; i++) {
+                for (i = 0, l = deps.length; i < l; i++) {
                     computed = computeds[deps[i]];
                     computed.update(options);
                 }
