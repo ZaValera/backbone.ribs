@@ -99,7 +99,8 @@
 
     var parseBinding = function (str) {
         try {
-            var newStr = '',
+            var temp = str,
+                newStr = '',
                 substr,
                 openBr = str.indexOf('(') + 1,
                 closeBr = str.indexOf(')') + 1;
@@ -112,7 +113,7 @@
                     newStr += str.slice(0, openBr);
                     substr = str.slice(openBr, closeBr);
                     if (openBr) {
-                        newStr += substr.replace(',', ' ');
+                        newStr += substr.replace(/\,/g, ' ');
                     } else {
                         newStr += substr;
                     }
@@ -125,7 +126,7 @@
 
             return JSON.parse(('{' + newStr + '}').replace(/([^\{\}\[\]\,\:]+)/ig,'"$1"'));
         } catch (e) {
-            throw new Error('wrong binding format "' + str + '"');
+            throw new Error('wrong binding format "' + temp + '"');
         }
     };
 
