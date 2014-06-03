@@ -235,8 +235,11 @@
     };
 
     var Binding = function (view, selector, bindings) {
+        var binding;
+
         this.selector = selector;
         this.view = view;
+        this.mods = {};
 
         this._setEl();
 
@@ -249,20 +252,28 @@
 
         this.handlers = [];
 
-        var binding;
+        var _addHandler = function (type, binding) {
+            if (typeof binding === 'string') {
+                this.addHandler(type, binding);
+            } else {
+                for (var attr in binding) {
+                    if (binding.hasOwnProperty(attr)) {
+                        this.addHandler(type, binding[attr], attr);
+                    }
+                }
+            }
+        };
 
         for (var type in bindings) {
             if (bindings.hasOwnProperty(type)) {
                 binding = bindings[type];
 
-                if (typeof binding === 'string') {
-                    this.addHandler(type, binding);
-                } else {
-                    for (var attr in binding) {
-                        if (binding.hasOwnProperty(attr)) {
-                            this.addHandler(type, binding[attr], attr);
-                        }
+                if (binding instanceof Array) {
+                    for (var i = 0; i < binding.length; i++) {
+                        _addHandler.call(this, type, binding[i]);
                     }
+                } else {
+                    _addHandler.call(this, type, binding);
                 }
             }
         }
@@ -313,7 +324,10 @@
     };
 
     Binding.prototype.addHandler = function (type, binding, bindAttr) {
+        var _binding = binding;
+
         binding = parseModelAttr(binding);
+
 
         var paths = binding.paths,
             attrs = [],
@@ -361,7 +375,7 @@
                 attr = attrs[0];
             }
 
-            set.call(self, attr, bindAttr);
+            set.call(self, attr, bindAttr, _binding);
         };
 
         for (var i = 0; i < paths.length; i++) {
@@ -397,7 +411,7 @@
             modelAttr = attrs[0];
         }
 
-        set.call(this, modelAttr, bindAttr);
+        set.call(this, modelAttr, bindAttr, _binding);
 
         if (get) {
             var events = this.events,
@@ -510,6 +524,18 @@
                     return checkedEl.val();
                 }
             }
+        },
+
+        mod: function (value, cl, binding) {
+            var modifier = this.mods[binding];
+
+            if (modifier) {
+                this.$el.removeClass(modifier);
+            }
+
+            modifier = cl + value;
+            this.mods[binding] = modifier;
+            this.$el.addClass(modifier);
         }
     };
 

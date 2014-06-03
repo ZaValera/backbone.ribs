@@ -555,7 +555,7 @@ $(function () {
 
     module('Bindings');
     test('Simple Bindings', function () {
-        var model = new Backbone.Ribs.Model({
+        var model = window.m = new Backbone.Ribs.Model({
             toggle1: true,
             toggle2: false,
             foo: 'foo',
@@ -572,14 +572,19 @@ $(function () {
             checked: ['second', 'third'],
             radio: 'second',
             num: 15,
-            num2: 10
+            num2: 10,
+            mod: 'start',
+            mod2: {
+                subMod: 'full'
+            }
         });
 
         var model2 = new Backbone.Ribs.Model({
             num: 13,
             weight: 900,
             id: 13,
-            passive: false
+            passive: false,
+            mod: 'active'
         });
 
         var col = new Backbone.Collection([{a: 2},{a: 4},{a: 3}]);
@@ -607,7 +612,9 @@ $(function () {
                 '.bind-mlt-checked':'checked:model.checked',
                 '.bind-radio-checked':'checked:model.radio',
                 '.bind-with-filter':'text:summ(model.num,model.num2,model2.num)',
-                '.bind-col-filter':'text:colFilter(col.a,col2.b)'
+                '.bind-col-filter':'text:colFilter(col.a,col2.b)',
+                '.bind-mod1':'mod:{bind-mod1_:model.mod,bind-mod_:model.mod2.subMod}',
+                '.bind-mod2':'mod:[{bind-mod2_:model.mod},{bind-mod2_:model.mod2.subMod},{bind-mod2_:model2.mod}]'
             },
 
             filters: {
@@ -639,6 +646,28 @@ $(function () {
         });
 
         var bindingView = new BindingView();
+
+        equal($('.bind-mod1').hasClass('bind-mod1_start'), true, 'Single Mod 1');
+        equal($('.bind-mod1').hasClass('bind-mod_full'), true, 'Single Mod 2');
+        equal($('.bind-mod2').hasClass('bind-mod2_start'), true, 'Multi Mod 1');
+        equal($('.bind-mod2').hasClass('bind-mod2_full'), true, 'Multi Mod 2');
+        equal($('.bind-mod2').hasClass('bind-mod2_active'), true, 'Multi Mod 3');
+
+        model.set('mod', 'stop');
+        model.set('mod2.subMod', 'empty');
+        model2.set('mod', 'blocked');
+
+        equal($('.bind-mod1').hasClass('bind-mod1_start'), false, 'Single Mod remove');
+        equal($('.bind-mod1').hasClass('bind-mod_full'), false, 'Single Mod 2 remove');
+        equal($('.bind-mod2').hasClass('bind-mod2_start'), false, 'Multi Mod 1 remove');
+        equal($('.bind-mod2').hasClass('bind-mod2_full'), false, 'Multi Mod 2 remove');
+        equal($('.bind-mod2').hasClass('bind-mod2_active'), false, 'Multi Mod 3 remove');
+
+        equal($('.bind-mod1').hasClass('bind-mod1_stop'), true, 'Single Mod changed');
+        equal($('.bind-mod1').hasClass('bind-mod_empty'), true, 'Single Mod 2 changed');
+        equal($('.bind-mod2').hasClass('bind-mod2_stop'), true, 'Multi Mod 1 changed');
+        equal($('.bind-mod2').hasClass('bind-mod2_empty'), true, 'Multi Mod 2 changed');
+        equal($('.bind-mod2').hasClass('bind-mod2_blocked'), true, 'Multi Mod 3 changed');
 
         equal($('.bind-toggle1:visible').length, 1, 'ToggleTrue');
         model.set('toggle1', false);
