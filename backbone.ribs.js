@@ -130,7 +130,7 @@
         }
     };
 
-    var parseModelAttr = function (modelAttrs) {
+    var parseModelAttr = function (modelAttrs, filters) {
         var parsed = modelAttrs.match(/^([^\(]+)\(([^\)]+)\)/),
             res = {
                 paths: []
@@ -324,9 +324,10 @@
     };
 
     Binding.prototype.addHandler = function (type, binding, bindAttr) {
-        var _binding = binding;
+        var _binding = binding,
+            filters = this.view.filters;
 
-        binding = parseModelAttr(binding);
+        binding = parseModelAttr(binding, filters);
 
 
         var paths = binding.paths,
@@ -918,9 +919,9 @@
                 collections: {}
             };
 
-            if (this.filters) {
-                _.extend(filters, this.filters);
-            }
+            this.filters = this.filters || {};
+
+            _.extend(this.filters, filters);
 
             _super(this, 'constructor', arguments);
 
