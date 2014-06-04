@@ -801,7 +801,6 @@ $(function () {
 
             initialize: function () {
                 this.collection = col;
-                this.collection;
                 this.setElement('.bind-col');
             }
         });
@@ -932,12 +931,12 @@ $(function () {
         bindingView.updateBindings();
         equal($('.met-bind-text_added').text(), 'foo', 'Update bindings');
 
-        bindingView.applyCollection('.met-apply-col', col, ItemView);
+        var bindId = bindingView.applyCollection('.met-apply-col', col, ItemView);
         $items = bindingView.$('.met-apply-col').children('.item-view');
         equal($items.length, 1, 'Apply collection');
 
         col.add({a: 5}, {silent: true});
-        bindingView.renderCollection(col, bindingView.$('.met-apply-col'));
+        bindingView.renderCollection(col, bindId);
         $items = bindingView.$('.met-apply-col').children('.item-view');
         equal($items.length, 2, 'Render certain collection 1');
         $items = bindingView.$('.met-bind-col').children('.item-view');

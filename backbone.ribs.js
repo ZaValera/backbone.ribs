@@ -979,7 +979,7 @@
                     for (var ribsCol in cols) {
                         if (cols.hasOwnProperty(ribsCol)) {
                             ribsCol = cols[ribsCol];
-                            ribsCol.collection.off('sort', this.renderCollection, this);
+                            ribsCol.collection.off('sort', this._onSort, this);
                             ribsCol.collection.off('add', this._onaddView, this);
                             ribsCol.collection.off('remove', this._removeView, this);
                             ribsCol.collection.off('reset', this._onReset, this);
@@ -1024,8 +1024,6 @@
                 $el = this.$(selector);
             }
 
-            selector = $el.selector;
-
             if (collection.comparator) {
                 collection.sort();
             }
@@ -1033,7 +1031,7 @@
             if (!collection.cid) {
                 collection.cid = _.uniqueId('col');
 
-                collection.on('sort', this.renderCollection, this);
+                collection.on('sort', this._onSort, this);
                 collection.on('add', this._onaddView, this);
                 collection.on('remove', this._removeView, this);
                 collection.on('reset', this._onReset, this);
@@ -1045,7 +1043,9 @@
                 col = this._ribs.collections[collection.cid] = {};
             }
 
-            col[selector] = {
+            var bindId = _.uniqueId('bc');
+
+            col[bindId] = {
                 collection: collection,
                 $el: $el,
                 View: View,
@@ -1054,29 +1054,24 @@
             };
 
             for (var i = 0; i < collection.length; i++) {
-                this._addView(collection.at(i), collection, selector);
+                this._addView(collection.at(i), collection, bindId);
             }
+
+            return bindId;
         },
 
-        renderCollection: function (collection, selector) {
+        _onSort: function (collection) {
+            this.renderCollection(collection);
+        },
+
+        renderCollection: function (collection, bindId) {
             var cols = this._ribs.collections[collection.cid],
-                $el,
                 ribsCol,
                 views,
                 view;
 
-            if (selector instanceof $) {
-                $el = selector;
-            } else if (selector === 'el') {
-                $el = this.$el;
-            } else {
-                $el = this.$(selector);
-            }
-
-            selector = $el.selector;
-
             for (var c in cols) {
-                if (cols.hasOwnProperty(c) && (!selector || c === selector)) {
+                if (cols.hasOwnProperty(c) && (!bindId || c === bindId)) {
                     ribsCol = cols[c];
                     if (!ribsCol) {
                         throw new Error('can\'t render collection without binding');
@@ -1107,14 +1102,14 @@
             this._addView(model, collection);
         },
 
-        _addView: function (model, collection, selector) {
+        _addView: function (model, collection, bindId) {
             var cols = this._ribs.collections[collection.cid],
                 ribsCol,
                 view,
                 index;
 
             for (var c in cols) {
-                if (cols.hasOwnProperty(c) && (!selector || c === selector)) {
+                if (cols.hasOwnProperty(c) && (!bindId || c === bindId)) {
                     ribsCol = cols[c];
                     view = new ribsCol.View(_.extend(ribsCol.data, {model: model, collection: collection}));
 
