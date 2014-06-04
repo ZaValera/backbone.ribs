@@ -1030,17 +1030,17 @@
 
             if (!collection.cid) {
                 collection.cid = _.uniqueId('col');
-
-                collection.on('sort', this._onSort, this);
-                collection.on('add', this._onaddView, this);
-                collection.on('remove', this._removeView, this);
-                collection.on('reset', this._onReset, this);
             }
 
             col = this._ribs.collections[collection.cid];
 
             if (!col) {
                 col = this._ribs.collections[collection.cid] = {};
+
+                collection.on('sort', this._onSort, this);
+                collection.on('add', this._onaddView, this);
+                collection.on('remove', this._removeView, this);
+                collection.on('reset', this._onReset, this);
             }
 
             var bindId = _.uniqueId('bc');
