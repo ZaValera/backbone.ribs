@@ -745,7 +745,7 @@
                 for (i = 0; i < l; i++) {
                     this.trigger('change:' + changes[i].attr, this, changes[i].val, options);
 
-                    if (options.bubble) {
+                    if (options.propagation) {
                         escapedPath = changes[i].escapedPath.slice();
 
                         if (escapedPath.length) {
