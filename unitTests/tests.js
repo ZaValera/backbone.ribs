@@ -576,7 +576,8 @@ $(function () {
             mod: 'start',
             mod2: {
                 subMod: 'full'
-            }
+            },
+            ar: [1, 2, 3]
         });
 
         var model2 = new Backbone.Ribs.Model({
@@ -614,7 +615,9 @@ $(function () {
                 '.bind-with-filter':'text:summ(model.num,model.num2,model2.num)',
                 '.bind-col-filter':'text:colFilter(col.a,col2.b)',
                 '.bind-mod1':'mod:{bind-mod1_:model.mod,bind-mod_:model.mod2.subMod}',
-                '.bind-mod2':'mod:[{bind-mod2_:model.mod},{bind-mod2_:model.mod2.subMod},{bind-mod2_:model2.mod}]'
+                '.bind-mod2':'mod:[{bind-mod2_:model.mod},{bind-mod2_:model.mod2.subMod},{bind-mod2_:model2.mod}]',
+                '.bind-with-not-filter':'toggle:not(model.toggle1)',
+                '.bind-with-length-filter':'text:length(model.ar)'
             },
 
             filters: {
@@ -670,12 +673,20 @@ $(function () {
         equal($('.bind-mod2').hasClass('bind-mod2_blocked'), true, 'Multi Mod 3 changed');
 
         equal($('.bind-toggle1:visible').length, 1, 'ToggleTrue');
+        equal($('.bind-with-not-filter:hidden').length, 1, 'ToggleTrue with not filter');
         model.set('toggle1', false);
         equal($('.bind-toggle1:hidden').length, 1, 'ToggleTrue changed');
+        equal($('.bind-with-not-filter:visible').length, 1, 'ToggleTrue changed with not filter');
 
         equal($('.bind-toggle2:hidden').length, 1, 'ToggleFalse');
         model.set('toggle2', true);
         equal($('.bind-toggle2:visible').length, 1, 'ToggleFalse changed');
+
+        equal($('.bind-with-length-filter').text(), 3, 'Text with length filter');
+        model.set('ar', [1, 2, 3, 4]);
+        equal($('.bind-with-length-filter').text(), 4, 'Text with length filter changed');
+        model.set('ar', '12');
+        equal($('.bind-with-length-filter').text(), 2, 'Text with length filter changed to string');
 
         equal($('.bind-text').text(), 'foo', 'Text');
         model.set('foo', 'newfoo');
@@ -928,10 +939,13 @@ $(function () {
         equal($('.met-add-bind-text').text(), '123', 'Add binding');
 
         bindingView.$el.append('<span class="met-bind-text met-bind-text_added"></span>');
+        equal($('.met-bind-text_added').text(), '', 'Add el before Update bindings');
         bindingView.updateBindings();
         equal($('.met-bind-text_added').text(), 'foo', 'Update bindings');
 
-        var bindId = bindingView.applyCollection('.met-apply-col', col, ItemView);
+        var bindId = bindingView.applyCollection('.met-apply-col', col, ItemView, {
+            foo: 'bar'
+        });
         $items = bindingView.$('.met-apply-col').children('.item-view');
         equal($items.length, 1, 'Apply collection');
 

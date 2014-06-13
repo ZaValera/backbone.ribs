@@ -443,6 +443,14 @@
     var filters = {
         not: function (val) {
             return !val;
+        },
+
+        length: function (val) {
+            if (val.hasOwnProperty('length')) {
+                return val.length;
+            } else {
+                return 0;
+            }
         }
     };
 
