@@ -293,6 +293,7 @@
         for (i = 0; i < handlers.length; i++) {
             handler = handlers[i];
             if (handler.get) {
+                //this.view.$el.off('.bindingHandlers' + this.view.cid);
                 this.$el.off(handler.events, handler.get);
             }
 
@@ -420,6 +421,7 @@
                     self.view[model].set(attr, get.call(self));
                 };
 
+            //this.view.$el.on(events + '.bindingHandlers' + this.view.cid, this.selector, getter);
             this.$el.on(events, getter);
 
             handler.events = events;
@@ -1022,8 +1024,14 @@
         },
 
         applyCollection: function (selector, collection, View, data) {
-            var col,
+            var bindId = _.uniqueId('bc'),
+                views = {},
+                col,
+                view,
+                model,
                 $el;
+
+            data = data || {};
 
             if (selector instanceof $) {
                 $el = selector;
@@ -1052,19 +1060,24 @@
                 collection.on('reset', this._onReset, this);
             }
 
-            var bindId = _.uniqueId('bc');
-
             col[bindId] = {
                 collection: collection,
                 $el: $el,
                 View: View,
-                data: data || {},
-                views: {}
+                data: data,
+                views: views
             };
 
+            var fragment = document.createDocumentFragment();
+
             for (var i = 0; i < collection.length; i++) {
-                this._addView(collection.at(i), collection, bindId);
+                model = collection.at(i);
+                view = new View(_.extend(data, {model: model, collection: collection}));
+                views[model.cid] = view;
+                fragment.appendChild(view.el);
             }
+
+            $el.append(fragment);
 
             return bindId;
         },
