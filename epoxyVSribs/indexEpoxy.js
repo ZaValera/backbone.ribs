@@ -47,7 +47,7 @@ require([
                 'input[type="checkbox"]': 'checked:checked,attr:{"data-time":time}',
                 '.span-text': 'text:mlt(text),classes:{"span-text__active":active}',
                 '.span-second': 'toggle:active',
-                '.simple-input': 'disabled:not(active),value:inputText'
+                '.simple-input': 'disabled:not(active),value:inputText,events:["keyup","change"]'
             },
 
             bindingFilters: {
@@ -89,8 +89,10 @@ require([
             }
         });
 
-        console.time('test');
+        var start = +new Date();
+        //console.time('test');
         new CollectionView();
-        console.timeEnd('test');
+        alert(+new Date() - start);
+        //console.timeEnd('test');
     });
 });

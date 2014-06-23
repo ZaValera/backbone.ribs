@@ -596,7 +596,7 @@ $(function () {
         var col2 = new Backbone.Collection([{b: 2},{b: 3},{b: 7}]);*/
 
         var BindingView = Backbone.Ribs.View.extend({
-            bindings: {
+            bindings2: {
                 '.bind-toggle1': 'toggle:model.toggle1',
                 '.bind-toggle2': 'toggle:model.toggle2',
                 '.bind-text':'text:model.foo',
@@ -620,7 +620,7 @@ $(function () {
                 '.bind-with-length-filter':'text:length(model.ar)'
             },
 
-            bindings2: {
+            bindings: {
                 '.bind-toggle1': {
                     toggle: 'model.toggle1'
                 },
@@ -635,7 +635,7 @@ $(function () {
                 },
                 '.bind-css': {
                     css: {
-                        color: 'model.color',
+                        'color': 'model.color',
                         'font-weight': 'model2.weight'
                     }
                 },
@@ -694,9 +694,11 @@ $(function () {
                     }
                 },
                 '.bind-mod2': {
-                    mod: {
-                        'bind-mod2_': ['model.mod', 'model.mod2.subMod', 'model2.mod']
-                    }
+                    mod: [
+                        {'bind-mod2_': 'model.mod'},
+                        {'bind-mod2_': 'model.mod2.subMod'},
+                        {'bind-mod2_': 'model2.mod'}
+                    ]
                 },
                 '.bind-with-not-filter': {
                     toggle: {
@@ -897,7 +899,12 @@ $(function () {
         var CollectionView = Backbone.Ribs.View.extend({
 
             bindings: {
-                'el': 'collection:{col:collection,view:ItemView}'
+                'el': {
+                    collection:{
+                        col: 'collection',
+                        view: 'ItemView'
+                    }
+                }
             },
 
             ItemView: ItemView,
@@ -998,9 +1005,18 @@ $(function () {
 
         var BindingView = Backbone.Ribs.View.extend({
             bindings: {
-                '.met-bind-text':'text:model.foo',
-                '.met-remove-bind-text':'text:model.foo',
-                '.met-bind-col': 'collection:{col:col,view:ItemView}'
+                '.met-bind-text': {
+                    text: 'model.foo'
+                },
+                '.met-remove-bind-text': {
+                    text: 'model.foo'
+                },
+                '.met-bind-col': {
+                    collection: {
+                        col: 'col',
+                        view: 'ItemView'
+                    }
+                }
             },
 
             initialize: function () {
@@ -1027,7 +1043,7 @@ $(function () {
         $items = bindingView.$('.met-bind-col').children('.item-view');
         equal($items.length, 1, 'Apply col binding');
 
-        bindingView.addBinding('.met-add-bind-text','text:model.bar');
+        bindingView.addBinding('.met-add-bind-text', {text: 'model.bar'});
         equal($('.met-add-bind-text').text(), '123', 'Add binding');
 
         bindingView.$el.append('<span class="met-bind-text met-bind-text_added"></span>');

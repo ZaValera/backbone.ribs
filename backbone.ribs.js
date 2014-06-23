@@ -13,7 +13,7 @@
 
 }(this, function(_, Backbone) {
     var Ribs = Backbone.Ribs = {
-        version: '0.0.6'
+        version: '0.1.7'
     };
 
     var _super = function (self, method, args) {
@@ -97,90 +97,6 @@
         }
     };
 
-    var parseBinding = function (str) {
-        try {
-            var temp = str,
-                newStr = '',
-                substr,
-                openBr = str.indexOf('(') + 1,
-                closeBr = str.indexOf(')') + 1;
-
-            if (openBr) {
-                while (str.length) {
-                    openBr = str.indexOf('(') + 1;
-                    closeBr = str.indexOf(')') + 1 || str.length;
-
-                    newStr += str.slice(0, openBr);
-                    substr = str.slice(openBr, closeBr);
-                    if (openBr) {
-                        newStr += substr.replace(/\,/g, ' ');
-                    } else {
-                        newStr += substr;
-                    }
-
-                    str = str.slice(closeBr);
-                }
-            } else {
-                newStr = str;
-            }
-
-            return JSON.parse(('{' + newStr + '}').replace(/([^\{\}\[\]\,\:]+)/ig,'"$1"'));
-        } catch (e) {
-            throw new Error('wrong binding format "' + temp + '"');
-        }
-    };
-
-    var parseModelAttr = function (modelAttrs, filters) {
-        var parsed = modelAttrs.match(/^([^\(]+)\(([^\)]+)\)/),
-            res = {
-                paths: []
-            },
-            paths,
-            path,
-            model,
-            attr,
-            filter;
-
-        if (parsed) {
-            filter = parsed[1];
-            paths = parsed[2].split(' ');
-        } else {
-            paths = modelAttrs.split(' ');
-        }
-
-        res.filter = filter;
-
-        if (filter && !filters.hasOwnProperty(filter)) {
-            throw new Error('unknown filter "' + filter + '"');
-        }
-
-        if (!filter && paths.length > 1) {
-            throw new Error('wrong binging "' + modelAttrs + '"');
-        }
-
-        for (var i = 0; i < paths.length; i++) {
-            path = paths[i];
-            parsed = path.match(/^(?:\!\.|[^.])+/);
-
-            try {
-                model = parsed[0];
-                attr = paths[i].slice(model.length + 1);
-                if (!attr.length) {
-                    throw '';
-                }
-            } catch (e) {
-                throw new Error('wrong binging "' + modelAttrs + '"');
-            }
-
-            res.paths.push({
-                model: model,
-                attr: attr
-            });
-        }
-
-        return res;
-    };
-
     var Computed = function (data, name, model) {
         this.name = name;
 
@@ -234,6 +150,18 @@
         return this.value;
     };
 
+    var _addHandler = function (type, binding) {
+        if (handlers[type].multiple) {
+            for (var attr in binding) {
+                if (binding.hasOwnProperty(attr)) {
+                    this.addHandler(type, binding[attr], attr);
+                }
+            }
+        } else {
+            this.addHandler(type, binding);
+        }
+    };
+
     var Binding = function (view, selector, bindings) {
         var binding;
 
@@ -243,29 +171,10 @@
 
         this._setEl();
 
-        if (bindings.events) {
-            this.events = bindings.events.join(' ');
-            delete bindings.events;
-        } else {
-            this.events = 'change';
-        }
-
         this.handlers = [];
 
-        var _addHandler = function (type, binding) {
-            if (typeof binding === 'string') {
-                this.addHandler(type, binding);
-            } else {
-                for (var attr in binding) {
-                    if (binding.hasOwnProperty(attr)) {
-                        this.addHandler(type, binding[attr], attr);
-                    }
-                }
-            }
-        };
-
         for (var type in bindings) {
-            if (bindings.hasOwnProperty(type)) {
+            if (bindings.hasOwnProperty(type) && type !== 'collection') {
                 binding = bindings[type];
 
                 if (binding instanceof Array) {
@@ -279,7 +188,7 @@
         }
     };
 
-    Binding.prototype.unbind = function () {
+    Binding.prototype._unbind = function () {
         var handlers = this.handlers,
             col = [],
             paths,
@@ -292,10 +201,9 @@
 
         for (i = 0; i < handlers.length; i++) {
             handler = handlers[i];
-            if (handler.get) {
-                //this.view.$el.off('.bindingHandlers' + this.view.cid);
+            /*if (handler.get) {
                 this.$el.off(handler.events, handler.get);
-            }
+            }*/
 
             paths = handler.paths;
 
@@ -324,15 +232,48 @@
         }
     };
 
+    var splitModelAttr = function (modelAttr) {
+        var parsed = modelAttr.match(/^(?:!\.|[^.])+/),
+            model,
+            attr;
+
+        try {
+            model = parsed[0];
+            attr = modelAttr.slice(model.length + 1);
+            if (!attr.length || !model.length) {
+                throw '';
+            }
+        } catch (e) {
+            throw new Error('wrong binging data"' + modelAttr + '"');
+        }
+
+        return {
+            model: model,
+            attr: attr
+        };
+    };
+
     Binding.prototype.addHandler = function (type, binding, bindAttr) {
         var _binding = binding,
-            filters = this.view.filters;
+            filter = binding.filter,
+            events = binding.events || 'change',
+            filters = this.view.filters,
+            paths = [],
+            i, l;
 
-        binding = parseModelAttr(binding, filters);
+        if (typeof binding !== 'string') {
+            binding = binding.data;
+        }
 
+        if (typeof binding === 'string') {
+            paths.push(splitModelAttr(binding));
+        } else {
+            for (i = 0, l = binding.length; i < l; i++) {
+                paths.push(splitModelAttr(binding[i]));
+            }
+        }
 
-        var paths = binding.paths,
-            attrs = [],
+        var attrs = [],
             col = [],
             self = this,
             path,
@@ -352,8 +293,12 @@
             set = set.set;
         }
 
-        if (binding.filter) {
-            var filter = filters[binding.filter];
+        if (typeof filter === 'string') {
+            if (!filters.hasOwnProperty(filter)) {
+                throw new Error('unknown filter "' + filter + '"');
+            }
+
+            filter = filters[filter];
         }
 
         var setter = function () {
@@ -380,7 +325,7 @@
             set.call(self, attr, bindAttr, _binding);
         };
 
-        for (var i = 0; i < paths.length; i++) {
+        for (i = 0; i < paths.length; i++) {
             path = paths[i];
             model = path.model;
             attr = path.attr;
@@ -416,13 +361,12 @@
         set.call(this, modelAttr, bindAttr, _binding);
 
         if (get) {
-            var events = this.events,
-                getter = function () {
+            var getter = function () {
                     self.view[model].set(attr, get.call(self));
                 };
 
-            //this.view.$el.on(events + '.bindingHandlers' + this.view.cid, this.selector, getter);
-            this.$el.on(events, getter);
+            this.view.$el.on(events + '.bindingHandlers' + this.view.cid, this.selector, getter);
+            //this.$el.on(events, getter);
 
             handler.events = events;
             handler.get = getter;
@@ -472,16 +416,25 @@
             }
         },
 
-        css: function (value, style) {
-            this.$el.css(style, value);
+        css: {
+            set: function (value, style) {
+                this.$el.css(style, value);
+            },
+            multiple: true
         },
 
-        attr: function (value, attr) {
-            this.$el.attr(attr, value);
+        attr: {
+            set: function (value, attr) {
+                this.$el.attr(attr, value);
+            },
+            multiple: true
         },
 
-        classes: function (value, cl) {
-            this.$el.toggleClass(cl, !!value);
+        classes: {
+            set: function (value, cl) {
+                this.$el.toggleClass(cl, !!value);
+            },
+            multiple: true
         },
 
         html: function (value) {
@@ -537,16 +490,19 @@
             }
         },
 
-        mod: function (value, cl, binding) {
-            var modifier = this.mods[binding];
+        mod: {
+            set: function (value, cl, binding) {
+                var modifier = this.mods[binding];
 
-            if (modifier) {
-                this.$el.removeClass(modifier);
-            }
+                if (modifier) {
+                    this.$el.removeClass(modifier);
+                }
 
-            modifier = cl + value;
-            this.mods[binding] = modifier;
-            this.$el.addClass(modifier);
+                modifier = cl + value;
+                this.mods[binding] = modifier;
+                this.$el.addClass(modifier);
+            },
+            multiple: true
         }
     };
 
@@ -957,30 +913,38 @@
         },
 
         addBinding: function (selector, bindings) {
-            var _bindings = this._ribs._bindings;
+            var _bindings = this._ribs._bindings,
+                hasBindings = false;
 
             if (!_bindings.hasOwnProperty(selector)) {
                 _bindings[selector] = bindings;
             }
 
-            bindings = parseBinding(bindings);
-
             if (bindings.collection) {
                 var colBind = bindings.collection;
 
                 this.applyCollection(selector, this[colBind.col], this[colBind.view]);
-                delete bindings.collection;
             }
 
-            this._ribs.bindings.push(new Binding(this, selector, bindings));
+            for (var b in bindings) {
+                if (bindings.hasOwnProperty(b)) {
+                    hasBindings = true;
+                }
+            }
+
+            if (hasBindings) {
+                this._ribs.bindings.push(new Binding(this, selector, bindings));
+            }
         },
 
         removeBindings: function () {
             var bindings = this._ribs.bindings,
                 collections = this._ribs.collections;
 
+            this.$el.off('.bindingHandlers' + this.cid);
+
             for (var i = 0; i < bindings.length; i++) {
-                bindings[i].unbind();
+                bindings[i]._unbind();
             }
 
             for (var cols in collections) {

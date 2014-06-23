@@ -59,10 +59,25 @@ require([
             el: '<div class="item"><input type="checkbox"/><span class="span-text"></span><span class="span-second">span</span><input class="simple-input"/></div>',
 
             bindings: {
-                'input[type="checkbox"]': 'checked:model.checked,attr:{data-time:model.time}',
-                '.span-text': 'text:mlt(model.text),classes:{span-text__active:model.active}',
-                '.span-second': 'toggle:model.active',
-                '.simple-input': 'disabled:not(model.active),value:model.inputText'
+                'input[type="checkbox"]': {
+                    checked: 'model.checked',
+                    attr: {'data-time': 'model.time'}
+                },
+                '.span-text': {
+                    text: {filter: 'mlt', data: 'model.text'},
+                    classes: {'span-text__active': 'model.active'}
+                },
+                '.span-second': {toggle: 'model.active'},
+                '.simple-input': {
+                    disabled: {
+                        filter: 'not',
+                        data: 'model.active'
+                    },
+                    value: {
+                        data: 'model.inputText',
+                        events: 'keyup change'
+                    }
+                }
             },
 
             filters: {
@@ -78,7 +93,9 @@ require([
             ItemView: ItemView,
 
             bindings: {
-                '.item-views': 'collection:{col:collection,view:ItemView}'
+                '.item-views': {
+                    collection: {col: 'collection', view: 'ItemView'}
+                }
             },
 
             initialize: function () {
@@ -88,8 +105,12 @@ require([
             }
         });
 
-        console.time('test');
+        var start = +new Date();
+        //console.profile('test');
+        //console.time('test');
         new CollectionView();
-        console.timeEnd('test');
+        //console.profileEnd('test');
+        alert(+new Date() - start);
+        //console.timeEnd('test');
     });
 });
