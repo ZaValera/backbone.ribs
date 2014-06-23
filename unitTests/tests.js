@@ -620,6 +620,98 @@ $(function () {
                 '.bind-with-length-filter':'text:length(model.ar)'
             },
 
+            bindings2: {
+                '.bind-toggle1': {
+                    toggle: 'model.toggle1'
+                },
+                '.bind-toggle2': {
+                    toggle: 'model.toggle2'
+                },
+                '.bind-text': {
+                    text: 'model.foo'
+                },
+                '.bind-value': {
+                    value: 'model.bar'
+                },
+                '.bind-css': {
+                    css: {
+                        color: 'model.color',
+                        'font-weight': 'model2.weight'
+                    }
+                },
+                '.bind-attr': {
+                    attr: {
+                        'data-type': 'model.type',
+                        'data-id': 'model2.id'
+                    }
+                },
+                '.bind-classes': {
+                    classes: {
+                        'bind-classes_active': 'model.active',
+                        'bind-classes_passive': 'model2.passive'
+                    }
+                },
+                '.bind-html': {
+                    html: 'model.template'
+                },
+                '.bind-disabled1': {
+                    disabled: 'model.disabled1'
+                },
+                '.bind-disabled2': {
+                    disabled: 'model.disabled2'
+                },
+                '.bind-enabled1': {
+                    enabled: 'model.enabled1'
+                },
+                '.bind-enabled2': {
+                    enabled: 'model.enabled2'
+                },
+                '.bind-single-checked': {
+                    checked: 'model.singleChecked'
+                },
+                '.bind-mlt-checked': {
+                    checked: 'model.checked'
+                },
+                '.bind-radio-checked': {
+                    checked: 'model.radio'
+                },
+                '.bind-with-filter': {
+                    text: {
+                        filter: 'summ',
+                        data: ['model.num', 'model.num2', 'model2.num']
+                    }
+                },
+                '.bind-col-filter': {
+                    text: {
+                        filter: 'colFilter',
+                        data: ['col.a', 'col2.b']
+                    }
+                },
+                '.bind-mod1': {
+                    mod: {
+                        'bind-mod1_': 'model.mod',
+                        'bind-mod_': 'model.mod2.subMod'
+                    }
+                },
+                '.bind-mod2': {
+                    mod: {
+                        'bind-mod2_': ['model.mod', 'model.mod2.subMod', 'model2.mod']
+                    }
+                },
+                '.bind-with-not-filter': {
+                    toggle: {
+                        filter: 'not',
+                        data: 'model.toggle1'
+                    }
+                },
+                '.bind-with-length-filter': {
+                    text: {
+                        filter: 'length',
+                        data: 'model.ar'
+                    }
+                }
+            },
+
             filters: {
                 summ: function (a, b, c) {
                     return a + b + c;
