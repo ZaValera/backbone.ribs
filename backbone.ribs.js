@@ -142,7 +142,7 @@
         this.value = this._get.apply(this._model, deps);
 
         if (!_.isEqual(this._previous, this.value)) {
-            this._model.trigger('change:' + this.name, this.value, this._model, options);
+            this._model.trigger('change:' + this.name, this._model, this.value, options);
         }
     };
 
