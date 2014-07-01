@@ -1,3 +1,10 @@
+//     Backbone.Ribs.js 0.1.7
+
+//     (c) 2014 Valeriy Zaytsev
+//     Ribs may be freely distributed under the MIT license.
+//     For all details and documentation:
+//     https://github.com/ZaValera/backbone.ribs
+
 (function(root, factory) {
 
     if (typeof exports !== 'undefined') {
