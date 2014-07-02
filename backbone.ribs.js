@@ -1,4 +1,4 @@
-//     Backbone.Ribs.js 0.1.7
+//     Backbone.Ribs.js 0.2.0
 
 //     (c) 2014 Valeriy Zaytsev
 //     Ribs may be freely distributed under the MIT license.
@@ -20,7 +20,7 @@
 
 }(this, function(_, Backbone) {
     var Ribs = Backbone.Ribs = {
-        version: '0.1.7'
+        version: '0.2.0'
     };
 
     var _super = function (self, method, args) {
@@ -158,6 +158,8 @@
     };
 
     var _addHandler = function (type, binding) {
+        var handlers = this.view.handlers;
+
         if (handlers[type].multiple) {
             for (var attr in binding) {
                 if (binding.hasOwnProperty(attr)) {
@@ -292,7 +294,7 @@
             handler = {
                 paths: paths
             },
-            set = handlers[type],
+            set = this.view.handlers[type],
             get;
 
         if (typeof set !== 'function') {
@@ -329,7 +331,7 @@
                 attr = attrs[0];
             }
 
-            set.call(self, attr, bindAttr, _binding);
+            set.call(self, self.$el, attr, bindAttr, _binding);
         };
 
         for (i = 0; i < paths.length; i++) {
@@ -365,11 +367,11 @@
             modelAttr = attrs[0];
         }
 
-        set.call(this, modelAttr, bindAttr, _binding);
+        set.call(this, this.$el, modelAttr, bindAttr, _binding);
 
         if (get) {
             var getter = function () {
-                    self.view[model].set(attr, get.call(self));
+                    self.view[model].set(attr, get.call(self, self.$el));
                 };
 
             this.view.$el.on(events + '.bindingHandlers' + this.view.cid, this.selector, getter);
@@ -408,81 +410,81 @@
     };
 
     var handlers = {
-        text: function (value) {
-            this.$el.text(value);
+        text: function ($el, value) {
+            $el.text(value);
         },
 
         value: {
-            set: function (value) {
-                if (this.$el.val() !== value) {
-                    this.$el.val(value);
+            set: function ($el, value) {
+                if ($el.val() !== value) {
+                    $el.val(value);
                 }
             },
-            get: function () {
-                return this.$el.val();
+            get: function ($el) {
+                return $el.val();
             }
         },
 
         css: {
-            set: function (value, style) {
-                this.$el.css(style, value);
+            set: function ($el, value, style) {
+                $el.css(style, value);
             },
             multiple: true
         },
 
         attr: {
-            set: function (value, attr) {
-                this.$el.attr(attr, value);
+            set: function ($el, value, attr) {
+                $el.attr(attr, value);
             },
             multiple: true
         },
 
         classes: {
-            set: function (value, cl) {
-                this.$el.toggleClass(cl, !!value);
+            set: function ($el, value, cl) {
+                $el.toggleClass(cl, !!value);
             },
             multiple: true
         },
 
-        html: function (value) {
-            this.$el.html(value);
+        html: function ($el, value) {
+            $el.html(value);
         },
 
-        toggle: function (value) {
-            this.$el.toggle(!!value);
+        toggle: function ($el, value) {
+            $el.toggle(!!value);
         },
 
-        disabled: function (value) {
-            this.$el.prop('disabled', !!value);
+        disabled: function ($el, value) {
+            $el.prop('disabled', !!value);
         },
 
-        enabled: function (value) {
-            this.$el.prop('disabled', !value);
+        enabled: function ($el, value) {
+            $el.prop('disabled', !value);
         },
 
         checked: {
-            set: function (value) {
-                this.$el.prop('checked', false);
+            set: function ($el, value) {
+                $el.prop('checked', false);
 
                 if (value instanceof Array) {
                     for (var i = 0; i < value.length; i++) {
-                        this.$el.filter('[value="' + value[i] + '"]').prop('checked', true);
+                        $el.filter('[value="' + value[i] + '"]').prop('checked', true);
                     }
                 } else if (typeof value === 'boolean') {
-                    this.$el.prop('checked', value);
+                    $el.prop('checked', value);
                 } else {
-                    this.$el.filter('[value="' + value + '"]').prop('checked', true);
+                    $el.filter('[value="' + value + '"]').prop('checked', true);
                 }
             },
 
-            get: function () {
-                var type = this.$el.attr('type'),
-                    checkedEl = this.$el.filter(':checked');
+            get: function ($el) {
+                var type = $el.attr('type'),
+                    checkedEl = $el.filter(':checked');
 
                 if (type === 'checkbox') {
                     var checked = [];
 
-                    if (this.$el.length === 1) {
+                    if ($el.length === 1) {
                         return !!checkedEl.length;
                     } else {
                         checkedEl.each(function (i, el) {
@@ -498,16 +500,16 @@
         },
 
         mod: {
-            set: function (value, cl, binding) {
+            set: function ($el, value, cl, binding) {
                 var modifier = this.mods[binding];
 
                 if (modifier) {
-                    this.$el.removeClass(modifier);
+                    $el.removeClass(modifier);
                 }
 
                 modifier = cl + value;
                 this.mods[binding] = modifier;
-                this.$el.addClass(modifier);
+                $el.addClass(modifier);
             },
             multiple: true
         }
@@ -893,8 +895,10 @@
             };
 
             this.filters = this.filters || {};
+            this.handlers = this.handlers || {};
 
             _.extend(this.filters, filters);
+            _.extend(this.handlers, handlers);
 
             _super(this, 'constructor', arguments);
 

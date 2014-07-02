@@ -577,7 +577,10 @@ $(function () {
             mod2: {
                 subMod: 'full'
             },
-            ar: [1, 2, 3]
+            ar: [1, 2, 3],
+            single: 'single-class',
+            multiple1: 'foo',
+            multiple2: 'bar'
         });
 
         var model2 = new Backbone.Ribs.Model({
@@ -711,6 +714,15 @@ $(function () {
                         filter: 'length',
                         data: 'model.ar'
                     }
+                },
+                '.bind-custom-single': {
+                    single: 'model.single'
+                },
+                '.bind-custom-multiple': {
+                    multiple: {
+                        first: 'model.multiple1',
+                        second: 'model.multiple2'
+                    }
                 }
             },
 
@@ -731,6 +743,20 @@ $(function () {
                 }
             },
 
+            handlers: {
+                single: {
+                    set: function ($el, value) {
+                        $el.addClass(value);
+                    }
+                },
+                multiple: {
+                    set: function ($el, value, name) {
+                        $el.attr('data-' + name, value);
+                    },
+                    multiple: true
+                }
+            },
+
             initialize: function () {
                 this.setElement('.bind');
 
@@ -743,6 +769,16 @@ $(function () {
         });
 
         var bindingView = new BindingView();
+
+        equal($('.bind-custom-single').hasClass('single-class'), true, 'Single custom handler');
+        model.set('single', 'another-class');
+        equal($('.bind-custom-single').hasClass('another-class'), true, 'Single custom handler changed');
+        equal($('.bind-custom-multiple').attr('data-first'), 'foo', 'Multiple custom handler 1');
+        equal($('.bind-custom-multiple').attr('data-second'), 'bar', 'Multiple custom handler 2');
+        model.set('multiple1', 'foo2');
+        model.set('multiple2', 'bar2');
+        equal($('.bind-custom-multiple').attr('data-first'), 'foo2', 'Multiple custom handler 1 changed');
+        equal($('.bind-custom-multiple').attr('data-second'), 'bar2', 'Multiple custom handler 2 changed');
 
         equal($('.bind-mod1').hasClass('bind-mod1_start'), true, 'Single Mod 1');
         equal($('.bind-mod1').hasClass('bind-mod_full'), true, 'Single Mod 2');
