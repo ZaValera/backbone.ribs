@@ -516,43 +516,6 @@ $(function () {
         equal(error, 'addComputed: computed name "comp2" is already used', 'addComputed - already used computed error');
     });
 
-    test('Computed Methods', function () {
-        var model = new (Backbone.Ribs.Model.extend({
-            computeds: {
-                fooComp: {
-                    deps: ['barComp'],
-                    get: function (barComp) {
-                        return barComp;
-                    }
-                },
-                barComp: {
-                    deps: ['foo1', 'foo2'],
-                    get: function (foo1, foo2) {
-                        return foo1 + '-' + foo2;
-                    },
-                    set: function (val) {
-                        val = val.split('-');
-
-                        return {
-                            foo1:  parseInt(val[0]),
-                            foo2: parseInt(val[1])
-                        }
-                    }
-                }
-            },
-
-            defaults: {
-                foo1: 10,
-                foo2: 20
-            }
-        }));
-
-        //model.removeComputed('barComp');
-        //console.log(model.get('fooComp'));
-
-        equal(1, 1, 'Init 3');
-    });
-
     module('Bindings');
     test('Simple Bindings', function () {
         var model = window.m = new Backbone.Ribs.Model({
@@ -580,7 +543,9 @@ $(function () {
             ar: [1, 2, 3],
             single: 'single-class',
             multiple1: 'foo',
-            multiple2: 'bar'
+            multiple2: 'bar',
+            optionsSingle: '3',
+            optionsMultiple: ['2', '4']
         });
 
         var model2 = new Backbone.Ribs.Model({
@@ -599,30 +564,6 @@ $(function () {
         var col2 = new Backbone.Collection([{b: 2},{b: 3},{b: 7}]);*/
 
         var BindingView = Backbone.Ribs.View.extend({
-            bindings2: {
-                '.bind-toggle1': 'toggle:model.toggle1',
-                '.bind-toggle2': 'toggle:model.toggle2',
-                '.bind-text':'text:model.foo',
-                '.bind-value':'value:model.bar',
-                '.bind-css':'css:{color:model.color,font-weight:model2.weight}',
-                '.bind-attr':'attr:{data-type:model.type,data-id:model2.id}',
-                '.bind-classes':'classes:{bind-classes_active:model.active,bind-classes_passive:model2.passive}',
-                '.bind-html':'html:model.template',
-                '.bind-disabled1':'disabled:model.disabled1',
-                '.bind-disabled2':'disabled:model.disabled2',
-                '.bind-enabled1':'enabled:model.enabled1',
-                '.bind-enabled2':'enabled:model.enabled2',
-                '.bind-single-checked':'checked:model.singleChecked',
-                '.bind-mlt-checked':'checked:model.checked',
-                '.bind-radio-checked':'checked:model.radio',
-                '.bind-with-filter':'text:summ(model.num,model.num2,model2.num)',
-                '.bind-col-filter':'text:colFilter(col.a,col2.b)',
-                '.bind-mod1':'mod:{bind-mod1_:model.mod,bind-mod_:model.mod2.subMod}',
-                '.bind-mod2':'mod:[{bind-mod2_:model.mod},{bind-mod2_:model.mod2.subMod},{bind-mod2_:model2.mod}]',
-                '.bind-with-not-filter':'toggle:not(model.toggle1)',
-                '.bind-with-length-filter':'text:length(model.ar)'
-            },
-
             bindings: {
                 '.bind-toggle1': {
                     toggle: 'model.toggle1'
@@ -723,6 +664,12 @@ $(function () {
                         first: 'model.multiple1',
                         second: 'model.multiple2'
                     }
+                },
+                '.bind-options-single': {
+                    options: 'model.optionsSingle'
+                },
+                '.bind-options-multiple': {
+                    options: 'model.optionsMultiple'
                 }
             },
 
@@ -769,6 +716,15 @@ $(function () {
         });
 
         var bindingView = new BindingView();
+
+        equal($('.bind-options-single').val(), '3', 'Single Options');
+        model.set('optionsSingle', '2');
+        equal($('.bind-options-single').val(), '2', 'Single Options changed');
+        deepEqual($('.bind-options-multiple').val(), ['2', '4'], 'Multiple Options');
+        model.set('optionsMultiple', ['1', '3']);
+        deepEqual($('.bind-options-multiple').val(), ['1', '3'], 'Multiple Options changed');
+        $('.bind-options-multiple').val(['2']).change();
+        deepEqual($('.bind-options-multiple').val(), ['2'], 'Multiple Options select changed');
 
         equal($('.bind-custom-single').hasClass('single-class'), true, 'Single custom handler');
         model.set('single', 'another-class');
