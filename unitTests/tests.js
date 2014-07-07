@@ -828,10 +828,10 @@ $(function () {
         $('.bind-value').val(333).change();
         equal(model.get('bar'), '333', 'Value input changed');
 
-        equal($('.bind-css').attr('style'), 'color: red; font-weight: 900;', 'Css');
+        equal($('.bind-css').attr('style').trim(), 'color: red; font-weight: 900;', 'Css');
         model.set('color', 'blue');
         model2.set('weight', 300);
-        equal($('.bind-css').attr('style'), 'color: blue; font-weight: 300;', 'Css changed');
+        equal($('.bind-css').attr('style').trim(), 'color: blue; font-weight: 300;', 'Css changed');
 
         equal($('.bind-attr').attr('data-type'), 'someType', 'Attr Type');
         equal($('.bind-attr').attr('data-id'), '13', 'Attr Id');
