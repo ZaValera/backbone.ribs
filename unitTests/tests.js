@@ -979,6 +979,15 @@ $(function () {
         colView.applyBindings();
         $items = colView.$el.children('.item-view');
         equal($items.length, 4, 'Coll Length After applying bindings');
+
+        col.reset();
+        col.comparator = 'a';
+        col.add([{a: 4}, {a: 2}, {a: 5}]);
+        $items = colView.$el.children('.item-view');
+        equal($items.length, 3, 'Coll Length After multi add');
+        equal($items.filter(':eq(0)').text(), 2, 'Multi add 1');
+        equal($items.filter(':eq(1)').text(), 4, 'Multi add 2');
+        equal($items.filter(':eq(2)').text(), 5, 'Multi add 3');
     });
 
     test('Bindings methods', function () {

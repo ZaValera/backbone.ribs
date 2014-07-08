@@ -64,7 +64,7 @@ require([
             view: ItemView,
 
             initialize: function () {
-                for (var i = 0; i < 10000; i++) {
+                for (var i = 0; i < 5000; i++) {
                     this.add({
                         first: i,
                         second: i + 10,
@@ -91,7 +91,19 @@ require([
 
         var start = +new Date();
         //console.time('test');
-        new CollectionView();
+        var colView = new CollectionView(),
+            items = [];
+
+        /*for (var i = 0; i < 5000; i++) {
+            items.push({
+                first: i,
+                second: i + 10,
+                active: !!Math.round(Math.random()),
+                checked: !!Math.round(Math.random())
+            });
+        }*/
+
+        colView.collection.add(items);
         alert(+new Date() - start);
         //console.timeEnd('test');
     });

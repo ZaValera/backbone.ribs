@@ -1,4 +1,4 @@
-//     Backbone.Ribs.js 0.2.1
+//     Backbone.Ribs.js 0.2.2
 
 //     (c) 2014 Valeriy Zaytsev
 //     Ribs may be freely distributed under the MIT license.
@@ -20,7 +20,7 @@
 
 }(this, function(_, Backbone) {
     var Ribs = Backbone.Ribs = {
-        version: '0.2.1'
+        version: '0.2.2'
     };
 
     var _super = function (self, method, args) {
@@ -1111,6 +1111,46 @@
 
         _addView: function (model, collection, bindId) {
             var cols = this._ribs.collections[collection.cid],
+                modelCid = model.cid,
+                ribsCol,
+                views,
+                cid,
+                view,
+                index;
+
+            for (var c in cols) {
+                if (cols.hasOwnProperty(c) && (!bindId || c === bindId)) {
+                    ribsCol = cols[c];
+                    views = ribsCol.views;
+                    view = new ribsCol.View(_.extend(ribsCol.data, {model: model, collection: collection}));
+
+                    index = undefined;
+
+                    for (var i = 0; i < collection.length; i++) {
+                        cid = collection.at(i).cid;
+
+                        if (cid === modelCid) {
+                            if (index === undefined) {
+                                ribsCol.$el.prepend(view.$el)
+                            } else {
+                                views[index].$el.after(view.$el);
+                            }
+                            break;
+                        }
+
+                        if (cid in views) {
+                            index = cid;
+                        }
+                    }
+
+                    views[modelCid] = view;
+                }
+            }
+        },
+
+
+        /*_addView2: function (model, collection, bindId) {
+            var cols = this._ribs.collections[collection.cid],
                 ribsCol,
                 view,
                 index;
@@ -1141,7 +1181,7 @@
                     }
                 }
             }
-        },
+        },*/
 
         _removeView: function (model, collection) {
             var cols = this._ribs.collections[collection.cid],
