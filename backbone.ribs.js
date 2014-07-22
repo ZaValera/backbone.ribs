@@ -1,4 +1,4 @@
-//     Backbone.Ribs.js 0.2.3
+//     Backbone.Ribs.js 0.2.4
 
 //     (c) 2014 Valeriy Zaytsev
 //     Ribs may be freely distributed under the MIT license.
@@ -20,7 +20,7 @@
 
 }(this, function(_, Backbone) {
     var Ribs = Backbone.Ribs = {
-        version: '0.2.3'
+        version: '0.2.4'
     };
 
     var _super = function (self, method, args) {
@@ -481,18 +481,18 @@
                 var type = $el.attr('type'),
                     checkedEl = $el.filter(':checked');
 
+                if ($el.length === 1) {
+                    return !!checkedEl.length;
+                }
+
                 if (type === 'checkbox') {
                     var checked = [];
 
-                    if ($el.length === 1) {
-                        return !!checkedEl.length;
-                    } else {
-                        checkedEl.each(function (i, el) {
-                            checked.push($(el).val());
-                        });
+                    checkedEl.each(function (i, el) {
+                        checked.push($(el).val());
+                    });
 
-                        return checked;
-                    }
+                    return checked;
                 } else {
                     return checkedEl.val();
                 }
