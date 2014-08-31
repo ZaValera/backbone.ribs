@@ -268,6 +268,8 @@
             events = binding.events || 'change',
             filters = this.view.filters,
             paths = [],
+            getFilter,
+            setFilter,
             i, l;
 
         if (typeof binding !== 'string') {
@@ -308,6 +310,13 @@
             }
 
             filter = filters[filter];
+
+            if (typeof filter === 'function') {
+                getFilter = filter;
+            } else {
+                getFilter = filter.get;
+                setFilter = filter.set;
+            }
         }
 
         var setter = function () {
@@ -325,8 +334,8 @@
                 }
             }
 
-            if (filter) {
-                attr = filter.apply(self.view, attrs);
+            if (getFilter) {
+                attr = getFilter.apply(self.view, attrs);
             } else {
                 attr = attrs[0];
             }
@@ -361,8 +370,8 @@
             }
         }
 
-        if (filter) {
-            modelAttr = filter.apply(this.view, attrs);
+        if (getFilter) {
+            modelAttr = getFilter.apply(this.view, attrs);
         } else {
             modelAttr = attrs[0];
         }
@@ -371,7 +380,13 @@
 
         if (get) {
             var getter = function () {
-                    self.view[model].set(attr, get.call(self, self.$el));
+                    var val = get.call(self, self.$el);
+
+                    if (setFilter) {
+                        val = setFilter.call(self.view, val);
+                    }
+
+                    self.view[model].set(attr, val);
                 };
 
             this.view.$el.on(events + '.bindingHandlers' + this.view.cid, this.selector, getter);

@@ -96,7 +96,7 @@ require([
 
         var view = window.bindView = new BindingView();*/
 
-        var ItemView = Backbone.View.extend({
+       /* var ItemView = Backbone.View.extend({
 
             initialize: function () {
                 this.setElement('<div class="item-view">' + this.model.get('a') + '</div>');
@@ -138,7 +138,7 @@ require([
 
 
 
-        var colView = window.colView = new CollectionView();
+        var colView = window.colView = new CollectionView();*/
 
 
         /*var Model = Backbone.Ribs.Model.extend({
@@ -177,7 +177,7 @@ require([
 
 
 
-        var model = window.m2 =  new (Backbone.Ribs.Model.extend({
+        /*var model = window.m2 =  new (Backbone.Ribs.Model.extend({
             computeds: {
                 comp1: {
                     deps: ['bar1'],
@@ -219,9 +219,29 @@ require([
                 bar1: 10,
                 bar2: 20
             }
-        }));
+        }));*/
 
+        var TestView = Backbone.Ribs.View.extend({
 
+            bindings: {
+                'input': {
+                    'value': {
+                        data: 'model.text',
+                        filter: 'test'
+                    }
+                }
+            },
+
+            initialize: function () {
+                window.m = this.model = new Backbone.Model({
+                    text: 123
+                });
+
+                this.setElement('.filter');
+            }
+        });
+
+        window.v =  new TestView();
 
 
     });
