@@ -1,4 +1,4 @@
-//     Backbone.Ribs.js 0.2.5
+//     Backbone.Ribs.js 0.2.6
 
 //     (c) 2014 Valeriy Zaytsev
 //     Ribs may be freely distributed under the MIT license.
@@ -20,7 +20,7 @@
 
 }(this, function(_, Backbone) {
     var Ribs = Backbone.Ribs = {
-        version: '0.2.5'
+        version: '0.2.6'
     };
 
     var _super = function (self, method, args) {
@@ -905,6 +905,12 @@
             }
 
             delete this._ribs.computeds[name];
+            return this;
+        },
+
+        removeComputeds: function () {
+            this._ribs.computedsDeps = {};
+            this._ribs.computeds = {};
             return this;
         }
     });
