@@ -545,7 +545,9 @@ $(function () {
             multiple1: 'foo',
             multiple2: 'bar',
             optionsSingle: '3',
-            optionsMultiple: ['2', '4']
+            optionsMultiple: ['2', '4'],
+            lowerCase: 'bar',
+            getSetFilter: 'bar'
         });
 
         var model2 = new Backbone.Ribs.Model({
@@ -654,6 +656,27 @@ $(function () {
                     text: {
                         filter: 'length',
                         data: 'model.ar'
+                    }
+                },
+                '.bind-with-get-filter': {
+                    text: {
+                        filter: function (val) {
+                            return val.toUpperCase();
+                        },
+                        data: 'model.lowerCase'
+                    }
+                },
+                '.bind-with-get-set-filter': {
+                    value: {
+                        filter: {
+                            get: function (val) {
+                                return val.toUpperCase();
+                            },
+                            set: function (val) {
+                                return val.toLowerCase();
+                            }
+                        },
+                        data: 'model.getSetFilter'
                     }
                 },
                 '.bind-custom-single': {
@@ -773,6 +796,16 @@ $(function () {
         equal($('.bind-with-length-filter').text(), 4, 'Text with length filter changed');
         model.set('ar', '12');
         equal($('.bind-with-length-filter').text(), 2, 'Text with length filter changed to string');
+
+        equal($('.bind-with-get-filter').text(), 'BAR', 'Text with get filter');
+        model.set('lowerCase', 'foo');
+        equal($('.bind-with-get-filter').text(), 'FOO', 'Text with get filter changed');
+
+        equal($('.bind-with-get-set-filter').val(), 'BAR', 'Value input with get-set filter');
+        model.set('getSetFilter', 'foo');
+        equal($('.bind-with-get-set-filter').val(), 'FOO', 'Value input with get-set filter changed');
+        $('.bind-with-get-set-filter').val('FOOBAR').change();
+        equal(model.get('getSetFilter'), 'foobar', 'Value input with get-set filter changed');
 
         equal($('.bind-text').text(), 'foo', 'Text');
         model.set('foo', 'newfoo');

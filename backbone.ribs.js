@@ -1,4 +1,4 @@
-//     Backbone.Ribs.js 0.2.6
+//     Backbone.Ribs.js 0.2.7
 
 //     (c) 2014 Valeriy Zaytsev
 //     Ribs may be freely distributed under the MIT license.
@@ -20,7 +20,7 @@
 
 }(this, function(_, Backbone) {
     var Ribs = Backbone.Ribs = {
-        version: '0.2.6'
+        version: '0.2.7'
     };
 
     var _super = function (self, method, args) {
@@ -304,12 +304,14 @@
             set = set.set;
         }
 
-        if (typeof filter === 'string') {
-            if (!filters.hasOwnProperty(filter)) {
-                throw new Error('unknown filter "' + filter + '"');
-            }
+        if (filter) {
+            if (typeof filter === 'string') {
+                if (!filters.hasOwnProperty(filter)) {
+                    throw new Error('unknown filter "' + filter + '"');
+                }
 
-            filter = filters[filter];
+                filter = filters[filter];
+            }
 
             if (typeof filter === 'function') {
                 getFilter = filter;
