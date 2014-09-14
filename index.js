@@ -96,7 +96,7 @@ require([
 
         var view = window.bindView = new BindingView();*/
 
-       /* var ItemView = Backbone.View.extend({
+        var ItemView = Backbone.View.extend({
 
             initialize: function () {
                 this.setElement('<div class="item-view">' + this.model.get('a') + '</div>');
@@ -108,7 +108,12 @@ require([
         var CollectionView = Backbone.Ribs.View.extend({
 
             bindings: {
-                'el':'text:colFilter(col.a.b)'
+                'el': {
+                    'collection': {
+                        col: 'col',
+                        view: ItemView
+                    }
+                }
             },
 
             filters: {
@@ -125,20 +130,22 @@ require([
 
             initialize: function () {
                 this.col = new Backbone.Collection([
-                    new Backbone.Ribs.Model({a: {b: 3}}),
-                    new Backbone.Ribs.Model({a: {b: 5}}),
-                    new Backbone.Ribs.Model({a: {b: 8}})
+                    new Backbone.Ribs.Model({a: 3}),
+                    new Backbone.Ribs.Model({a: 5}),
+                    new Backbone.Ribs.Model({a: 8})
                 ]);
+
+                //this.ItemView = ItemView;
 
                 window.col = this.col;
 
-                this.setElement('.bind-col-change');
+                this.setElement('.col');
             }
         });
 
 
 
-        var colView = window.colView = new CollectionView();*/
+        var colView = window.colView = new CollectionView();
 
 
         /*var Model = Backbone.Ribs.Model.extend({
@@ -221,13 +228,20 @@ require([
             }
         }));*/
 
-        var TestView = Backbone.Ribs.View.extend({
+        /*var TestView = Backbone.Ribs.View.extend({
 
             bindings: {
                 'input': {
-                    'value': {
-                        data: 'model.text',
-                        filter: 'test'
+                    'file': {
+                        data: 'model.text'
+                    }
+                }
+            },
+
+            handlers: {
+                file: {
+                    get: function ($el) {
+                        return $el[0].files[0].name
                     }
                 }
             },
@@ -241,7 +255,7 @@ require([
             }
         });
 
-        window.v =  new TestView();
+        window.v =  new TestView();*/
 
 
     });

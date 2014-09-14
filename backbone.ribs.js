@@ -1,4 +1,4 @@
-//     Backbone.Ribs.js 0.2.7
+//     Backbone.Ribs.js 0.2.8
 
 //     (c) 2014 Valeriy Zaytsev
 //     Ribs may be freely distributed under the MIT license.
@@ -20,7 +20,7 @@
 
 }(this, function(_, Backbone) {
     var Ribs = Backbone.Ribs = {
-        version: '0.2.7'
+        version: '0.2.8'
     };
 
     var _super = function (self, method, args) {
@@ -158,9 +158,14 @@
     };
 
     var _addHandler = function (type, binding) {
-        var handlers = this.view.handlers;
+        var handlers = this.view.handlers,
+            handler = handlers[type];
 
-        if (handlers[type].multiple) {
+        if (!handler) {
+            throw new Error('unknown handler type "' + type + '"');
+        }
+
+        if (handler.multiple) {
             for (var attr in binding) {
                 if (binding.hasOwnProperty(attr)) {
                     this.addHandler(type, binding[attr], attr);
@@ -210,6 +215,10 @@
 
         for (i = 0; i < handlers.length; i++) {
             handler = handlers[i];
+
+            if (!handler.set) {
+                continue;
+            }
             /*if (handler.get) {
                 this.$el.off(handler.events, handler.get);
             }*/
@@ -264,6 +273,7 @@
 
     Binding.prototype.addHandler = function (type, binding, bindAttr) {
         var _binding = binding,
+            data = binding.data,
             filter = binding.filter,
             events = binding.events || 'change',
             filters = this.view.filters,
@@ -273,7 +283,11 @@
             i, l;
 
         if (typeof binding !== 'string') {
-            binding = binding.data;
+            if (!data || (typeof data !== 'string' && !(data instanceof Array))) {
+                throw new Error('wrong binging format ' + JSON.stringify(binding));
+            }
+
+            binding = data;
         }
 
         if (typeof binding === 'string') {
@@ -354,21 +368,26 @@
 
             if (this.view[model] instanceof Backbone.Collection) {
                 attrs.push(this.view[model].pluck(attr));
-                if (col.indexOf(model) === -1) {
-                    col.push(model);
-                    this.view[model].on('add remove reset sort', setter);
+
+                if (set) {
+                    if (col.indexOf(model) === -1) {
+                        col.push(model);
+                        this.view[model].on('add remove reset sort', setter);
+                    }
                 }
             } else {
                 attrs.push(this.view[model].get(attr));
             }
 
-            for (var j = 0; j < attrArray.length; j++) {
-                if (ch) {
-                    ch += '.';
-                }
+            if (set) {
+                for (var j = 0; j < attrArray.length; j++) {
+                    if (ch) {
+                        ch += '.';
+                    }
 
-                ch += attrArray[j];
-                this.view[model].on('change:' + ch, setter);
+                    ch += attrArray[j];
+                    this.view[model].on('change:' + ch, setter);
+                }
             }
         }
 
@@ -378,7 +397,9 @@
             modelAttr = attrs[0];
         }
 
-        set.call(this, this.$el, modelAttr, bindAttr, _binding);
+        if (set) {
+            set.call(this, this.$el, modelAttr, bindAttr, _binding);
+        }
 
         if (get) {
             var getter = function () {
@@ -392,7 +413,6 @@
                 };
 
             this.view.$el.on(events + '.bindingHandlers' + this.view.cid, this.selector, getter);
-            //this.$el.on(events, getter);
 
             handler.events = events;
             handler.get = getter;
@@ -966,16 +986,22 @@
                 _bindings[selector] = bindings;
             }
 
-            if (bindings.collection) {
-                var colBind = bindings.collection;
-
-                this.applyCollection(selector, this[colBind.col], this[colBind.view]);
+            if (typeof bindings !== 'object') {
+                throw new Error('wrong binging format for "' + selector + '" - ' + JSON.stringify(bindings));
             }
 
             for (var b in bindings) {
                 if (bindings.hasOwnProperty(b)) {
                     hasBindings = true;
                 }
+            }
+
+            if (bindings.collection) {
+                var colBind = bindings.collection,
+                    view = typeof colBind.view === 'string' ? this[colBind.view] : colBind.view,
+                    col = typeof colBind.col === 'string' ? this[colBind.col] : colBind.col;
+
+                this.applyCollection(selector, col, view);
             }
 
             if (hasBindings) {
