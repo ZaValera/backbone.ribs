@@ -6,7 +6,6 @@
 //     https://github.com/ZaValera/backbone.ribs
 
 (function(root, factory) {
-    'use strict';
 
     if (typeof exports !== 'undefined') {
         // Define as CommonJS export:
@@ -20,8 +19,6 @@
     }
 
 }(this, function(_, Backbone) {
-    'use strict';
-
     var Ribs = Backbone.Ribs = {
         version: '0.2.8'
     };
@@ -30,72 +27,54 @@
         return self._super.prototype[method].apply(self, args);
     };
 
-    //optimized
     var _split = function (str) {
         if (str.indexOf('!.') === -1) {
             return str.split('.');
         }
 
-        var res = [],
-            length, _length, l,
-            last, s,
-            i, j;
+        var path = [],
+            item = '',
+            ch = str.charAt(0),
+            pch;
 
-        str = str.split('!.');
-        length = str.length;
+        for (var i = 0, l = str.length; i < l; i++) {
+            nch = str.charAt(i + 1);
 
-        for (i = 0; i < length; i++) {
-            s = str[i].split('.');
-            _length = s.length;
-
-            if (last !== undefined) {
-                last += '.' + s[0];
-
-                if (_length > 1) {
-                    res.push(last);
-                } else {
-                    if (i + 1 === length) {
-                        res.push(last);
-                    }
-                    continue;
-                }
-
-                j = 1;
-            } else {
-                j = 0;
+            if (ch === '.' && pch === '!') {
+                item += '.';
+            } else if (ch === '.' && pch !== '!') {
+                path.push(item);
+                item = '';
+            } else if (ch !== '!' || nch !== '.') {
+                item += ch;
             }
 
-            if (i + 1 < length) {
-                l = _length - 1;
-                last = s[_length - 1];
-            } else {
-                l = _length;
-            }
-
-            for (; j < l; j++) {
-                res.push(s[j]);
-            }
+            pch = ch;
+            ch = nch;
         }
 
-        return res;
+        path.push(item);
+
+        return path;
     };
 
-    //optimized
     var getPath = function (path, obj) {
-        var p, i, l;
+        var p;
 
         if (typeof path === 'string') {
             path = _split(path);
+        } else {
+            path = path.slice();
         }
 
-        for (i = 0, l = path.length; i < l; i++) {
-            p = path[i];
+        while (path.length) {
+            p = path.shift();
 
             if (obj.hasOwnProperty(p)) {
                 obj = obj[p];
             } else {
-                if (l > i + 1) {
-                    throw new Error('can\'t get "' + path[i + 1] + '" of "' + p + '", "' + p +'" is undefined');
+                if (path.length) {
+                    throw new Error('can\'t get "' + path.shift() + '" of "' + p + '", "' + p +'" is undefined');
                 } else {
                     return undefined;
                 }
@@ -105,14 +84,15 @@
         return obj;
     };
 
-    //optimized
     var deletePath = function (path, obj) {
         var p;
 
-        for (var i = 0, l = path.length; i < l; i++) {
-            p = path[i];
+        path = path.slice();
 
-            if (i + 1 === l) {
+        while (path.length) {
+            p = path.shift();
+
+            if (!path.length) {
                 delete obj[p];
             } else {
                 if (obj.hasOwnProperty(p)) {
@@ -124,7 +104,152 @@
         }
     };
 
-    //optimized
+    var Computed = function (data, name, model) {
+        this.name = name;
+
+        if (typeof data === 'function') {
+            this.get = function () {return data.apply(model, arguments)};
+            this.set = function () {
+                throw new Error('set: computed "' + name + '" has no set method');
+            };
+            this._simple = true;
+            return this;
+        }
+
+        this._deps = data.deps;
+        this._get = data.get;
+        this.set = function () {return data.set.apply(model, arguments)};
+        this._model = model;
+
+        return this;
+    };
+
+    Computed.prototype.update = function (options) {
+        if (this._simple) {
+            return;
+        }
+
+        var deps = [],
+            val;
+
+        this._previous = this.value;
+
+        if (this._deps instanceof Array) {
+            for (var i = 0; i < this._deps.length; i++) {
+                try {
+                    val = this._model.get(this._deps[i]);
+                } catch (e) {
+                    val = undefined;
+                }
+
+                deps.push(val);
+            }
+        }
+
+        this.value = this._get.apply(this._model, deps);
+
+        if (!_.isEqual(this._previous, this.value)) {
+            this._model.trigger('change:' + this.name, this._model, this.value, options);
+        }
+    };
+
+    Computed.prototype.get = function () {
+        return this.value;
+    };
+
+    var _addHandler = function (type, binding) {
+        var handlers = this.view.handlers,
+            handler = handlers[type];
+
+        if (!handler) {
+            throw new Error('unknown handler type "' + type + '"');
+        }
+
+        if (handler.multiple) {
+            for (var attr in binding) {
+                if (binding.hasOwnProperty(attr)) {
+                    this.addHandler(type, binding[attr], attr);
+                }
+            }
+        } else {
+            this.addHandler(type, binding);
+        }
+    };
+
+    var Binding = function (view, selector, bindings) {
+        var binding;
+
+        this.selector = selector;
+        this.view = view;
+        this.mods = {};
+
+        this._setEl();
+
+        this.handlers = [];
+
+        for (var type in bindings) {
+            if (bindings.hasOwnProperty(type) && type !== 'collection') {
+                binding = bindings[type];
+
+                if (binding instanceof Array) {
+                    for (var i = 0; i < binding.length; i++) {
+                        _addHandler.call(this, type, binding[i]);
+                    }
+                } else {
+                    _addHandler.call(this, type, binding);
+                }
+            }
+        }
+    };
+
+    Binding.prototype._unbind = function () {
+        var handlers = this.handlers,
+            col = [],
+            paths,
+            path,
+            model,
+            attrArray,
+            ch,
+            handler,
+            i, j, k;
+
+        for (i = 0; i < handlers.length; i++) {
+            handler = handlers[i];
+
+            if (!handler.set) {
+                continue;
+            }
+            /*if (handler.get) {
+                this.$el.off(handler.events, handler.get);
+            }*/
+
+            paths = handler.paths;
+
+            for (j = 0; j < paths.length; j++) {
+                path = paths[j];
+                attrArray = _split(path.attr);
+                model = path.model;
+                ch = '';
+
+                if (this.view[model] instanceof Backbone.Collection) {
+                    if (col.indexOf(model) === -1) {
+                        col.push(model);
+                        this.view[model].off('add remove reset sort', handler.set);
+                    }
+                }
+
+                for (k = 0; k < attrArray.length; k++) {
+                    if (ch) {
+                        ch += '.';
+                    }
+                    
+                    ch += attrArray[k];
+                    this.view[model].off('change:' + ch, handler.set);
+                }
+            }
+        }
+    };
+
     var splitModelAttr = function (modelAttr) {
         var parsed = modelAttr.match(/^(?:!\.|[^.])+/),
             model,
@@ -146,145 +271,53 @@
         };
     };
 
-    //optimized
-    var Computed = function (data, name, model) {
-        this.name = name;
-
-        if (typeof data === 'function') {
-            this.get = function () {return data.apply(model);};
-            this.set = function () {
-                throw new Error('set: computed "' + name + '" has no set method');
-            };
-            this._simple = true;
-            return this;
-        }
-
-        this._deps = data.deps;
-        this._get = data.get;
-        this.set = function () {return data.set.apply(model, arguments);};
-        this._model = model;
-
-        return this;
-    };
-
-    //optimized
-    Computed.prototype.update = function (options) {
-        if (this._simple) {
-            return;
-        }
-
-        var deps = [],
-            val;
-
-        this._previous = this.value;
-
-        if (this._deps instanceof Array) {
-            for (var i = 0, l = this._deps.length; i < l; i++) {
-                try {
-                    val = this._model.get(this._deps[i]);
-                } catch (e) {
-                    val = undefined;
-                }
-
-                deps.push(val);
-            }
-        }
-
-        this.value = this._get.apply(this._model, deps);
-
-        if (!_.isEqual(this._previous, this.value)) {
-            this._model.trigger('change:' + this.name, this._model, this.value, options);
-        }
-    };
-
-    //optimized
-    Computed.prototype.get = function () {
-        return this.value;
-    };
-
-    //optimized
-    var Binding = function (view, selector, bindings) {
-        var binding;
-
-        this.selector = selector;
-        this.view = view;
-        this.mods = {};
-        this._setEl();
-        this.handlers = [];
-
-        for (var type in bindings) {
-            if (type !== 'collection' && bindings.hasOwnProperty(type)) {
-                binding = bindings[type];
-
-                if (binding instanceof Array) {
-                    for (var i = 0, l = binding.length; i < l; i++) {
-                        this._addHandler(type, binding[i]);
-                    }
-                } else {
-                    this._addHandler(type, binding);
-                }
-            }
-        }
-    };
-
-    //optimized
-    Binding.prototype._addHandler = function (type, binding) {
-        var handler = this.view.handlers[type];
-
-        if (!handler) {
-            throw new Error('unknown handler type "' + type + '"');
-        }
-
-        if (handler.multiple) {
-            for (var attr in binding) {
-                if (binding.hasOwnProperty(attr)) {
-                    this.addHandler(type, binding[attr], attr);
-                }
-            }
-        } else {
-            this.addHandler(type, binding);
-        }
-    };
-
-    //optimized
     Binding.prototype.addHandler = function (type, binding, bindAttr) {
-        var data = binding.data,
+        var _binding = binding,
+            data = binding.data,
             filter = binding.filter,
             events = binding.events || 'change',
             filters = this.view.filters,
-            paths = [], attrs = [], col = [], changeAttrs = {}, self = this,
-            handler = {
-                changeAttrs: changeAttrs
-            },
-            setHandler = this.view.handlers[type],
-            getHandler,
-            getFilter, setFilter,
-            path, model, attr, attrArray, modelAttr, ch, changeAttr,
-            setter, getter,
-            i, l, j, l2;
+            paths = [],
+            getFilter,
+            setFilter,
+            i, l;
 
-        if (typeof setHandler !== 'function') {
-            getHandler = setHandler.get;
-            setHandler = setHandler.set;
+        if (typeof binding !== 'string') {
+            if (!data || (typeof data !== 'string' && !(data instanceof Array))) {
+                throw new Error('wrong binging format ' + JSON.stringify(binding));
+            }
+
+            binding = data;
         }
 
-        //Формируем paths - массив объектов model-attr
         if (typeof binding === 'string') {
             paths.push(splitModelAttr(binding));
         } else {
-            if (typeof data === 'string') {
-                paths.push(splitModelAttr(data));
-            } else if (data instanceof Array) {
-                for (i = 0, l = data.length; i < l; i++) {
-                    paths.push(splitModelAttr(data[i]));
-                }
-            } else {
-                throw new Error('wrong binging format ' + JSON.stringify(binding));
+            for (i = 0, l = binding.length; i < l; i++) {
+                paths.push(splitModelAttr(binding[i]));
             }
         }
-        //////////////////////////////////////////////
 
-        //Определяемся с фильтром
+        var attrs = [],
+            col = [],
+            self = this,
+            path,
+            model,
+            attr,
+            attrArray,
+            ch,
+            modelAttr,
+            handler = {
+                paths: paths
+            },
+            set = this.view.handlers[type],
+            get;
+
+        if (typeof set !== 'function') {
+            get = set.get;
+            set = set.set;
+        }
+
         if (filter) {
             if (typeof filter === 'string') {
                 if (!filters.hasOwnProperty(filter)) {
@@ -301,68 +334,42 @@
                 setFilter = filter.set;
             }
         }
-        //////////////////////////////
 
-        //Определяем обработчик события при изменении модели/коллекции
-        if (setHandler) {
-            setter = function () {
-                var attrs = [],
-                    view = self.view,
-                    model, attr, path, i, l;
+        var setter = function () {
+            var attrs = [],
+                attr,
+                path;
 
-                for (i = 0, l = paths.length; i < l; i++) {
-                    path = paths[i];
-                    model = path.model;
-                    attr = path.attr;
+            for (var i = 0; i < paths.length; i++) {
+                path = paths[i];
 
-                    if (view[model] instanceof Backbone.Collection) {
-                        attrs.push(view[model].pluck(attr));
-                    } else {
-                        attrs.push(view[model].get(attr));
-                    }
-                }
-
-                if (getFilter) {
-                    attr = getFilter.apply(view, attrs);
+                if (self.view[path.model] instanceof Backbone.Collection) {
+                    attrs.push(self.view[path.model].pluck(path.attr));
                 } else {
-                    attr = attrs[0];
+                    attrs.push(self.view[path.model].get(path.attr));
                 }
-
-                setHandler.call(self, self.$el, attr, bindAttr, binding);
-            };
-        }
-        //////////////////////////////////////////////////////////////
-
-        //Определяем обработчик при изменении DOM-элемента
-        if (getHandler) {
-            if (paths.length > 1) {
-                throw new Error('wrong binging format ' + JSON.stringify(binding));
             }
 
-            getter = function () {
-                var val = getHandler.call(self, self.$el);
+            if (getFilter) {
+                attr = getFilter.apply(self.view, attrs);
+            } else {
+                attr = attrs[0];
+            }
 
-                if (setFilter) {
-                    val = setFilter.call(self.view, val);
-                }
+            set.call(self, self.$el, attr, bindAttr, _binding);
+        };
 
-                self.view[paths[0].model].set(attr, val);
-            };
-        }
-        ///////////////////////////////////////////////////
-
-        for (i = 0, l = paths.length; i < l; i++) {
+        for (i = 0; i < paths.length; i++) {
             path = paths[i];
             model = path.model;
             attr = path.attr;
             attrArray = _split(attr);
             ch = '';
-            changeAttr = changeAttrs[model] = [];
 
             if (this.view[model] instanceof Backbone.Collection) {
                 attrs.push(this.view[model].pluck(attr));
 
-                if (setHandler) {
+                if (set) {
                     if (col.indexOf(model) === -1) {
                         col.push(model);
                         this.view[model].on('add remove reset sort', setter);
@@ -372,15 +379,13 @@
                 attrs.push(this.view[model].get(attr));
             }
 
-            if (setHandler) {
-                for (j = 0, l2 = attrArray.length; j < l2; j++) {
+            if (set) {
+                for (var j = 0; j < attrArray.length; j++) {
                     if (ch) {
                         ch += '.';
                     }
 
                     ch += attrArray[j];
-                    changeAttr.push(ch);
-
                     this.view[model].on('change:' + ch, setter);
                 }
             }
@@ -392,59 +397,31 @@
             modelAttr = attrs[0];
         }
 
-        if (setHandler) {
-            setHandler.call(this, this.$el, modelAttr, bindAttr, binding);
-
-            handler.setter = setter;
+        if (set) {
+            set.call(this, this.$el, modelAttr, bindAttr, _binding);
         }
 
-        if (getHandler) {
+        if (get) {
+            var getter = function () {
+                    var val = get.call(self, self.$el);
+
+                    if (setFilter) {
+                        val = setFilter.call(self.view, val);
+                    }
+
+                    self.view[model].set(attr, val);
+                };
+
             this.view.$el.on(events + '.bindingHandlers' + this.view.cid, this.selector, getter);
 
             handler.events = events;
+            handler.get = getter;
         }
 
+        handler.set = setter;
         this.handlers.push(handler);
     };
 
-    //optimized
-    Binding.prototype._unbind = function () {
-        var handlers = this.handlers,
-            col = [],
-            changeAttrs, changeAttr,
-            handler, setter,
-            model, i, j, l, l2;
-
-        for (i = 0, l = handlers.length; i < l; i++) {
-            handler = handlers[i];
-            setter = handler.setter;
-
-            if (!setter) {
-                continue;
-            }
-
-            changeAttrs = handler.changeAttrs;
-
-            for (model in changeAttrs) {
-                if (changeAttrs.hasOwnProperty(model)) {
-                    if (this.view[model] instanceof Backbone.Collection) {
-                        if (col.indexOf(model) === -1) {
-                            col.push(model);
-                            this.view[model].off('add remove reset sort', setter);
-                        }
-                    }
-
-                    changeAttr = changeAttrs[model];
-
-                    for (j = 0, l2 = changeAttr.length; j < l2; j++) {
-                        this.view[model].off('change:' + changeAttr[j], setter);
-                    }
-                }
-            }
-        }
-    };
-
-    //optimized
     Binding.prototype._setEl = function () {
         var selector = this.selector;
 
@@ -455,7 +432,6 @@
         }
     };
 
-    //optimized
     var filters = {
         not: function (val) {
             return !val;
@@ -470,7 +446,6 @@
         }
     };
 
-    //optimized
     var handlers = {
         text: function ($el, value) {
             $el.text(value);
@@ -529,7 +504,7 @@
                 $el.prop('checked', false);
 
                 if (value instanceof Array) {
-                    for (var i = 0, l = value.length; i < l; i++) {
+                    for (var i = 0; i < value.length; i++) {
                         $el.filter('[value="' + value[i] + '"]').prop('checked', true);
                     }
                 } else if (typeof value === 'boolean') {
@@ -597,15 +572,11 @@
             };
 
             var attrs = attributes || {};
-            options = options || {};
+            options || (options = {});
             this.cid = _.uniqueId('c');
             this.attributes = {};
-            if (options.collection) {
-                this.collection = options.collection;
-            }
-            if (options.parse) {
-                attrs = this.parse(attrs, options) || {};
-            }
+            if (options.collection) this.collection = options.collection;
+            if (options.parse) attrs = this.parse(attrs, options) || {};
             attrs = _.defaults({}, attrs, _.result(this, 'defaults'));
 
             var escapedAttrs = {};
@@ -618,6 +589,7 @@
 
             this.set(escapedAttrs, options);
             this.changed = {};
+
             this._initComputeds();
             this.initialize.apply(this, arguments);
         },
@@ -636,7 +608,7 @@
             var path = _split(attr);
 
             if (path.length === 1) {
-                return this.attributes[path[0]];
+                return _super(this, 'get', [path[0]]);
             } else {
                 return getPath(path, this.attributes);
             }
@@ -721,9 +693,7 @@
             current = this.attributes;
             prev = this._previousAttributes;
 
-            if (this.idAttribute in attrs) {
-                this.id = attrs[this.idAttribute];
-            }
+            if (this.idAttribute in attrs) this.id = attrs[this.idAttribute];
 
             //new from Ribs
             for (attr in attrs) {
@@ -1084,7 +1054,7 @@
                 binding._setEl();
 
                 for (var j = 0; j < binding.handlers.length; j++) {
-                    binding.handlers[j].setter();
+                    binding.handlers[j].set();
                 }
             }
         },
@@ -1212,7 +1182,7 @@
 
                         if (cid === modelCid) {
                             if (index === undefined) {
-                                ribsCol.$el.prepend(view.$el);
+                                ribsCol.$el.prepend(view.$el)
                             } else {
                                 views[index].$el.after(view.$el);
                             }
@@ -1228,6 +1198,41 @@
                 }
             }
         },
+
+
+        /*_addView2: function (model, collection, bindId) {
+            var cols = this._ribs.collections[collection.cid],
+                ribsCol,
+                view,
+                index;
+
+            for (var c in cols) {
+                if (cols.hasOwnProperty(c) && (!bindId || c === bindId)) {
+                    ribsCol = cols[c];
+                    view = new ribsCol.View(_.extend(ribsCol.data, {model: model, collection: collection}));
+
+                    ribsCol.views[model.cid] = view;
+
+                    index = collection.models.indexOf(model);
+
+                    if (index) {
+                        ribsCol.views[collection.at(index - 1).cid].$el.after(view.$el);
+                    } else {
+                        if (collection.length > 1) {
+                            var nextView = ribsCol.views[collection.at(1).cid];
+
+                            if (nextView) {
+                                nextView.$el.before(view.$el);
+                            } else {
+                                ribsCol.$el.append(view.$el);
+                            }
+                        } else {
+                            ribsCol.$el.append(view.$el);
+                        }
+                    }
+                }
+            }
+        },*/
 
         _removeView: function (model, collection) {
             var cols = this._ribs.collections[collection.cid],
