@@ -96,7 +96,7 @@ require([
 
         var view = window.bindView = new BindingView();*/
 
-        var ItemView = Backbone.View.extend({
+        /*var ItemView = Backbone.View.extend({
 
             initialize: function () {
                 this.setElement('<div class="item-view">' + this.model.get('a') + '</div>');
@@ -145,7 +145,7 @@ require([
 
 
 
-        var colView = window.colView = new CollectionView();
+        var colView = window.colView = new CollectionView();*/
 
 
         /*var Model = Backbone.Ribs.Model.extend({
@@ -257,6 +257,38 @@ require([
 
         window.v =  new TestView();*/
 
+        var View = Backbone.Ribs.View.extend({
+            el: '<div class="toggle">' +
+                    '<div class="indom">first</div>' +
+                    '<div class="second">second</div>' +
+                    '<div class="indom">third</div>' +
+                '</div>',
 
+            bindings: {
+                '.indom': {
+                    inDOM: {
+                        data: 'model.second'
+                    }
+                },
+                'el': {
+                    inDOM: {
+                        data: 'model.main'
+                    }
+                }
+            },
+
+            initialize: function () {
+                window.model = this.model = new Backbone.Model({
+                    second: true,
+                    main: true
+                });
+
+                //this.setElement('.toggle');
+            }
+        });
+
+        window.view = new View();
+
+        window.view.appendTo($('body'));
     });
 });

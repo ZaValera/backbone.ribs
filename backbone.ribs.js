@@ -209,6 +209,7 @@
         this.selector = selector;
         this.view = view;
         this.mods = {};
+        this._hasInDOMHandler = bindings.hasOwnProperty('inDOM');
         this._setEl();
         this.handlers = [];
 
@@ -446,12 +447,32 @@
 
     //optimized
     Binding.prototype._setEl = function () {
-        var selector = this.selector;
+        var selector = this.selector,
+            dummy;
 
         if (selector === 'el') {
             this.$el = this.view.$el;
         } else {
             this.$el = this.view.$(selector);
+        }
+
+        if (this._hasInDOMHandler) {
+            this.dummies = [];
+
+            for (var i = 0; i < this.$el.length; i++) {
+                dummy = document.createElement('div');
+                dummy.style.display = 'none';
+                dummy.className = 'ribsDummy';
+                this.dummies.push(dummy);
+            }
+
+            if (selector === 'el') {
+                this.view._$el = $(this.dummies[0]);
+                this.view._el = this.view._$el[0];
+            } else {
+                this.view._$el = null;
+                this.view._el = null;
+            }
         }
     };
 
@@ -510,6 +531,30 @@
 
         html: function ($el, value) {
             $el.html(value);
+        },
+
+        inDOM: function ($el, value) {
+            var dummy,
+                el;
+
+            if (this.selector === 'el') {
+                this.view._ribs.outOfDOM = !value;
+            }
+
+            for (var i = 0; i < $el.length; i++) {
+                el = $el[i];
+                dummy = this.dummies[i];
+
+                if (value) {
+                    if (!el.parentNode && dummy.parentNode) {
+                        dummy.parentNode.replaceChild(el, dummy);
+                    }
+                } else {
+                    if (el.parentNode) {
+                        el.parentNode.replaceChild(dummy, el);
+                    }
+                }
+            }
         },
 
         toggle: function ($el, value) {
@@ -990,6 +1035,18 @@
             }
         },
 
+        getEl: function () {
+            return this._ribs.outOfDOM ? this._$el : this.$el;
+        },
+
+        appendTo: function ($el) {
+            if (!($el instanceof $)) {
+                $el = $($el);
+            }
+
+            $el.append(this.getEl());
+        },
+
         preventBindings: function () {
             this._ribs.preventBindings = true;
         },
@@ -1140,7 +1197,7 @@
                 model = collection.at(i);
                 view = new View(_.extend(data, {model: model, collection: collection}));
                 views[model.cid] = view;
-                fragment.appendChild(view.el);
+                fragment.appendChild(view instanceof Backbone.Ribs.View ? view.getEl()[0] : view.el);
             }
 
             $el.append(fragment);
@@ -1179,7 +1236,7 @@
                         if (!view) {
                             this._addView(collection.at(i), collection, c);
                         } else {
-                            ribsCol.$el.append(view.$el);
+                            ribsCol.$el.append(view instanceof Backbone.Ribs.View ? view.getEl() : view.$el);
                         }
                     }
                 }
