@@ -1,4 +1,4 @@
-//     Backbone.Ribs.js 0.2.8
+//     Backbone.Ribs.js 0.2.9
 
 //     (c) 2014 Valeriy Zaytsev
 //     Ribs may be freely distributed under the MIT license.
@@ -23,7 +23,7 @@
     'use strict';
 
     var Ribs = Backbone.Ribs = {
-        version: '0.2.8'
+        version: '0.2.9'
     };
 
     var _super = function (self, method, args) {
@@ -1009,6 +1009,24 @@
             this._ribs.computedsDeps = {};
             this._ribs.computeds = {};
             return this;
+        },
+
+        toJSON: function (options) {
+            var json = _super(this, 'toJSON', arguments);
+
+            if (options && options.computeds) {
+                var computeds = this._ribs.computeds,
+                    computed;
+
+                for (var name in computeds) {
+                    if (computeds.hasOwnProperty(name)) {
+                        computed = computeds[name];
+                        json[name] = computed._simple ? computed.get() : computed.value;
+                    }
+                }
+            }
+
+            return json;
         }
     });
 
