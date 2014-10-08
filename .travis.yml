@@ -1,7 +1,7 @@
 language: node_js
 
 before_script:
-  - npm install https://github.com/bayandin/node-qunit-phantomjs/tarball/fix-exit-code
+  - npm install node-qunit-phantomjs@0.2.2
 
 script:
   - node node_modules/.bin/node-qunit-phantomjs unitTests/unitTests.html --verbose
