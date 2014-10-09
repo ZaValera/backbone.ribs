@@ -1268,9 +1268,11 @@
         _addView: function (model, collection, bindId) {
             var cols = this._ribs.collections[collection.cid],
                 modelCid = model.cid,
+                $el,
                 ribsCol,
                 views,
                 cid,
+                prevView,
                 view,
                 index;
 
@@ -1286,10 +1288,13 @@
                         cid = collection.at(i).cid;
 
                         if (cid === modelCid) {
+                            $el = view instanceof Backbone.Ribs.View ? view.getEl() : view.$el;
+
                             if (index === undefined) {
-                                ribsCol.$el.prepend(view.$el);
+                                ribsCol.$el.prepend($el);
                             } else {
-                                views[index].$el.after(view.$el);
+                                prevView = views[index];
+                                (prevView instanceof Backbone.Ribs.View ? prevView.getEl() : prevView.$el).after($el);
                             }
                             break;
                         }
