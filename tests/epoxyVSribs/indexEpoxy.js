@@ -1,19 +1,19 @@
 ﻿require.config({
     paths: {
-        jquery: '../vendor/jquery-1.9.0.min',
-        underscore: '../vendor/lodash.min',
-        backbone: '../vendor/backbone',
-        epoxy: '../vendor/backbone.epoxy',
-        ribs: '../backbone.ribs'
+        jquery: '../../vendor/jquery-1.9.0.min',
+        underscore: '../../vendor/lodash.min',
+        backbone: '../../vendor/backbone',
+        epoxy: '../../vendor/backbone.epoxy',
+        ribs: '../../backbone.ribs'
     }
 });
 
 require([
-    'ribs',
+    '../speedTest/0.2.8/ribs',
     'epoxy'
 ], function() {
     $(document).ready(function() {
-        var ItemModel = Backbone.Ribs.Model.extend({
+        var ItemModel = Backbone.Epoxy.Model.extend({
             computeds: {
                 text: {
                     deps: ['first', 'second'],
@@ -40,8 +40,28 @@ require([
             }
         });
 
+        var ItemView = Backbone.Epoxy.View.extend({
+            el: '<div class="item"><input type="checkbox"/><span class="span-text"></span><span class="span-second">span</span><input class="simple-input"/></div>',
+
+            bindings: {
+                'input[type="checkbox"]': 'checked:checked,attr:{"data-time":time}',
+                '.span-text': 'text:mlt(text),classes:{"span-text__active":active}',
+                '.span-second': 'toggle:active',
+                '.simple-input': 'disabled:not(active),value:inputText,events:["keyup","change"]'
+            },
+
+            bindingFilters: {
+                mlt: {
+                    get: function (a) {
+                        return a * 2;
+                    }
+                }
+            }
+        });
+
         var Col = Backbone.Collection.extend({
             model: ItemModel,
+            view: ItemView,
 
             initialize: function () {
                 for (var i = 0; i < 5000; i++) {
@@ -55,47 +75,11 @@ require([
             }
         });
 
-        var ItemView = Backbone.Ribs.View.extend({
-            el: '<div class="item"><input type="checkbox"/><span class="span-text"></span><span class="span-second">span</span><input class="simple-input"/></div>',
-
-            bindings: {
-                'input[type="checkbox"]': {
-                    checked: 'model.checked',
-                    attr: {'data-time': 'model.time'}
-                },
-                '.span-text': {
-                    text: {filter: 'mlt', data: 'model.text'},
-                    classes: {'span-text__active': 'model.active'}
-                },
-                '.span-second': {toggle: 'model.active'},
-                '.simple-input': {
-                    disabled: {
-                        filter: 'not',
-                        data: 'model.active'
-                    },
-                    value: {
-                        data: 'model.inputText',
-                        events: 'keyup change'
-                    }
-                }
-            },
-
-            filters: {
-                mlt: function (a) {
-                    return a * 2;
-                }
-            }
-        });
-
-        var CollectionView = Backbone.Ribs.View.extend({
+        var CollectionView = Backbone.Epoxy.View.extend({
             el: '<div><div class="item-views"></div></div>',
 
-            ItemView: ItemView,
-
             bindings: {
-                '.item-views': {
-                    collection: {col: 'collection', view: 'ItemView'}
-                }
+                '.item-views': 'collection:$collection'
             },
 
             initialize: function () {
@@ -106,7 +90,6 @@ require([
         });
 
         var start = +new Date();
-        //console.profile('test');
         //console.time('test');
         var colView = new CollectionView(),
             items = [];
@@ -121,7 +104,6 @@ require([
         }*/
 
         colView.collection.add(items);
-        //console.profileEnd('test');
         alert(+new Date() - start);
         //console.timeEnd('test');
     });

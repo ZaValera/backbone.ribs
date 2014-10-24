@@ -1,10 +1,10 @@
 ﻿require.config({
     paths: {
-        jquery: 'vendor/jquery-1.9.0.min',
-        underscore: 'vendor/lodash.min',
-        backbone: 'vendor/backbone',
-        epoxy: 'vendor/backbone.epoxy',
-        ribs: 'backbone.ribs'
+        jquery: '../vendor/jquery-1.9.0.min',
+        underscore: '../vendor/lodash.min',
+        backbone: '../vendor/backbone',
+        epoxy: '../vendor/backbone.epoxy',
+        ribs: '../backbone.ribs'
     }/*,
     shim: {
         'backbone': {

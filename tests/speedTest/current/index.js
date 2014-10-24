@@ -9,7 +9,8 @@
 });
 
 require([
-    '../speedTest'
+    'speedTest',
+    'ribs'
 ], function(speedTest) {
     $(document).ready(function() {
         speedTest();

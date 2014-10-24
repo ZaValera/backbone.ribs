@@ -1,5 +1,5 @@
 define([
-    'ribs'
+
 ], function () {
     var iterations = 1,
         testCounts = 1;
