@@ -260,28 +260,30 @@ require([
         var View = Backbone.Ribs.View.extend({
             el: '<div class="toggle">' +
                     '<div class="indom">first</div>' +
-                    '<div class="second">second</div>' +
+                    '<input class="second">' +
                     '<div class="indom">third</div>' +
                 '</div>',
 
             bindings: {
-                '.indom': {
-                    inDOM: {
-                        data: 'model.second'
-                    }
-                },
                 'el': {
-                    inDOM: {
-                        data: 'model.main'
-                    }
+                    /*inDOM: 'model.main',
+                    classes: {
+                        'test-class': 'model.hasClass'
+                    }*/
+                },
+                '.second': {
+                    /*value: 'model.second'*/
                 }
             },
 
             initialize: function () {
                 window.model = this.model = new Backbone.Model({
-                    second: true,
+                    second: 'tada',
+                    hasClass: true,
                     main: true
                 });
+
+                this.appendTo($('body'));
 
                 //this.setElement('.toggle');
             }
@@ -289,6 +291,10 @@ require([
 
         window.view = new View();
 
-        window.view.appendTo($('body'));
+        /*window.view.removeBindings2({
+            el: 'classes'
+        });*/
+
+        //window.view.appendTo($('body'));
     });
 });

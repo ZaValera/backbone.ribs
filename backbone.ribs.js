@@ -211,10 +211,10 @@
         this.mods = {};
         this._hasInDOMHandler = bindings.hasOwnProperty('inDOM');
         this._setEl();
-        this.handlers = [];
+        this.handlers = {};
 
         for (var type in bindings) {
-            if (type !== 'collection' && bindings.hasOwnProperty(type)) {
+            if (bindings.hasOwnProperty(type)) {
                 binding = bindings[type];
 
                 if (binding instanceof Array) {
@@ -230,21 +230,93 @@
 
     //optimized
     Binding.prototype._addHandler = function (type, binding) {
-        var handler = this.view.handlers[type];
+        var handler = this.view.handlers[type],
+            isCol = type === 'collection';
 
-        if (!handler) {
+        if (!isCol && !handler) {
             throw new Error('unknown handler type "' + type + '"');
         }
 
-        if (handler.multiple) {
+        if (!isCol && handler.multiple) {
             for (var attr in binding) {
                 if (binding.hasOwnProperty(attr)) {
                     this.addHandler(type, binding[attr], attr);
                 }
             }
         } else {
-            this.addHandler(type, binding);
+            if (isCol) {
+                this.addColHandler(binding);
+            } else {
+                this.addHandler(type, binding);
+            }
         }
+    };
+
+    Binding.prototype.addColHandler = function (colBind) {
+        var mainView = this.view,
+            View = typeof colBind.view === 'string' ? mainView[colBind.view] : colBind.view,
+            collection = typeof colBind.col === 'string' ? mainView[colBind.col] : colBind.col,
+            data = colBind.data || {},
+            selector = this.selector,
+            col, view;
+
+
+
+
+
+
+
+
+        var bindId = _.uniqueId('bc'),
+            views = {},
+            model,
+            $el;
+
+        if (selector === 'el') {
+            $el = mainView.$el;
+        } else {
+            $el = mainView.$(selector);
+        }
+
+        if (collection.comparator) {
+            collection.sort();
+        }
+
+        if (!collection.cid) {
+            collection.cid = _.uniqueId('col');
+        }
+
+        col = this._ribs.collections[collection.cid];
+
+        if (!col) {
+            col = this._ribs.collections[collection.cid] = {};
+
+            collection.on('sort', this._onSort, this);
+            collection.on('add', this._onaddView, this);
+            collection.on('remove', this._removeView, this);
+            collection.on('reset', this._onReset, this);
+        }
+
+        col[bindId] = {
+            collection: collection,
+            $el: $el,
+            View: View,
+            data: data,
+            views: views
+        };
+
+        var fragment = document.createDocumentFragment();
+
+        for (var i = 0; i < collection.length; i++) {
+            model = collection.at(i);
+            view = new View(_.extend(data, {model: model, collection: collection}));
+            views[model.cid] = view;
+            fragment.appendChild(view instanceof Backbone.Ribs.View ? view.getEl()[0] : view.el);
+        }
+
+        $el.append(fragment);
+
+        return bindId;
     };
 
     //optimized
@@ -400,47 +472,55 @@
         }
 
         if (getHandler) {
-            this.view.$el.on(events + '.bindingHandlers' + this.view.cid, this.selector, getter);
-
+            //this.view.$el.on(events + '.bindingHandlers' + this.view.cid, this.selector, getter);
+            this.view.$el.on(events + '.bindingHandlers', this.selector, getter);
+            handler.getter = getter;
             handler.events = events;
         }
 
-        this.handlers.push(handler);
+        this.handlers[type] = handler;
     };
 
     //optimized
-    Binding.prototype._unbind = function () {
+    Binding.prototype._unbind = function (types) {
         var handlers = this.handlers,
             col = [],
             changeAttrs, changeAttr,
-            handler, setter,
-            model, i, j, l, l2;
+            handler, setter, events,
+            model, i, l;
 
-        for (i = 0, l = handlers.length; i < l; i++) {
-            handler = handlers[i];
-            setter = handler.setter;
+        for (var type in handlers) {
+            if (handlers.hasOwnProperty(type) && !(types && types.indexOf(type) === -1)) {
+                handler = handlers[type];
+                setter = handler.setter;
+                events = handler.events;
 
-            if (!setter) {
-                continue;
-            }
+                if (events) {
+                    this.view.$el.off(events + '.bindingHandlers', this.selector, handler.getter);
+                }
 
-            changeAttrs = handler.changeAttrs;
+                if (setter) {
+                    changeAttrs = handler.changeAttrs;
 
-            for (model in changeAttrs) {
-                if (changeAttrs.hasOwnProperty(model)) {
-                    if (this.view[model] instanceof Backbone.Collection) {
-                        if (col.indexOf(model) === -1) {
-                            col.push(model);
-                            this.view[model].off('add remove reset sort', setter);
+                    for (model in changeAttrs) {
+                        if (changeAttrs.hasOwnProperty(model)) {
+                            if (this.view[model] instanceof Backbone.Collection) {
+                                if (col.indexOf(model) === -1) {
+                                    col.push(model);
+                                    this.view[model].off('add remove reset sort', setter);
+                                }
+                            }
+
+                            changeAttr = changeAttrs[model];
+
+                            for (i = 0, l = changeAttr.length; i < l; i++) {
+                                this.view[model].off('change:' + changeAttr[i], setter);
+                            }
                         }
                     }
-
-                    changeAttr = changeAttrs[model];
-
-                    for (j = 0, l2 = changeAttr.length; j < l2; j++) {
-                        this.view[model].off('change:' + changeAttr[j], setter);
-                    }
                 }
+
+                delete handlers[type];
             }
         }
     };
@@ -1036,7 +1116,7 @@
         constructor: function(attributes, options) {
             this._ribs = {
                 _bindings: _.clone(this.bindings) || {},
-                bindings: [],
+                bindings: {},
                 collections: {}
             };
 
@@ -1085,7 +1165,7 @@
 
         addBinding: function (selector, bindings) {
             var _bindings = this._ribs._bindings,
-                hasBindings = false;
+                colBind = bindings.collection;
 
             if (!_bindings.hasOwnProperty(selector)) {
                 _bindings[selector] = bindings;
@@ -1095,22 +1175,39 @@
                 throw new Error('wrong binging format for "' + selector + '" - ' + JSON.stringify(bindings));
             }
 
-            for (var b in bindings) {
-                if (bindings.hasOwnProperty(b)) {
-                    hasBindings = true;
-                }
+            /*if (colBind) {
+                var view = typeof colBind.view === 'string' ? this[colBind.view] : colBind.view,
+                    col = typeof colBind.col === 'string' ? this[colBind.col] : colBind.col;
+
+                this.applyCollection(selector, col, view);
+            }*/
+
+            if (!_.isEmpty(bindings)) {
+                this._ribs.bindings[selector] = new Binding(this, selector, bindings);
+            }
+        },
+
+        addBinding2: function (selector, bindings) {
+            var _bindings = this._ribs._bindings,
+                colBind = bindings.collection;
+
+            if (!_bindings.hasOwnProperty(selector)) {
+                _bindings[selector] = bindings;
             }
 
-            if (bindings.collection) {
-                var colBind = bindings.collection,
-                    view = typeof colBind.view === 'string' ? this[colBind.view] : colBind.view,
+            if (typeof bindings !== 'object') {
+                throw new Error('wrong binging format for "' + selector + '" - ' + JSON.stringify(bindings));
+            }
+
+            if (colBind) {
+                var view = typeof colBind.view === 'string' ? this[colBind.view] : colBind.view,
                     col = typeof colBind.col === 'string' ? this[colBind.col] : colBind.col;
 
                 this.applyCollection(selector, col, view);
             }
 
-            if (hasBindings) {
-                this._ribs.bindings.push(new Binding(this, selector, bindings));
+            if (!_.isEmpty(bindings)) {
+                this._ribs.bindings[selector] = new Binding(this, selector, bindings);
             }
         },
 
@@ -1118,10 +1215,12 @@
             var bindings = this._ribs.bindings,
                 collections = this._ribs.collections;
 
-            this.$el.off('.bindingHandlers' + this.cid);
+            //this.$el.off('.bindingHandlers');
 
-            for (var i = 0; i < bindings.length; i++) {
-                bindings[i]._unbind();
+            for (var b in bindings) {
+                if (bindings.hasOwnProperty(b)) {
+                    bindings[b]._unbind();
+                }
             }
 
             for (var cols in collections) {
@@ -1147,24 +1246,72 @@
             }
 
             this._ribs.collections = {};
-            this._ribs.bindings = [];
+            this._ribs.bindings = {};
+        },
+
+        removeBindings2: function (key, val) {
+            var bindings = this._ribs.bindings,
+                types,
+                attrs;
+
+            if (typeof key === 'string') {
+                attrs = {};
+                attrs[key] = val;
+            } else {
+                attrs = key;
+            }
+
+            for (var type in bindings) {
+                if (bindings.hasOwnProperty(type)) {
+                    if (attrs) {
+                        if (attrs.hasOwnProperty(type)) {
+                            types = attrs[type];
+
+                            if (typeof types === 'string') {
+                                types = [types];
+                            }
+                        } else {
+                            continue;
+                        }
+                    }
+
+                    bindings[type]._unbind(types);
+
+                    if (_.isEmpty(bindings[type].handlers)) {
+                        delete bindings[type];
+                    }
+                }
+            }
         },
 
         updateBindings: function () {
             var bindings = this._ribs.bindings,
-                binding;
+                binding, handlers, type;
 
-            for (var i = 0; i < bindings.length; i++) {
-                binding = bindings[i];
-                binding._setEl();
+            for (var b in bindings) {
+                if (bindings.hasOwnProperty(b)) {
+                    binding = bindings[b];
+                    handlers = binding.handlers;
+                    binding._setEl();
 
-                for (var j = 0; j < binding.handlers.length; j++) {
-                    binding.handlers[j].setter();
+                    for (type in handlers) {
+                        if (handlers.hasOwnProperty(type)) {
+                            handlers[type].setter();
+                        }
+                    }
                 }
             }
         },
 
         applyCollection: function (selector, collection, View, data) {
+            this.addBinding(selector, {collection: {
+                col: collection,
+                view: View,
+                data: data
+            }});
+        },
+
+        applyCollection2: function (selector, collection, View, data) {
             var bindId = _.uniqueId('bc'),
                 views = {},
                 col,
