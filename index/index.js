@@ -96,9 +96,10 @@ require([
 
         var view = window.bindView = new BindingView();*/
 
-        /*var ItemView = Backbone.View.extend({
+        var ItemView = Backbone.View.extend({
 
-            initialize: function () {
+            initialize: function (args) {
+                debugger
                 this.setElement('<div class="item-view">' + this.model.get('a') + '</div>');
             }
         });
@@ -108,12 +109,16 @@ require([
         var CollectionView = Backbone.Ribs.View.extend({
 
             bindings: {
-                'el': {
+                /*'el': {
                     'collection': {
                         col: 'col',
-                        view: ItemView
+                        view: ItemView,
+                        data: {
+                            a: 123,
+                            b: 'lala'
+                        }
                     }
-                }
+                }*/
             },
 
             filters: {
@@ -129,15 +134,20 @@ require([
             },
 
             initialize: function () {
-                this.col = new Backbone.Collection([
-                    new Backbone.Ribs.Model({a: 3}),
-                    new Backbone.Ribs.Model({a: 5}),
-                    new Backbone.Ribs.Model({a: 8})
-                ]);
-
-                //this.ItemView = ItemView;
+                this.col = new Backbone.Collection([{a: 3},{a: 5},{a: 8}]);
 
                 window.col = this.col;
+
+                this.addBindings('el', {
+                    collection: {
+                        col: 'col',
+                            view: ItemView,
+                            data: {
+                                el: this.$el,
+                                b: 'lala'
+                            }
+                        }
+                });
 
                 this.setElement('.col');
             }
@@ -145,7 +155,7 @@ require([
 
 
 
-        var colView = window.colView = new CollectionView();*/
+        var colView = window.colView = new CollectionView();
 
 
         /*var Model = Backbone.Ribs.Model.extend({
@@ -257,7 +267,7 @@ require([
 
         window.v =  new TestView();*/
 
-        var View = Backbone.Ribs.View.extend({
+        /*var View = Backbone.Ribs.View.extend({
             el: '<div class="toggle">' +
                     '<div class="indom">first</div>' +
                     '<input class="second">' +
@@ -266,13 +276,13 @@ require([
 
             bindings: {
                 'el': {
-                    /*inDOM: 'model.main',
+                    inDOM: 'model.main',
                     classes: {
                         'test-class': 'model.hasClass'
-                    }*/
+                    }
                 },
                 '.second': {
-                    /*value: 'model.second'*/
+                    value: 'model.second'
                 }
             },
 
@@ -289,7 +299,7 @@ require([
             }
         });
 
-        window.view = new View();
+        window.view = new View();*/
 
         /*window.view.removeBindings2({
             el: 'classes'

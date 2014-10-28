@@ -253,7 +253,7 @@
                 }
             }
         },
-        //optimized
+
         addColHandler: function (colBind) {
             var mainView = this.view,
                 View = typeof colBind.view === 'string' ? mainView[colBind.view] : colBind.view,
@@ -475,7 +475,7 @@
 
             this.handlers[type] = handler;
         },
-        //optimized
+
         unbind: function (types) {
             var handlers = this.handlers,
                 col = [],
@@ -529,6 +529,27 @@
                                 views[view].remove();
                             }
                         }
+                    }
+
+                    if (type === 'inDOM') {
+                        var $el = this.$el,
+                            dummies = this.dummies,
+                            el, dummy;
+
+                        for (i = 0, l = $el.length; i < l; i++) {
+                            el = $el[i];
+                            dummy = dummies[i];
+
+                            if (!el.parentNode && dummy.parentNode) {
+                                dummy.parentNode.replaceChild(el, dummy);
+                            }
+                        }
+
+                        if (this.selector === 'el') {
+                            this.view._ribs.outOfDOM = false;
+                        }
+
+                        this.dummies = [];
                     }
 
                     delete handlers[type];
@@ -588,10 +609,6 @@
             }
         },
 
-        _onsort: function () {
-            this.renderCollection({withoutNewView: true});
-        },
-
         renderCollection: function (args) {
             var ribsCol = this.handlers.collection,
                 views = ribsCol.views,
@@ -605,6 +622,10 @@
             }
 
             this._fillElByCollection(args);
+        },
+
+        _onsort: function () {
+            this.renderCollection({withoutNewView: true});
         },
 
         _onaddView: function (model) {
@@ -1263,11 +1284,7 @@
             this._ribs.preventBindings = true;
         },
 
-        applyBindings: function (options) {
-            if (options && options.remove) {
-                this.removeBindings();
-            }
-
+        applyBindings: function () {
             var _bindings = this._ribs._bindings;
 
             for (var s in _bindings) {
@@ -1277,20 +1294,51 @@
             }
         },
 
+        addBindings: function (key, val) {
+            var ribsBindings = this._ribs.bindings,
+                bindings,
+                selector,
+                types,
+                attrs;
+
+            if (typeof key === 'string') {
+                attrs = {};
+                attrs[key] = val;
+            } else {
+                attrs = key;
+            }
+
+            for (selector in attrs) {
+                if (attrs.hasOwnProperty(selector)) {
+                    bindings = attrs[selector];
+
+                    if (typeof bindings !== 'object' || _.isEmpty(bindings)) {
+                        throw new Error('wrong binging format for "' + selector + '" - ' + JSON.stringify(bindings));
+                    }
+
+                    if (ribsBindings.hasOwnProperty(selector)) {
+                        types = [];
+
+                        for (var type in bindings) {
+                            if (bindings.hasOwnProperty(type)) {
+                                types.push(type);
+                            }
+                        }
+
+                        this.removeBindings(selector, types);
+                    }
+
+                    ribsBindings[selector] = new Binding(this, selector, bindings);
+                }
+            }
+        },
+
+        //redundant
         addBinding: function (selector, bindings) {
-            var _bindings = this._ribs._bindings;
+            var attrs = {};
 
-            if (!_bindings.hasOwnProperty(selector)) {
-                _bindings[selector] = bindings;
-            }
-
-            if (typeof bindings !== 'object') {
-                throw new Error('wrong binging format for "' + selector + '" - ' + JSON.stringify(bindings));
-            }
-
-            if (!_.isEmpty(bindings)) {
-                this._ribs.bindings[selector] = new Binding(this, selector, bindings);
-            }
+            attrs[selector] = bindings;
+            this.addBindings(attrs);
         },
 
         removeBindings: function (key, val) {
@@ -1358,6 +1406,7 @@
             }
         },
 
+        //redundant
         applyCollection: function (selector, collection, View, data) {
             this.addBinding(selector, {collection: {
                 col: collection,
