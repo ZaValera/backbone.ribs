@@ -1430,6 +1430,16 @@
                     }
                 }
             }
+        },
+
+        getCollectionViews: function (selector) {
+            var binding = this._ribs.bindings[selector];
+
+            if (binding && binding.handlers.hasOwnProperty('collection')) {
+                return binding.handlers.collection.views;
+            }
+
+            return undefined;
         }
     });
 

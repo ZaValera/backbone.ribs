@@ -99,7 +99,6 @@ require([
         var ItemView = Backbone.View.extend({
 
             initialize: function (args) {
-                debugger
                 this.setElement('<div class="item-view">' + this.model.get('a') + '</div>');
             }
         });
