@@ -1,4 +1,4 @@
-//     Backbone.Ribs.js 0.2.10
+//     Backbone.Ribs.js 0.3.0
 
 //     (c) 2014 Valeriy Zaytsev
 //     Ribs may be freely distributed under the MIT license.
@@ -23,7 +23,7 @@
     'use strict';
 
     var Ribs = Backbone.Ribs = {
-        version: '0.2.10'
+        version: '0.3.0'
     };
 
     var _super = function (self, method, args) {

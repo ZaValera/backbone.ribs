@@ -96,10 +96,22 @@ require([
 
         var view = window.bindView = new BindingView();*/
 
-        var ItemView = Backbone.View.extend({
+        /*var ItemView = Backbone.Ribs.View.extend({
 
-            initialize: function (args) {
-                this.setElement('<div class="item-view">' + this.model.get('a') + '</div>');
+            bindings: {
+                'span': {
+                    text: {
+                        data: 'model.a',
+                        filter: function (val) {
+                                return val + 'asdf';
+
+                        }
+                    }
+                }
+            },
+
+            initialize: function () {
+                this.setElement('<div class="item-view"><span></span></div>');
             }
         });
 
@@ -108,7 +120,7 @@ require([
         var CollectionView = Backbone.Ribs.View.extend({
 
             bindings: {
-                /*'el': {
+                'el': {
                     'collection': {
                         col: 'col',
                         view: ItemView,
@@ -117,7 +129,7 @@ require([
                             b: 'lala'
                         }
                     }
-                }*/
+                }
             },
 
             filters: {
@@ -136,25 +148,13 @@ require([
                 this.col = new Backbone.Collection([{a: 3},{a: 5},{a: 8}]);
 
                 window.col = this.col;
-
-                this.addBindings('el', {
-                    collection: {
-                        col: 'col',
-                            view: ItemView,
-                            data: {
-                                el: this.$el,
-                                b: 'lala'
-                            }
-                        }
-                });
-
                 this.setElement('.col');
             }
         });
 
 
 
-        var colView = window.colView = new CollectionView();
+        var colView = window.colView = new CollectionView();*/
 
 
         /*var Model = Backbone.Ribs.Model.extend({
@@ -266,7 +266,7 @@ require([
 
         window.v =  new TestView();*/
 
-        /*var View = Backbone.Ribs.View.extend({
+        var View = Backbone.Ribs.View.extend({
             el: '<div class="toggle">' +
                     '<div class="indom">first</div>' +
                     '<input class="second">' +
@@ -298,7 +298,7 @@ require([
             }
         });
 
-        window.view = new View();*/
+        window.view = new View();
 
         /*window.view.removeBindings2({
             el: 'classes'
