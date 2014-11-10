@@ -1,0 +1,33 @@
+{
+  "name": "backbone.ribs",
+  "version": "0.2.10",
+  "description": "Deep get/set, bindings and computed model attributes for Backbone.",
+  "homepage": "https://github.com/ZaValera/backbone.ribs",
+  "github": "https://github.com/ZaValera/backbone.ribs",
+  "license": "MIT",
+  "author": "Valeriy Zaitsev <ZaValera@gmail.com>",
+  "main": "backbone.ribs.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ZaValera/backbone.ribs.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ZaValera/backbone.ribs/issues"
+  },
+  "keywords": [
+    "backbone.ribs.js",
+    "backbone.ribs",
+    "ribs.js",
+    "backbone",
+    "bindings",
+    "computed"
+  ],
+  "dependencies": {
+    "backbone": ">=1.1.2",
+    "jquery": ">=1.9.0",
+    "underscore": ">=1.5.0"
+  },
+  "devDependencies": {
+    "qunitjs": ">=1.14.0"
+  }
+}
