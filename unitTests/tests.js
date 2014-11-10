@@ -1092,7 +1092,7 @@ $(function () {
         equal($items.length, 1, 'Apply collection');
 
         col.add({a: 5}, {silent: true});
-        bindingView.renderCollection(col, bindId);
+        bindingView.renderCollection(col, '.met-apply-col');
         $items = bindingView.$('.met-apply-col').children('.item-view');
         equal($items.length, 2, 'Render certain collection 1');
         $items = bindingView.$('.met-bind-col').children('.item-view');
@@ -1100,6 +1100,7 @@ $(function () {
 
         col.add({a: 3}, {silent: true});
         bindingView.renderCollection(col);
+
         $items = bindingView.$('.met-apply-col').children('.item-view');
         equal($items.length, 3, 'Render all collections 1');
         $items = bindingView.$('.met-bind-col').children('.item-view');
