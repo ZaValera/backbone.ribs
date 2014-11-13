@@ -463,32 +463,32 @@ $(function () {
             }
         }));
 
-        model.addComputed('comp3', {
+        model.addComputeds('comp3', {
             deps: ['bar2'],
             get: function (bar2) {
                 return bar2/10;
             }
         });
 
-        equal(model.get('comp3'), '2', 'addComputed');
+        equal(model.get('comp3'), '2', 'addComputeds');
         model.removeComputed('comp1');
         model.set('bar1', 30);
         equal(model.get('comp1'), undefined, 'removeComputed');
         model.set('comp1', 40);
         equal(model.attributes.comp1, 40, 'Set attr after removeComputed');
         model.set('comp1', 50, {unset: true});
-        model.addComputed('comp1', {
+        model.addComputeds('comp1', {
             deps: ['bar1'],
             get: function (bar1) {
                 return bar1 * 10;
             }
         });
-        equal(model.get('comp1'), 300, 'addComputed after unset attr');
+        equal(model.get('comp1'), 300, 'addComputeds after unset attr');
 
         var error = '';
 
         try {
-            model.addComputed('bar1', {
+            model.addComputeds('bar1', {
                 deps: ['bar2'],
                 get: function (bar2) {
                     return bar2 * 10;
@@ -498,12 +498,12 @@ $(function () {
             error = e.message;
         }
 
-        equal(error, 'addComputed: computed name "bar1" is already used', 'addComputed - already used attr error');
+        equal(error, 'addComputeds: computed name "bar1" is already used', 'addComputeds - already used attr error');
 
         error = '';
 
         try {
-            model.addComputed('comp2', {
+            model.addComputeds('comp2', {
                 deps: ['bar2'],
                 get: function (bar2) {
                     return bar2 * 10;
@@ -513,7 +513,7 @@ $(function () {
             error = e.message;
         }
 
-        equal(error, 'addComputed: computed name "comp2" is already used', 'addComputed - already used computed error');
+        equal(error, 'addComputeds: computed name "comp2" is already used', 'addComputeds - already used computed error');
     });
 
     module('Bindings');
@@ -1077,7 +1077,7 @@ $(function () {
         $items = bindingView.$('.met-bind-col').children('.item-view');
         equal($items.length, 1, 'Apply col binding');
 
-        bindingView.addBinding('.met-add-bind-text', {text: 'model.bar'});
+        bindingView.addBindings('.met-add-bind-text', {text: 'model.bar'});
         equal($('.met-add-bind-text').text(), '123', 'Add binding');
 
         bindingView.$el.append('<span class="met-bind-text met-bind-text_added"></span>');
@@ -1085,9 +1085,13 @@ $(function () {
         bindingView.updateBindings();
         equal($('.met-bind-text_added').text(), 'foo', 'Update bindings');
 
-        var bindId = bindingView.applyCollection('.met-apply-col', col, ItemView, {
-            foo: 'bar'
-        });
+        bindingView.addBindings('.met-apply-col', {collection: {
+            col: col,
+            view: ItemView,
+            data: {
+                foo: 'bar'
+            }
+        }});
         $items = bindingView.$('.met-apply-col').children('.item-view');
         equal($items.length, 1, 'Apply collection');
 

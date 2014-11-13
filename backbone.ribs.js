@@ -1,4 +1,4 @@
-//     Backbone.Ribs.js 0.3.1
+//     Backbone.Ribs.js 0.4.0
 
 //     (c) 2014 Valeriy Zaytsev
 //     Ribs may be freely distributed under the MIT license.
@@ -23,7 +23,7 @@
     'use strict';
 
     var Ribs = Backbone.Ribs = {
-        version: '0.3.1'
+        version: '0.4.0'
     };
 
     var _super = function (self, method, args) {
@@ -872,7 +872,7 @@
 
             for (var attr in attrs) {
                 if (attrs.hasOwnProperty(attr)) {
-                    escapedAttrs[attr.replace('.', '!.')] = attrs[attr];
+                    escapedAttrs[attr.replace(/\./g, '!.')] = attrs[attr];
                 }
             }
 
@@ -994,7 +994,7 @@
                         escapedPath = path.slice();
                         
                         for (i = 0; i < escapedPath.length; i++) {
-                            escapedPath[i] = escapedPath[i].replace('.', '!.');
+                            escapedPath[i] = escapedPath[i].replace(/\./g, '!.');
                         }
 
                         changes.push({
@@ -1154,75 +1154,112 @@
             }
         },
 
-        addComputed: function (name, computed) {
-            if (name in this.attributes || name in this._ribs.computeds) {
-                throw new Error('addComputed: computed name "' + name + '" is already used');
-            }
-
-            var deps = computed.deps,
-                computedsDeps = this._ribs.computedsDeps,
-                depArr,
-                dep;
-
-            if (deps instanceof Array) {
-                for (var i = 0; i < deps.length; i++) {
-                    depArr = _split(deps[i]);
-                    dep = 'change:' + depArr[0].replace('.', '!.');
-
-                    for (var j = 0; j < depArr.length; j++) {
-                        if (dep in computedsDeps) {
-                            if (computedsDeps[dep].indexOf(name) === -1) {
-                                computedsDeps[dep].push(name);
-                            }
-                        } else {
-                            computedsDeps[dep] = [name];
-                        }
-
-                        if (depArr[j + 1]) {
-                            dep += '.' + depArr[j + 1].replace('.', '!.');
-                        }
-                    }
-                }
-            }
-
-            this._ribs.computeds[name] = new Computed(computed, name, this);
-
-            var options = arguments[2] || {};
-
-            if (!options.silent) {
-                this._ribs.computeds[name].update();
-            }
-            return this;
-        },
-
-        removeComputed: function (name) {
+        //optimized
+        addComputeds: function (key, val, options) {
             var computedsDeps = this._ribs.computedsDeps,
-                dep,
-                attr,
-                index;
+                deps, dep, computed, computedsDep, silent,
+                depArr, nextDepArr, name, attrs, i, j, l1, l2;
 
-            for (attr in computedsDeps) {
-                if (computedsDeps.hasOwnProperty(attr)) {
-                    dep = computedsDeps[attr];
-                    index = dep.indexOf(name);
+            if (typeof key === 'string') {
+                attrs = {};
+                attrs[key] = val;
+            } else {
+                options = val;
+                attrs = key;
+            }
 
-                    if (index !== -1) {
-                        dep.splice(index, 1);
+            silent = options && options.silent;
+
+            for (name in attrs) {
+                if (attrs.hasOwnProperty(name)) {
+                    if (this.attributes[name] || this._ribs.computeds[name]) {
+                        throw new Error('addComputeds: computed name "' + name + '" is already used');
                     }
 
-                    if (!dep.length) {
-                        delete computedsDeps[attr];
+                    computed = attrs[name];
+                    deps = computed.deps;
+
+                    if (deps instanceof Array) {
+                        for (i = 0, l1 = deps.length; i < l1; i++) {
+                            depArr = _split(deps[i]);
+                            dep = 'change:' + depArr[0].replace(/\./g, '!.');
+
+                            for (j = 0, l2 = depArr.length; j < l2; j++) {
+                                computedsDep = computedsDeps[dep];
+
+                                if (computedsDep) {
+                                    if (computedsDep.indexOf(name) === -1) {
+                                        computedsDep.push(name);
+                                    }
+                                } else {
+                                    computedsDeps[dep] = [name];
+                                }
+
+                                nextDepArr = depArr[j + 1];
+
+                                if (nextDepArr) {
+                                    dep += '.' + nextDepArr.replace(/\./g, '!.');
+                                }
+                            }
+                        }
+                    }
+
+                    computed = this._ribs.computeds[name] = new Computed(computed, name, this);
+
+                    if (!silent) {
+                        computed.update();
                     }
                 }
             }
 
-            delete this._ribs.computeds[name];
             return this;
         },
 
-        removeComputeds: function () {
-            this._ribs.computedsDeps = {};
-            this._ribs.computeds = {};
+        //redundant
+        addComputed: function () {
+            this.addComputeds.apply(this, arguments);
+        },
+
+        //redundant
+        removeComputed: function (name) {
+            this.removeComputeds(name);
+        },
+
+        removeComputeds: function (names) {
+            if (!names) {
+                this._ribs.computedsDeps = {};
+                this._ribs.computeds = {};
+                return this;
+            }
+
+            if (!(names instanceof Array)) {
+                names = [names];
+            }
+
+            var computedsDeps = this._ribs.computedsDeps,
+                dep, attr, index, name, i, l;
+
+            for (i = 0, l = names.length; i < l; i++) {
+                name = names[i];
+
+                for (attr in computedsDeps) {
+                    if (computedsDeps.hasOwnProperty(attr)) {
+                        dep = computedsDeps[attr];
+                        index = dep.indexOf(name);
+
+                        if (index !== -1) {
+                            dep.splice(index, 1);
+                        }
+
+                        if (!dep.length) {
+                            delete computedsDeps[attr];
+                        }
+                    }
+                }
+
+                delete this._ribs.computeds[name];
+            }
+
             return this;
         },
 
@@ -1285,13 +1322,7 @@
         },
 
         applyBindings: function () {
-            var _bindings = this._ribs._bindings;
-
-            for (var s in _bindings) {
-                if (_bindings.hasOwnProperty(s)) {
-                    this.addBinding(s, _bindings[s]);
-                }
-            }
+            this.addBindings(this._ribs._bindings);
         },
 
         addBindings: function (key, val) {
@@ -1335,10 +1366,7 @@
 
         //redundant
         addBinding: function (selector, bindings) {
-            var attrs = {};
-
-            attrs[selector] = bindings;
-            this.addBindings(attrs);
+            this.addBindings.apply(this, arguments);
         },
 
         removeBindings: function (key, val) {
@@ -1408,7 +1436,7 @@
 
         //redundant
         applyCollection: function (selector, collection, View, data) {
-            this.addBinding(selector, {collection: {
+            this.addBindings(selector, {collection: {
                 col: collection,
                 view: View,
                 data: data
@@ -1435,7 +1463,7 @@
         getCollectionViews: function (selector) {
             var binding = this._ribs.bindings[selector];
 
-            if (binding && binding.handlers.hasOwnProperty('collection')) {
+            if (binding && binding.handlers.collection) {
                 return binding.handlers.collection.views;
             }
 
