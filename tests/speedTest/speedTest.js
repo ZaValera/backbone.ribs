@@ -1,8 +1,8 @@
 define([
 
 ], function () {
-    var iterations = 1,
-        testCounts = 1;
+    var iterations = 500,
+        testCounts = 5;
 
     var test = function () {
         var ItemModel = Backbone.Ribs.Model.extend({
@@ -112,12 +112,25 @@ define([
 
         $('.content').empty();
 
+        var models = [];
+
         var start = +new Date(),
             colView = new CollectionView(),
             model;
 
-        for (var i = 0; i < colView.length; i++) {
-            model = colView.at(i);
+        for (var i = 0; i < iterations; i++) {
+            models.push({
+                first: i,
+                second: i + 10,
+                active: !!Math.round(Math.random()),
+                checked: !!Math.round(Math.random())
+            });
+        }
+
+        colView.collection.add(models);
+
+        for (var i = 0; i < colView.collection.length; i++) {
+            model = colView.collection.at(i);
             model.set('foo', model.get('foo') + '_');
             model.set('bar.foo.bar', model.get('bar.foo.bar') + '_');
         }

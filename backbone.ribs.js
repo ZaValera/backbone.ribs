@@ -1,4 +1,4 @@
-//     Backbone.Ribs.js 0.4.0
+//     Backbone.Ribs.js 0.4.1
 
 //     (c) 2014 Valeriy Zaytsev
 //     Ribs may be freely distributed under the MIT license.
@@ -23,7 +23,7 @@
     'use strict';
 
     var Ribs = Backbone.Ribs = {
-        version: '0.4.0'
+        version: '0.4.1'
     };
 
     var _super = function (self, method, args) {
@@ -261,16 +261,13 @@
                 data = colBind.data || {},
                 selector = this.selector,
                 views = {},
+                self = this,
                 $el;
 
             if (selector === 'el') {
                 $el = mainView.$el;
             } else {
                 $el = mainView.$(selector);
-            }
-
-            if (collection.comparator) {
-                collection.sort();
             }
 
             collection.on('sort', this._onsort, this);
@@ -286,6 +283,18 @@
                 views: views
             };
 
+            var colSet = collection.set;
+
+            collection.set = function () {
+                colSet.apply(collection, arguments);
+
+                if (self._toAdd) {
+                    self._fillElByCollection();
+                }
+
+                self._toAdd = undefined;
+            };
+
             this._fillElByCollection();
         },
 
@@ -297,14 +306,18 @@
                 View = ribsCol.View,
                 $el = ribsCol.$el,
                 fragment = document.createDocumentFragment(),
-                view, model, i, l;
+                toAdd = this._toAdd,
+                view, model, cid, i, l;
+
+            args = args || {};
 
             for (i = 0, l = collection.length; i < l; i++) {
                 model = collection.at(i);
-                view = views[model.cid];
-                if (!view && !(args && args.withoutNewView)) {
+                cid = model.cid;
+                view = views[cid];
+                if (!view && !args.withoutNewView && (!toAdd || toAdd[cid])) {
                     view = new View(_.extend(data, {model: model, collection: collection}));
-                    views[model.cid] = view;
+                    views[cid] = view;
                 }
 
                 if (view) {
@@ -572,7 +585,7 @@
                     }
 
                     if (type === 'collection') {
-                        this.renderCollection();
+                        this._fillElByCollection();
                     }
                 }
             }
@@ -609,62 +622,18 @@
             }
         },
 
-        renderCollection: function (args) {
-            var ribsCol = this.handlers.collection,
-                views = ribsCol.views,
-                view;
-
-            for (view in views) {
-                if (views.hasOwnProperty(view)) {
-                    view = views[view];
-                    (view instanceof Backbone.Ribs.View ? view.getEl() : view.$el).detach();
-                }
-            }
-
-            this._fillElByCollection(args);
-        },
-
         _onsort: function () {
-            this.renderCollection({withoutNewView: true});
+            if (!this._toAdd) {
+                this._fillElByCollection({withoutNewView: true});
+            }
         },
 
         _onaddView: function (model) {
-            this._addView(model);
-        },
-
-        _addView: function (model) {
-            var ribsCol = this.handlers.collection,
-                collection = ribsCol.collection,
-                views = ribsCol.views,
-                data = ribsCol.data,
-                View = ribsCol.View,
-                $mainEl = ribsCol.$el,
-                modelCid = model.cid,
-                prevView, view, $el, cid, index, i, l;
-
-            view = new View(_.extend(data, {model: model, collection: collection}));
-
-            for (i = 0, l = collection.length; i < l; i++) {
-                cid = collection.at(i).cid;
-
-                if (cid === modelCid) {
-                    $el = view instanceof Backbone.Ribs.View ? view.getEl() : view.$el;
-
-                    if (index === undefined) {
-                        $mainEl.prepend($el);
-                    } else {
-                        prevView = views[index];
-                        (prevView instanceof Backbone.Ribs.View ? prevView.getEl() : prevView.$el).after($el);
-                    }
-                    break;
-                }
-
-                if (views.hasOwnProperty(cid)) {
-                    index = cid;
-                }
+            if (!this._toAdd) {
+                this._toAdd = {};
             }
 
-            views[modelCid] = view;
+            this._toAdd[model.cid] = model;
         },
 
         _removeView: function (model) {
@@ -1449,11 +1418,11 @@
                 bindCol;
 
             for (var s in bindings) {
-                if (bindings.hasOwnProperty(s) && !(selector && selector !== s)) {
+                if (bindings.hasOwnProperty(s) && (!selector || selector === s)) {
                     binding = bindings[s];
                     bindCol = binding.handlers.collection;
 
-                    if (bindCol && bindCol.collection === col) {
+                    if (bindCol && (!col || bindCol.collection === col)) {
                         binding.update(['collection']);
                     }
                 }
