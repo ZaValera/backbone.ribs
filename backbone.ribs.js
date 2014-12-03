@@ -1,4 +1,4 @@
-//     Backbone.Ribs.js 0.4.1
+//     Backbone.Ribs.js 0.4.2
 
 //     (c) 2014 Valeriy Zaytsev
 //     Ribs may be freely distributed under the MIT license.
@@ -23,7 +23,7 @@
     'use strict';
 
     var Ribs = Backbone.Ribs = {
-        version: '0.4.1'
+        version: '0.4.2'
     };
 
     var _super = function (self, method, args) {
@@ -286,13 +286,15 @@
             var colSet = collection.set;
 
             collection.set = function () {
-                colSet.apply(collection, arguments);
+                var res = colSet.apply(collection, arguments);
 
                 if (self._toAdd) {
                     self._fillElByCollection();
                 }
 
                 self._toAdd = undefined;
+
+                return res;
             };
 
             this._fillElByCollection();
@@ -1111,7 +1113,7 @@
 
             for (name in computeds) {
                 if (computeds.hasOwnProperty(name)) {
-                    this.addComputed(name, computeds[name], {silent: true});
+                    this.addComputeds(name, computeds[name], {silent: true});
                 }
             }
 
