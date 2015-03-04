@@ -1,4 +1,4 @@
-//     Backbone.Ribs.js 0.4.2
+//     Backbone.Ribs.js 0.4.3
 
 //     (c) 2014 Valeriy Zaytsev
 //     Ribs may be freely distributed under the MIT license.
@@ -23,7 +23,7 @@
     'use strict';
 
     var Ribs = Backbone.Ribs = {
-        version: '0.4.2'
+        version: '0.4.3'
     };
 
     var _super = function (self, method, args) {
@@ -664,8 +664,13 @@
 
     //optimized
     var filters = {
-        not: function (val) {
-            return !val;
+        not: {
+            set: function (val) {
+                return !val;
+            },
+            get: function (val) {
+                return !val;
+            }
         },
 
         length: function (val) {
