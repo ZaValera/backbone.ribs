@@ -334,6 +334,7 @@
         addHandler: function (type, binding, bindAttr) {
             var data = binding.data,
                 filter = binding.filter,
+                options = binding.options || {},
                 events = binding.events || 'change',
                 filters = this.view.filters,
                 paths = [], attrs = [], col = [], changeAttrs = {}, self = this,
@@ -430,7 +431,7 @@
                         val = setFilter.call(self.view, val);
                     }
 
-                    self.view[paths[0].model].set(attr, val);
+                    self.view[paths[0].model].set(attr, val, options);
                 };
             }
             ///////////////////////////////////////////////////
