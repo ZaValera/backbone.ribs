@@ -1,4 +1,4 @@
-//     Backbone.Ribs.js 0.4.4
+//     Backbone.Ribs.js 0.4.5
 
 //     (c) 2014 Valeriy Zaytsev
 //     Ribs may be freely distributed under the MIT license.
@@ -23,7 +23,7 @@
     'use strict';
 
     var Ribs = Backbone.Ribs = {
-        version: '0.4.4'
+        version: '0.4.5'
     };
 
     var _super = function (self, method, args) {
@@ -597,12 +597,30 @@
         //optimized
         _setEl: function () {
             var selector = this.selector,
-                dummy;
+                dummy,
+                $el;
 
             if (selector === 'el') {
                 this.$el = this.view.$el;
             } else {
                 this.$el = this.view.$(selector);
+            }
+
+            var bindings = this.view._ribs.bindings,
+                binding;
+
+            for (binding in bindings) {
+                if (bindings.hasOwnProperty(binding)) {
+                    binding = bindings[binding];
+
+                    if (binding._hasInDOMHandler) {
+                        $el = binding.$el.find(selector);
+
+                        if ($el.length) {
+                            this.$el = this.$el.add($el);
+                        }
+                    }
+                }
             }
 
             if (this._hasInDOMHandler) {
@@ -1445,6 +1463,12 @@
             }
 
             return undefined;
+        },
+
+        remove: function () {
+            this.removeBindings();
+
+            return _super(this, 'remove', arguments);
         }
     });
 
