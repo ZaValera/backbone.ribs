@@ -1,4 +1,4 @@
-//     Backbone.Ribs.js 0.4.5
+//     Backbone.Ribs.js 0.4.6
 
 //     (c) 2014 Valeriy Zaytsev
 //     Ribs may be freely distributed under the MIT license.
@@ -23,7 +23,7 @@
     'use strict';
 
     var Ribs = Backbone.Ribs = {
-        version: '0.4.5'
+        version: '0.4.6'
     };
 
     var _super = function (self, method, args) {
@@ -424,8 +424,8 @@
                     throw new Error('wrong binging format ' + JSON.stringify(binding));
                 }
 
-                getter = function () {
-                    var val = getHandler.call(self, self.$el);
+                getter = function (e) {
+                    var val = getHandler.call(self, self.$el, e);
 
                     if (setFilter) {
                         val = setFilter.call(self.view, val);
