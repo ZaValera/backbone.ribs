@@ -80,6 +80,25 @@
         return res;
     };
 
+    var _deepClone = function (obj) {
+        if (!_.isObject(obj)) {
+            return obj;
+        }
+
+        if (_.isArray(obj)) {
+            return obj.slice();
+        }
+
+        var p, clone = {};
+        for (p in obj) {
+            if (obj.hasOwnProperty(p)) {
+                clone[p] = _deepClone(obj[p]);
+            }
+        }
+
+        return clone;
+    };
+
     //optimized
     var getPath = function (path, obj) {
         var p, i, l;
@@ -927,7 +946,7 @@
             //new from Ribs
             //Заменяем все computeds на обычные аргументы
             var computeds = this._ribs.computeds,
-                realAttrs = _.clone(attrs),
+                realAttrs = _deepClone(attrs),
                 computedsAttrs = {},
                 newAttrs,
                 hasComputed = true,
@@ -958,7 +977,7 @@
             ////////////////////////
 
             if (!changing) {
-                this._previousAttributes = _.clone(this.attributes);
+                this._previousAttributes = _deepClone(this.attributes);
 
                 var previousComputeds = {};
 
@@ -1274,6 +1293,20 @@
             }
 
             return json;
+        },
+
+        previous: function(attr) {
+            if (typeof attr !== 'string' || !this._previousAttributes) {
+                return null;
+            }
+
+            var path = _split(attr);
+
+            if (path.length === 1) {
+                return this._previousAttributes[path[0]];
+            } else {
+                return getPath(path, this._previousAttributes);
+            }
         }
     });
 
