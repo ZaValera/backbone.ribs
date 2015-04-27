@@ -335,6 +335,7 @@
             var data = binding.data,
                 filter = binding.filter,
                 options = binding.options || {},
+                callback = binding.callback,
                 events = binding.events || 'change',
                 filters = this.view.filters,
                 paths = [], attrs = [], col = [], changeAttrs = {}, self = this,
@@ -344,6 +345,7 @@
                 setHandler = this.view.handlers[type],
                 getHandler,
                 getFilter, setFilter,
+                getCallback, setCallback,
                 path, model, attr, attrArray, modelAttr, ch, changeAttr,
                 setter, getter,
                 i, l, j, l2;
@@ -388,6 +390,17 @@
             }
             //////////////////////////////
 
+            //Определяемся с колбэком
+            if (callback) {
+                if (typeof callback === 'function') {
+                    getCallback = callback;
+                } else {
+                    getCallback = callback.get;
+                    setCallback = callback.set;
+                }
+            }
+            //////////////////////////////
+
             //Определяем обработчик события при изменении модели/коллекции
             if (setHandler) {
                 setter = function () {
@@ -414,6 +427,10 @@
                     }
 
                     setHandler.call(self, self.$el, attr, bindAttr, binding);
+
+                    if (getCallback) {
+                        getCallback.call(view);
+                    }
                 };
             }
             //////////////////////////////////////////////////////////////
@@ -425,13 +442,18 @@
                 }
 
                 getter = function (e) {
-                    var val = getHandler.call(self, self.$el, e);
+                    var val = getHandler.call(self, self.$el, e),
+                        view = self.view;
 
                     if (setFilter) {
                         val = setFilter.call(self.view, val);
                     }
 
-                    self.view[paths[0].model].set(attr, val, options);
+                    view[paths[0].model].set(attr, val, options);
+
+                    if (setCallback) {
+                        setCallback.call(view, attr, val);
+                    }
                 };
             }
             ///////////////////////////////////////////////////
@@ -987,7 +1009,7 @@
                     path = _split(attr);
                     if (!_.isEqual(getPath(path, current), val)) {
                         escapedPath = path.slice();
-                        
+
                         for (i = 0; i < escapedPath.length; i++) {
                             escapedPath[i] = escapedPath[i].replace(/\./g, '!.');
                         }
@@ -1423,7 +1445,7 @@
                             continue;
                         }
                     }
-                    
+
                     bindings[s].update(types);
                 }
             }
