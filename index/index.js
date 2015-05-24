@@ -281,15 +281,28 @@ require([
                     }
                 },
                 '.second': {
-                    value: 'model.second'
+                    value: {
+                        data: 'model.second',
+                        filter: function (second) {
+                            console.log('binding');
+                            return second;
+                        }
+                    }
                 }
             },
 
             initialize: function () {
-                window.model = this.model = new Backbone.Model({
+                window.model = this.model = new Backbone.Ribs.Model({
                     second: 'tada',
                     hasClass: true,
-                    main: true
+                    main: true,
+                    'la.la': {
+                        foo: 'bar'
+                    }
+                });
+
+                this.model.on('change:second', function () {
+                    console.log('change');
                 });
 
                 this.appendTo($('body'));

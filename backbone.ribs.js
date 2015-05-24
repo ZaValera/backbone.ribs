@@ -346,7 +346,7 @@
                 getHandler,
                 getFilter, setFilter,
                 getCallback, setCallback,
-                path, model, attr, attrArray, modelAttr, ch, changeAttr,
+                path, model, modelName, attr, attrArray, modelAttr, ch, changeAttr,
                 setter, getter,
                 i, l, j, l2;
 
@@ -460,23 +460,24 @@
 
             for (i = 0, l = paths.length; i < l; i++) {
                 path = paths[i];
-                model = path.model;
+                modelName = path.model;
+                model = this.view[modelName];
                 attr = path.attr;
                 attrArray = _split(attr);
                 ch = '';
-                changeAttr = changeAttrs[model] = [];
+                changeAttr = changeAttrs[modelName] = [];
 
-                if (this.view[model] instanceof Backbone.Collection) {
-                    attrs.push(this.view[model].pluck(attr));
+                if (model instanceof Backbone.Collection) {
+                    attrs.push(model.pluck(attr));
 
                     if (setHandler) {
-                        if (col.indexOf(model) === -1) {
-                            col.push(model);
-                            this.view[model].on('add remove reset sort', setter);
+                        if (col.indexOf(modelName) === -1) {
+                            col.push(modelName);
+                            model.on('add remove reset sort', setter);
                         }
                     }
                 } else {
-                    attrs.push(this.view[model].get(attr));
+                    attrs.push(model.get(attr));
                 }
 
                 if (setHandler) {
@@ -488,7 +489,8 @@
                         ch += attrArray[j];
                         changeAttr.push(ch);
 
-                        this.view[model].on('change:' + ch, setter);
+                        model.on('change:' + ch, setter);
+                        this._normalizeModelEvents(model, 'change:' + ch, setter);
                     }
                 }
             }
@@ -512,6 +514,29 @@
             }
 
             this.handlers[type] = handler;
+        },
+
+        _normalizeModelEvents: function (model, name, callback) {
+            if (!model._events) {
+                return;
+            }
+
+            var events = model._events[name],
+                event;
+
+            if (!events) {
+                return;
+            }
+
+            for (var i = 0; i < events.length; i++) {
+                event = events[i];
+
+                if (event.callback === callback) {
+                    events.splice(i, 1);
+                    events.unshift(event);
+                    break;
+                }
+            }
         },
 
         unbind: function (types) {
