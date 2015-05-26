@@ -258,6 +258,7 @@
             var mainView = this.view,
                 View = typeof colBind.view === 'string' ? mainView[colBind.view] : colBind.view,
                 collection = typeof colBind.col === 'string' ? mainView[colBind.col] : colBind.col,
+                waterfallAdding = colBind.waterfallAdding,
                 data = colBind.data || {},
                 selector = this.selector,
                 views = {},
@@ -285,19 +286,59 @@
 
             var colSet = collection.set;
 
-            collection.set = function () {
-                var res = colSet.apply(collection, arguments);
+            collection.set = function (models, options) {
+                var res = colSet.apply(collection, arguments),
+                    wfa = waterfallAdding;
 
-                if (self._toAdd) {
-                    self._fillElByCollection();
+                if (options && options.hasOwnProperty('waterfallAdding')) {
+                    wfa = options.waterfallAdding;
                 }
 
+                if (wfa) {
+                    if (self._toAddArr) {
+                        self._addViewToEl();
+                    }
+                } else {
+                    if (self._toAdd) {
+                        self._fillElByCollection();
+                    }
+                }
+
+                self._toAddArr = undefined;
                 self._toAdd = undefined;
 
                 return res;
             };
 
             this._fillElByCollection();
+        },
+
+        _addViewToEl: function () {
+            var ribsCol = this.handlers.collection,
+                collection = ribsCol.collection,
+                views = ribsCol.views,
+                data = ribsCol.data,
+                View = ribsCol.View,
+                $el = ribsCol.$el,
+                _toAddArr = this._toAddArr,
+                nextModel, nextView, newEl,
+                view, model, i;
+
+            for (i = _toAddArr.length; i--;) {
+                model = _toAddArr[i];
+                nextModel = collection.at(collection.lastIndexOf(model) + 1);
+                view = new View(_.extend(data, {model: model, collection: collection}));
+                views[model.cid] = view;
+
+                newEl = view instanceof Backbone.Ribs.View ? view.getEl()[0] : view.el;
+
+                if (!nextModel) {
+                    $el.append(newEl);
+                } else {
+                    nextView = views[nextModel.cid];
+                    (nextView instanceof Backbone.Ribs.View ? nextView.getEl() : nextView.$el).before(newEl);
+                }
+            }
         },
 
         _fillElByCollection: function (args) {
@@ -701,7 +742,12 @@
                 this._toAdd = {};
             }
 
+            if (!this._toAddArr) {
+                this._toAddArr = [];
+            }
+
             this._toAdd[model.cid] = model;
+            this._toAddArr.push(model);
         },
 
         _removeView: function (model) {
