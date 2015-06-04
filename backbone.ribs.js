@@ -506,7 +506,7 @@
                 attr = path.attr;
                 attrArray = _split(attr);
                 ch = '';
-                changeAttr = changeAttrs[modelName] = [];
+                changeAttr = changeAttrs[modelName] || (changeAttrs[modelName] = []);
 
                 if (model instanceof Backbone.Collection) {
                     attrs.push(model.pluck(attr));
