@@ -324,6 +324,12 @@
                 nextModel, nextView, newEl,
                 view, model, i;
 
+            if (collection.comparator) {
+                _toAddArr.sort(function (a, b) {
+                    return collection.indexOf(a) - collection.indexOf(b);
+                });
+            }
+
             for (i = _toAddArr.length; i--;) {
                 model = _toAddArr[i];
                 nextModel = collection.at(collection.lastIndexOf(model) + 1);
