@@ -551,6 +551,10 @@
             if (setHandler) {
                 setHandler.call(this, this.$el, modelAttr, bindAttr, binding);
 
+                if (getCallback) {
+                    getCallback.call(this.view);
+                }
+
                 handler.setter = setter;
             }
 
