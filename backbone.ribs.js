@@ -88,6 +88,10 @@
             path = _split(path);
         }
 
+        if (path.length === 1) {
+            return obj[path[0]];
+        }
+
         for (i = 0, l = path.length; i < l; i++) {
             p = path[i];
 
@@ -980,6 +984,26 @@
             this.initialize.apply(this, arguments);
         },
 
+        previous: function(attr) {
+            if (this.deepPrevious) {
+                if (attr == null || !this._previousAttributes) {
+                    return null;
+                }
+
+                return getPath(attr, this._previousAttributes);
+            } else {
+                return _super(this, 'previous', arguments);
+            }
+        },
+
+        previousAttributes: function() {
+            if (this.deepPrevious) {
+                return _.cloneDeep(this._previousAttributes);
+            } else {
+                return _super(this, 'previousAttributes', arguments);
+            }
+        },
+
         get: function (attr) {
             if (typeof attr !== 'string') {
                 return undefined;
@@ -991,13 +1015,7 @@
                 return computeds[attr].get();
             }
 
-            var path = _split(attr);
-
-            if (path.length === 1) {
-                return this.attributes[path[0]];
-            } else {
-                return getPath(path, this.attributes);
-            }
+            return getPath(attr, this.attributes);
         },
 
         set: function (key, val, options) {
@@ -1061,7 +1079,11 @@
             ////////////////////////
 
             if (!changing) {
-                this._previousAttributes = _.clone(this.attributes);
+                if (this.deepPrevious) {
+                    this._previousAttributes = _.cloneDeep(this.attributes);
+                } else {
+                    this._previousAttributes = _.clone(this.attributes);
+                }
 
                 var previousComputeds = {};
 
