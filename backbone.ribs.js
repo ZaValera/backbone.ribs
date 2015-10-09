@@ -26,6 +26,38 @@
         version: '0.4.6'
     };
 
+    var _toString = Object.prototype.toString,
+        _tags = {
+            array: _toString.call([]),
+            object: _toString.call({})
+        };
+
+    var _cloneDeep = function (obj) {
+        var tag = _toString.call(obj),
+            result;
+
+        switch (tag) {
+            case _tags.object:
+                result = {};
+                for (var v in obj) {
+                    if (obj.hasOwnProperty(v)) {
+                        result[v] = _cloneDeep(obj[v]);
+                    }
+                }
+                return result;
+
+            case _tags.array:
+                result = [];
+                for (var i = obj.length; i--;) {
+                    result[i] = _cloneDeep(obj[i]);
+                }
+                return result;
+
+            default:
+                return obj;
+        }
+    };
+
     var _super = function (self, method, args) {
         return self._super.prototype[method].apply(self, args);
     };
@@ -998,7 +1030,7 @@
 
         previousAttributes: function() {
             if (this.deepPrevious) {
-                return _.cloneDeep(this._previousAttributes);
+                return _cloneDeep(this._previousAttributes);
             } else {
                 return _super(this, 'previousAttributes', arguments);
             }
@@ -1080,7 +1112,7 @@
 
             if (!changing) {
                 if (this.deepPrevious) {
-                    this._previousAttributes = _.cloneDeep(this.attributes);
+                    this._previousAttributes = _cloneDeep(this.attributes);
                 } else {
                     this._previousAttributes = _.clone(this.attributes);
                 }
