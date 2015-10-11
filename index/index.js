@@ -189,11 +189,64 @@ require([
 
         console.log(model.get('foo!.bar')); //"dot"*/
 
+        /*window.m1 =  new (Backbone.Ribs.Model.extend({
+            computeds: {
+                comp1: {
+                    deps: ['bar1.foo', 'comp2'],
+                    get: function (bar1, comp2) {
+                        return bar1 + '-' + comp2;
+                    },
+                    set: function (val) {
+                        var res = val.split('-');
+
+                        return {
+                            bar1: res[0],
+                            comp2: res[1]
+                        };
+                    }
+                },
+
+                comp2: {
+                    deps: ['bar2.foo', 'comp3'],
+                    get: function (bar2, comp1) {
+                        return bar2 + ';' + comp1;
+                    },
+                    set: function (val) {
+                        var res = val.split(';');
+
+                        return {
+                            bar2: res[0],
+                            comp1: res[1]
+                        };
+                    }
+                },
+                comp3: {
+                    deps: ['comp1'],
+                    get: function (comp1) {
+                        return comp1;
+                    },
+                    set: function (val) {
+                        return {
+                            comp1: val
+                        };
+                    }
+                }
+            },
+
+            defaults: {
+                bar1: {
+                    foo: 10
+                },
+                bar2: {
+                    foo: 20
+                }
+            }
+        }));*/
 
 
 
 
-        /*var model = window.m2 =  new (Backbone.Ribs.Model.extend({
+        var model = window.m2 =  new (Backbone.Ribs.Model.extend({
             computeds: {
                 comp1: {
                     deps: ['bar1'],
@@ -208,13 +261,6 @@ require([
                 },
 
                 comp2: {
-                    deps: ['comp1', 'comp3', 'comp4'],
-                    get: function (comp1, comp3, comp4) {
-                        return comp1 + ' ' + comp3 + ' ' + comp4;
-                    }
-                },
-
-                comp3: {
                     deps: ['bar2'],
                     get: function (bar2) {
                         return bar2 * 10;
@@ -226,8 +272,46 @@ require([
                     }
                 },
 
-                comp4: function () {
-                    return 5;
+                comp3: {
+                    deps: ['comp1', 'comp2', 'bar1'],
+                    get: function (comp1, comp3, bar1) {
+                        return comp1 + ' ' + comp3 + ' ' + bar1;
+                    },
+                    set: function (val) {
+                        var res = val.split(' ');
+                        return {
+                            comp1: parseInt(res[0]),
+                            comp2: parseInt(res[1]),
+                            bar1: parseInt(res[2])
+                        };
+                    }
+                },
+
+                comp4: {
+                    deps: ['comp3'],
+                    get: function (comp3) {
+                        return comp3 + 'bla';
+                    },
+                    set: function (val) {
+                        return {
+                            comp3: val.slice(0, -3)
+                        };
+                    }
+                },
+
+                comp5: {
+                    deps: ['comp3', 'comp4'],
+                    get: function (comp3, comp4) {
+                        return comp3 + 'zzz' + comp4;
+                    },
+                    set: function (val) {
+                        var res = val.split('zzz');
+
+                        return {
+                            comp3: res[0],
+                            comp4: res[1]
+                        };
+                    }
                 }
             },
 
@@ -235,7 +319,15 @@ require([
                 bar1: 10,
                 bar2: 20
             }
-        }));*/
+        }));
+
+        m2.on('change:bar1', function (model, value) {console.log('bar1:', value)});
+        m2.on('change:bar2', function (model, value) {console.log('bar2:', value)});
+        m2.on('change:comp1', function (model, value) {console.log('comp1:', value)});
+        m2.on('change:comp2', function (model, value) {console.log('comp2:', value)});
+        m2.on('change:comp3', function (model, value) {console.log('comp3:', value)});
+        m2.on('change:comp4', function (model, value) {console.log('comp4:', value)});
+        m2.on('change:comp5', function (model, value) {console.log('comp5:', value)});
 
         /*var TestView = Backbone.Ribs.View.extend({
 
@@ -266,7 +358,7 @@ require([
 
         window.v =  new TestView();*/
 
-        var View = Backbone.Ribs.View.extend({
+       /* var View = Backbone.Ribs.View.extend({
             el: '<div class="toggle">' +
                     '<div class="indom">first</div>' +
                     '<input class="second">' +
@@ -311,7 +403,7 @@ require([
             }
         });
 
-        window.view = new View();
+        window.view = new View();*/
 
         /*window.view.removeBindings2({
             el: 'classes'

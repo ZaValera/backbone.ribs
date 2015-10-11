@@ -160,6 +160,26 @@
         }
     };
 
+    var setPath = function (path, val, obj) {
+        var p;
+
+        path = path.slice();
+
+        while (path.length) {
+            p = path.shift();
+
+            if (path.length) {
+                if (!(obj.hasOwnProperty(p) && obj[p] instanceof Object)) {
+                    throw new Error('set: can\'t set anything to "' + p + '", typeof == "' + typeof obj[p] + '"');
+                }
+
+                obj = obj[p];
+            } else {
+                obj[p] = val;
+            }
+        }
+    };
+
     //optimized
     var splitModelAttr = function (modelAttr) {
         var parsed = modelAttr.match(/^(?:!\.|[^.])+/),
@@ -191,11 +211,18 @@
             this.set = function () {
                 throw new Error('set: computed "' + name + '" has no set method');
             };
-            this._simple = true;
+
+            this.isSimple = true;
             return this;
         }
 
-        this._deps = data.deps;
+        var deps = data.deps;
+
+        if (!_.isArray(deps)) {
+            throw new Error('init computed: computed "' + name + '" - "deps" must be an array');
+        }
+
+        this.deps = deps;
         this._get = data.get;
         this.set = function () {return data.set.apply(model, arguments);};
         this._model = model;
@@ -205,34 +232,27 @@
 
     _.extend(Computed.prototype, {
         //optimized
-        update: function (options) {
-            if (this._simple) {
+        update: function () {
+            if (this.isSimple) {
                 return;
             }
 
             var deps = [],
-                val;
+                val, i;
 
-            this._previous = this.value;
-
-            if (this._deps instanceof Array) {
-                for (var i = 0, l = this._deps.length; i < l; i++) {
-                    try {
-                        val = this._model.get(this._deps[i]);
-                    } catch (e) {
-                        val = undefined;
-                    }
-
-                    deps.push(val);
+            for (i = this.deps.length; i--;) {
+                try {
+                    val = this._model.get(this.deps[i]);
+                } catch (e) {
+                    val = undefined;
                 }
+
+                deps[i] = val;
             }
 
             this.value = this._get.apply(this._model, deps);
-
-            if (!_.isEqual(this._previous, this.value)) {
-                this._model.trigger('change:' + this.name, this._model, this.value, options);
-            }
         },
+
         //optimized
         get: function () {
             return this.value;
@@ -987,7 +1007,8 @@
         constructor: function(attributes, options) {
             this._ribs = {
                 computeds: {},
-                computedsDeps: {}
+                computedsDeps: {},
+                init: true
             };
 
             var attrs = attributes || {};
@@ -1010,9 +1031,11 @@
                 }
             }
 
+            this.addComputeds(this.computeds);
             this.set(escapedAttrs, options);
             this.changed = {};
-            this._initComputeds();
+
+            this._ribs.init = false;
             this.initialize.apply(this, arguments);
         },
 
@@ -1050,12 +1073,148 @@
             return getPath(attr, this.attributes);
         },
 
+        _convertComputedsToArguments: function (attrs) {
+            var newAttrs = {},
+                computeds = this._ribs.computeds,
+                attr,
+                newValue,
+                realAttrs,
+                hasComputed;
+
+            _.extend(newAttrs, attrs);
+
+            do {
+                hasComputed = false;
+                realAttrs = {};
+
+                for (attr in newAttrs) {
+                    if (newAttrs.hasOwnProperty(attr)) {
+                        if (attr in computeds) {
+                            hasComputed = true;
+                            newValue = newAttrs[attr];
+
+                            _.extend(realAttrs, computeds[attr].set(newValue));
+
+                            delete newAttrs[attr];
+                        }
+                    }
+                }
+
+                _.extend(newAttrs, realAttrs);
+            } while (hasComputed);
+
+            return newAttrs;
+        },
+
+        _savePrevComputeds: function (prev, computeds) {
+            prev = this._previousAttributes;
+
+            for (var attr in computeds) {
+                if (computeds.hasOwnProperty(attr)) {
+                    prev[attr] = computeds[attr].value;
+                }
+            }
+        },
+
+        _getComputedsToUpdate: function (deps) {
+            var computedsDeps = this._ribs.computedsDeps,
+                toUpdate = [],
+                prev, dep, index, i;
+
+            if (!deps.length) {
+                return toUpdate;
+            }
+
+            var findDeps = function (attrs) {
+                var newDeps = [],
+                    deps, i, j, l1, l2;
+
+                for (i = 0, l1 = attrs.length; i < l1; i++) {
+                    deps = computedsDeps[attrs[i]];
+
+                    if (deps) {
+                        for (j = 0, l2 = deps.length; j < l2; j++) {
+                            dep = deps[j];
+
+                            if (newDeps.indexOf(dep) === -1) {
+                                newDeps.push(dep);
+                            }
+                        }
+                    }
+                }
+
+                return newDeps;
+            };
+
+            while (true) {
+                deps = findDeps(deps);
+
+                if (!deps.length) {
+                    break;
+                }
+
+                prev = toUpdate[toUpdate.length - 1];
+
+                if (prev) {
+                    for (i = 0; i < deps.length; i++) {
+                        index = prev.indexOf(deps[i]);
+
+                        if (index !== -1) {
+                            prev.splice(index, 1);
+                        }
+                    }
+                }
+
+                toUpdate.push(deps);
+            }
+
+            return Array.prototype.concat.apply([], toUpdate);
+        },
+
+        _propagationTrigger: function (attr, options) {
+            var escapedPath = attr.escapedPath.slice();
+
+            if (escapedPath.length) {
+                while (escapedPath.length - 1) {
+                    escapedPath.length--;
+
+                    this.trigger('change:' + escapedPath.join('.'), this, undefined, options);
+                }
+            }
+        },
+
+        _unsetComputeds: function (attrs) {
+            var computeds = this._ribs.computeds;
+
+            for (var attr in attrs) {
+                if (attrs.hasOwnProperty(attr)) {
+                    if (attr in computeds) {
+                        this.removeComputeds(attr);
+                    }
+                }
+            }
+        },
+
+        _updateComputeds: function (attrs) {
+            var computeds = this._ribs.computeds,
+                computed, attr;
+
+            for (var i = 0; i < attrs.length; i++) {
+                attr = attrs[i];
+                computed = computeds[attr];
+                computed.update();
+                this.attributes[attr] = computed.value;
+            }
+        },
+
         set: function (key, val, options) {
             if (key == null) {
                 return this;
             }
 
-            var attrs,changes,changing,current,prev,silent,unset,path,escapedPath,attr,i,j,l;
+            var attrs,attr,silent,unset,changes,changing,changed,current,prev,i;
+
+            var computeds,computedsToUpdate,changedAttrs,newAttrs,path,escapedPath,l;
 
             if (typeof key === 'object') {
                 attrs = key;
@@ -1078,37 +1237,9 @@
             this._changing  = true;
 
             //new from Ribs
-            //Заменяем все computeds на обычные аргументы
-            var computeds = this._ribs.computeds,
-                realAttrs = _.clone(attrs),
-                computedsAttrs = {},
-                newAttrs,
-                hasComputed = true,
-                firstLoop = true;
-
-
-            while (hasComputed) {
-                hasComputed = false;
-                newAttrs = {};
-
-                for (attr in attrs) {
-                    if (attrs.hasOwnProperty(attr)) {
-                        if (attr in computeds) {
-                            hasComputed = true;
-                            _.extend(newAttrs, computeds[attr].set(attrs[attr]));
-                            if (firstLoop) {
-                                computedsAttrs[attr] = attrs[attr];
-                            }
-
-                            delete attrs[attr];
-                            _.extend(attrs, newAttrs);
-                        }
-                    }
-                }
-
-                firstLoop = false;
-            }
-            ////////////////////////
+            computeds       = this._ribs.computeds;
+            changedAttrs    = [];
+            ////////////////
 
             if (!changing) {
                 if (this.deepPrevious) {
@@ -1117,36 +1248,34 @@
                     this._previousAttributes = _.clone(this.attributes);
                 }
 
-                var previousComputeds = {};
-
-                for (attr in computeds) {
-                    if (computeds.hasOwnProperty(attr)) {
-                        previousComputeds[attr] = computeds[attr].value;
-                    }
-                }
-
-                _.extend(this._previousAttributes, previousComputeds);
-
                 this.changed = {};
+
+                this._savePrevComputeds(this._previousAttributes, computeds);
+            }
+
+            //Заменяем все computeds на обычные аргументы
+            newAttrs = this._convertComputedsToArguments(attrs);
+
+            //Если передан флаг unset удаляем computed
+            if (unset) {
+                this._unsetComputeds(attrs);
             }
 
             current = this.attributes;
+            changed = this.changed;
             prev = this._previousAttributes;
 
-            if (this.idAttribute in attrs) {
-                this.id = attrs[this.idAttribute];
-            }
-
             //new from Ribs
-            for (attr in attrs) {
-                if (attrs.hasOwnProperty(attr)) {
-                    val = attrs[attr];
+            for (attr in newAttrs) {
+                if (newAttrs.hasOwnProperty(attr)) {
+                    val = newAttrs[attr];
                     path = _split(attr);
-                    if (!_.isEqual(getPath(path, current), val)) {
-                        escapedPath = path.slice();
 
-                        for (i = 0; i < escapedPath.length; i++) {
-                            escapedPath[i] = escapedPath[i].replace(/\./g, '!.');
+                    if (!_.isEqual(getPath(path, current), val)) {
+                        escapedPath = [];
+
+                        for (i = path.length; i--;) {
+                            escapedPath[i] = path[i].replace(/\./g, '!.');
                         }
 
                         changes.push({
@@ -1155,76 +1284,45 @@
                             attr: attr,
                             val: val
                         });
+
+                        changedAttrs.push(attr);
                     }
 
                     if (!_.isEqual(getPath(path, prev), val)) {
-                        this.changed[attr] = val;
+                        changed[attr] = val;
                     } else {
-                        delete this.changed[attr];
+                        delete changed[attr];
                     }
 
-                    if (unset && (attr in realAttrs)) {
+                    if (unset && (attr in attrs)) {
                         deletePath(path, current);
                     } else {
-                        this._setPath(path, val);
+                        setPath(path, val, current);
                     }
                 }
             }
 
-            //Если передан флаг unset удаляем computed
-            for (attr in computedsAttrs) {
-                if (computedsAttrs.hasOwnProperty(attr) && unset) {
-                    this.removeComputed(attr);
-                    delete computedsAttrs[attr];
-                }
-            }
+            this.id = this.get(this.idAttribute);
 
-            var computedsDeps = this._ribs.computedsDeps,
-                computedsToUpdate = [],
-                deps,
-                dep;
+            computedsToUpdate = this._getComputedsToUpdate(changedAttrs);
+            this._updateComputeds(computedsToUpdate);
 
-            for (i = 0, l = changes.length; i < l; i++) {
-                attr = changes[i].attr;
-                deps = computedsDeps['change:' + attr];
+            if (!silent && changes.length) {
+                this._pending = options;
 
-                if (deps) {
-                    for (j = 0; j < deps.length; j++) {
-                        dep = deps[j];
-
-                        if (computedsToUpdate.indexOf(dep) === -1) {
-                            computedsToUpdate.push(dep);
-                        }
-                    }
-                }
-            }
-
-            if (!silent) {
-                l = changes.length;
-
-                if (l) {
-                    this._pending = options;
-                }
-
-                for (i = 0; i < l; i++) {
+                for (i = 0, l = changes.length; i < l; i++) {
                     this.trigger('change:' + changes[i].attr, this, changes[i].val, options);
 
                     if (options.propagation) {
-                        escapedPath = changes[i].escapedPath.slice();
-
-                        if (escapedPath.length) {
-                            while (escapedPath.length - 1) {
-                                escapedPath.length--;
-
-                                this.trigger('change:' + escapedPath.join('.'), this, undefined, options);
-                            }
-                        }
+                        this._propagationTrigger(changes[i], options);
                     }
                 }
-            }
 
-            for (i = 0; i < computedsToUpdate.length; i++) {
-                computeds[computedsToUpdate[i]].update(options);
+                //направление не менять
+                for (i = 0, l = computedsToUpdate.length; i < l; i++) {
+                    attr = computedsToUpdate[i];
+                    this.trigger('change:' + attr, this, computeds[attr].value, options);
+                }
             }
             /////////////////////////////
 
@@ -1244,83 +1342,18 @@
             return this;
         },
 
-        trigger: function(name) {
-            var computedsDeps = this._ribs.computedsDeps,
-                options = arguments[3],
-                i, l;
-
-            if (typeof name === 'string' && name in computedsDeps) {
-                var computeds = this._ribs.computeds,
-                    deps = computedsDeps[name],
-                    computed;
-
-                for (i = 0, l = deps.length; i < l; i++) {
-                    computed = computeds[deps[i]];
-                    computed.update(options);
-                }
-            }
-
-            if (options && options.silent) {
-                return this;
-            }
-
-            return _super(this, 'trigger', arguments);
-        },
-
-        _setPath: function (path, val) {
-            var attr = this.attributes,
-                p;
-
-            path = path.slice();
-
-            while (path.length) {
-                p = path.shift();
-
-                if (path.length) {
-                    if (!(attr.hasOwnProperty(p) && attr[p] instanceof Object)) {
-                        throw new Error('set: can\'t set anything to "' + p + '", typeof == "' + typeof attr[p] + '"');
-                    }
-
-                    attr = attr[p];
-                } else {
-                    attr[p] = val;
-                }
-            }
-        },
-
-        _initComputeds: function () {
-            var computeds = this.computeds,
-                name;
-
-            for (name in computeds) {
-                if (computeds.hasOwnProperty(name)) {
-                    this.addComputeds(name, computeds[name], {silent: true});
-                }
-            }
-
-            //Это не ошибка, сначала создаем все computeds, а потом обновляем
-            for (name in computeds) {
-                if (computeds.hasOwnProperty(name)) {
-                    this._ribs.computeds[name].update();
-                }
-            }
-        },
-
         //optimized
-        addComputeds: function (key, val, options) {
+        addComputeds: function (key, val) {
             var computedsDeps = this._ribs.computedsDeps,
-                deps, dep, computed, computedsDep, silent,
+                deps, dep, computed, computedsDep,
                 depArr, nextDepArr, name, attrs, i, j, l1, l2;
 
             if (typeof key === 'string') {
                 attrs = {};
                 attrs[key] = val;
             } else {
-                options = val;
                 attrs = key;
             }
-
-            silent = options && options.silent;
 
             for (name in attrs) {
                 if (attrs.hasOwnProperty(name)) {
@@ -1328,43 +1361,118 @@
                         throw new Error('addComputeds: computed name "' + name + '" is already used');
                     }
 
-                    computed = attrs[name];
-                    deps = computed.deps;
+                    computed = this._ribs.computeds[name] = new Computed(attrs[name], name, this);
 
-                    if (deps instanceof Array) {
-                        for (i = 0, l1 = deps.length; i < l1; i++) {
-                            depArr = _split(deps[i]);
-                            dep = 'change:' + depArr[0].replace(/\./g, '!.');
-
-                            for (j = 0, l2 = depArr.length; j < l2; j++) {
-                                computedsDep = computedsDeps[dep];
-
-                                if (computedsDep) {
-                                    if (computedsDep.indexOf(name) === -1) {
-                                        computedsDep.push(name);
-                                    }
-                                } else {
-                                    computedsDeps[dep] = [name];
-                                }
-
-                                nextDepArr = depArr[j + 1];
-
-                                if (nextDepArr) {
-                                    dep += '.' + nextDepArr.replace(/\./g, '!.');
-                                }
-                            }
-                        }
+                    if (computed.isSimple) {
+                        continue;
                     }
 
-                    computed = this._ribs.computeds[name] = new Computed(computed, name, this);
+                    deps = computed.deps;
 
-                    if (!silent) {
-                        computed.update();
+                    for (i = 0, l1 = deps.length; i < l1; i++) {
+                        depArr = _split(deps[i]);
+                        dep = depArr[0].replace(/\./g, '!.');
+
+                        for (j = 0, l2 = depArr.length; j < l2; j++) {
+                            computedsDep = computedsDeps[dep];
+
+                            if (computedsDep) {
+                                if (computedsDep.indexOf(name) === -1) {
+                                    computedsDep.push(name);
+                                }
+                            } else {
+                                computedsDeps[dep] = [name];
+                            }
+
+                            nextDepArr = depArr[j + 1];
+
+                            if (nextDepArr) {
+                                dep += '.' + nextDepArr.replace(/\./g, '!.');
+                            }
+                        }
                     }
                 }
             }
 
+            this._checkForLoop(attrs);
+
+            if (!this._ribs.init) {
+                this._initComputeds(attrs);
+            }
+
             return this;
+        },
+
+        _initComputeds: function (attrs) {
+            var computeds= this._ribs.computeds,
+                realAttrs = [],
+                compAttrs = [],
+                toUpdate,
+                attr;
+
+            for (attr in attrs) {
+                if (attrs.hasOwnProperty(attr)) {
+                    compAttrs.push(attr);
+                }
+            }
+
+            while (compAttrs.length) {
+                attr = compAttrs.pop();
+
+                if (attr in computeds) {
+                    Array.prototype.push.apply(compAttrs, computeds[attr].deps);
+                } else {
+                    if (realAttrs.indexOf(attr) === -1) {
+                        realAttrs.push(attr);
+                    }
+                }
+            }
+
+            toUpdate = this._getComputedsToUpdate(realAttrs);
+
+            this._updateComputeds(toUpdate);
+        },
+
+        _checkForLoop: function (newComputeds) {
+            var computeds = this._ribs.computeds,
+                loopref;
+
+            var find = function (name, computed, computeds) {
+                var deps = computed.deps,
+                    loop = computed.name;
+
+                if (!deps) {
+                    return false;
+                }
+
+                if (deps.indexOf(name) !== -1) {
+                    return loop;
+                }
+
+                for (var i = 0; i < deps.length; i++) {
+                    var dep = deps[i];
+
+                    if (computeds.hasOwnProperty(dep)) {
+                        loop = find(name, computeds[dep], computeds);
+
+                        if (loop) {
+                            return loop;
+                        }
+                    }
+                }
+
+                return false;
+            };
+
+            for (var name in newComputeds) {
+                if (newComputeds.hasOwnProperty(name)) {
+                    loopref = find(name, computeds[name], computeds);
+
+                    if (loopref) {
+                        throw new Error('addComputeds(): a circular references in computeds "' + name + ' <-> ' + loopref +'"');
+                    }
+                }
+            }
         },
 
         //redundant
@@ -1410,23 +1518,23 @@
                 }
 
                 delete this._ribs.computeds[name];
+                delete this.attributes[name];
             }
 
             return this;
         },
 
         toJSON: function (options) {
-            var json = _super(this, 'toJSON', arguments);
+            var computeds = this._ribs.computeds,
+                json = {};
 
-            if (options && options.computeds) {
-                var computeds = this._ribs.computeds,
-                    computed;
-
-                for (var name in computeds) {
-                    if (computeds.hasOwnProperty(name)) {
-                        computed = computeds[name];
-                        json[name] = computed._simple ? computed.get() : computed.value;
+            for (var attr in this.attributes) {
+                if (this.attributes.hasOwnProperty(attr)) {
+                    if (computeds.hasOwnProperty(attr) && (!options || !options.computeds)) {
+                        continue;
                     }
+
+                    json[attr] = this.attributes[attr];
                 }
             }
 
