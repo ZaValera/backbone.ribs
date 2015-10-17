@@ -329,12 +329,12 @@ require([
         m2.on('change:comp4', function (model, value) {console.log('comp4:', value)});
         m2.on('change:comp5', function (model, value) {console.log('comp5:', value)});
 
-        /*var TestView = Backbone.Ribs.View.extend({
+        var TestView = Backbone.Ribs.View.extend({
 
             bindings: {
                 'input': {
                     'file': {
-                        data: 'model.text'
+                        data: 'model.asdf'
                     }
                 }
             },
@@ -356,7 +356,7 @@ require([
             }
         });
 
-        window.v =  new TestView();*/
+        window.v =  new TestView();
 
        /* var View = Backbone.Ribs.View.extend({
             el: '<div class="toggle">' +

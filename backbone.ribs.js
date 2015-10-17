@@ -5,10 +5,15 @@
 //     For all details and documentation:
 //     https://github.com/ZaValera/backbone.ribs
 
-(function(root, factory) {
+//JSHint settings
+/* globals module: false */
+/* globals require: false */
+/* globals define: false */
+
+(function (root, factory) {
     'use strict';
 
-    if (typeof exports !== 'undefined') {
+    if (typeof module === 'object' && typeof module.exports === 'object') {
         // Define as CommonJS export:
         module.exports = factory(require('underscore'), require('backbone'));
     } else if (typeof define === 'function' && define.amd) {
@@ -19,8 +24,10 @@
         factory(root._, root.Backbone);
     }
 
-}(this, function(_, Backbone) {
+}(this, function (_, Backbone) {
     'use strict';
+
+    var $ = Backbone.$;
 
     var Ribs = Backbone.Ribs = {
         version: '0.4.6'
@@ -186,14 +193,13 @@
             model,
             attr;
 
-        try {
+        if (parsed !== null) {
             model = parsed[0];
             attr = modelAttr.slice(model.length + 1);
-            if (!attr.length || !model.length) {
-                throw '';
-            }
-        } catch (e) {
-            throw new Error('wrong binging data"' + modelAttr + '"');
+        }
+
+        if (!model || !attr || !model.length || !attr.length) {
+            throw new Error('wrong binging data - "' + modelAttr + '"');
         }
 
         return {
@@ -1224,7 +1230,9 @@
                 attrs[key] = val;
             }
 
-            options || (options = {});
+            if (!options) {
+                options = {};
+            }
 
             if (!this._validate(attrs, options)) {
                 return false;
@@ -1544,6 +1552,12 @@
 
     Ribs.View = Backbone.View.extend({
         _super: Backbone.View,
+
+        deepPrevious: false,
+
+        _$el: null,
+
+        _el: null,
 
         constructor: function(attributes, options) {
             this._ribs = {

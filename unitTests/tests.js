@@ -1092,6 +1092,9 @@ $(function () {
                 foo: 'bar'
             }
         }});
+
+        equal(typeof bindingView.getCollectionViews('.met-apply-col'), 'object', 'getCollectionViews return object');
+
         $items = bindingView.$('.met-apply-col').children('.item-view');
         equal($items.length, 1, 'Apply collection');
 
@@ -1122,5 +1125,8 @@ $(function () {
         equal($items.length, 0, 'Remove col binding 2');
         model.set('foo', 'remove');
         equal($('.met-remove-bind-text').text(), 'foo', 'Remove simple binding');
+
+        bindingView.appendTo($('.wrapper'));
+        strictEqual($('.wrapper').find('.met-bind')[0], bindingView.el, 'appendTo method');
     });
 });
