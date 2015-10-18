@@ -275,7 +275,12 @@ require([
             }
         }));*/
 
-        var model = window.m2 =  new (Backbone.Ribs.Model.extend({
+        var model = window.m2 = new (Backbone.Ribs.Model.extend({
+            defaults: {
+                bar1: 10,
+                bar2: 20
+            },
+
             computeds: {
                 comp1: {
                     deps: ['bar1'],
@@ -342,11 +347,6 @@ require([
                         };
                     }
                 }
-            },
-
-            defaults: {
-                bar1: 10,
-                bar2: 20
             }
         }));
 

@@ -426,13 +426,13 @@ $(function () {
         model.set('comp3', '100-110 100', {unset: true});
         equal(model.get('comp3'), undefined, 'Get updated computed after unset');
         equal(model.previous('comp3'), '80-90 80', 'Previous updated computed after unset');
-        equal(model.get('bar2'), 100, 'Get deps after unset');
+        equal(model.get('bar2'), 80, 'Get deps after unset');
         equal(model.previous('bar2'), 80, 'Previous deps after unset');
-        equal(model.get('comp2'), '110 100', 'Get deps computed after unset');
+        equal(model.get('comp2'), '90 80', 'Get deps computed after unset');
         equal(model.previous('comp2'), '90 80', 'Previous deps computed after unset');
-        equal(model.get('bar1'), 110, 'Get deps deps after unset');
+        equal(model.get('bar1'), 90, 'Get deps deps after unset');
         equal(model.previous('bar1'), 90, 'Previous deps deps after unset');
-        equal(model.get('comp1'), 1100, 'Get deps deps deps after unset');
+        equal(model.get('comp1'), 900, 'Get deps deps deps after unset');
         equal(model.previous('comp1'), 900, 'Previous deps deps deps after unset');
     });
     test('Methods', function () {
