@@ -46,6 +46,38 @@ require([
             }
         };
 
+        var MMM = Backbone.Ribs.Model.extend({
+            defaults: {
+                foo: 'a'
+            },
+
+            computeds: {
+                comp: {
+                    deps: ['foo'],
+                    get: function (foo) {
+                        return foo + '_comp';
+                    },
+                    set: function (val) {
+                        return {
+                            foo: val.split('_')[0]
+                        };
+                    }
+                },
+                comp2: {
+                    deps: ['comp'],
+                    get: function (comp) {
+                        return comp + '_123';
+                    }
+                }
+            }
+        });
+
+        window.mmm = new MMM();
+
+        mmm.on('change:foo', function (model, value) {console.log('foo:', value)});
+        mmm.on('change:comp', function (model, value) {console.log('comp:', value)});
+        mmm.on('change:comp2', function (model, value) {console.log('comp2:', value)});
+
 
         /*var model = window.model = new (Backbone.Ribs.Model.extend(_.cloneDeep(extend)));
 
@@ -243,9 +275,6 @@ require([
             }
         }));*/
 
-
-
-
         var model = window.m2 =  new (Backbone.Ribs.Model.extend({
             computeds: {
                 comp1: {
@@ -329,12 +358,12 @@ require([
         m2.on('change:comp4', function (model, value) {console.log('comp4:', value)});
         m2.on('change:comp5', function (model, value) {console.log('comp5:', value)});
 
-        var TestView = Backbone.Ribs.View.extend({
+        /*var TestView = Backbone.Ribs.View.extend({
 
             bindings: {
                 'input': {
                     'file': {
-                        data: 'model.asdf'
+                        data: 'model.text'
                     }
                 }
             },
@@ -356,7 +385,7 @@ require([
             }
         });
 
-        window.v =  new TestView();
+        window.v =  new TestView();*/
 
        /* var View = Backbone.Ribs.View.extend({
             el: '<div class="toggle">' +

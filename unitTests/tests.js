@@ -228,9 +228,9 @@ $(function () {
                 },
 
                 comp2: {
-                    deps: ['comp1', 'comp3', 'comp4', 'bar2'],
-                    get: function (comp1, comp3, comp4, bar2) {
-                        return comp1 + ' ' + comp3 + ' ' + comp4 + ' ' + bar2;
+                    deps: ['comp1', 'comp3', 'bar2'],
+                    get: function (comp1, comp3, bar2) {
+                        return comp1 + ' ' + comp3 + ' ' + bar2;
                     }
                 },
 
@@ -239,10 +239,6 @@ $(function () {
                     get: function (bar2) {
                         return bar2 * 10;
                     }
-                },
-
-                comp4: function () {
-                    return this.get('bar1')/10;
                 },
 
                 comp5: {
@@ -274,20 +270,17 @@ $(function () {
             }
         }));
 
-        equal(model.get('comp4'), 1, 'Get Simple Computed first time');
-        equal(model.get('comp2'), '100 200 1 20', 'Get Computed deps on other computed after init');
+        equal(model.get('comp2'), '100 200 20', 'Get Computed deps on other computed after init');
         equal(model.get('comp1'), 100, 'Get Deps Computed after init');
         equal(model.get('comp3'), 200, 'Get Deps Computed after init 2');
 
-        equal(model.previous('comp4'), undefined, 'Previous Simple Computed after init');
         equal(model.previous('comp2'), undefined, 'Previous Computed deps on other computed after init');
         equal(model.previous('comp1'), undefined, 'Previous Deps Computed after init');
         equal(model.previous('comp3'), undefined, 'Previous Deps Computed after init 2');
 
         model.set('bar1', 30);
-        equal(model.get('comp4'), 3, 'Get Simple Computed after set');
         equal(model.get('comp1'), 300, 'Get Deps Computed after set');
-        equal(model.get('comp2'), '300 200 3 20', 'Get Computed deps on other computed after set');
+        equal(model.get('comp2'), '300 200 20', 'Get Computed deps on other computed after set');
 
         model.set('bar2', 40, {silent: true});
         equal(model.get('comp3'), 400, 'Get Deps Computed after silent set');
@@ -452,8 +445,11 @@ $(function () {
                     }
                 },
 
-                comp2: function () {
-                    return 5;
+                comp2: {
+                    deps: ['bar2'],
+                    get: function (bar2) {
+                        return bar2 * 10;
+                    }
                 }
             },
 
