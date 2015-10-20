@@ -459,6 +459,10 @@ $(function () {
             }
         }));
 
+        equal(model.isComputed('comp1'), true, 'isComputed computed');
+        equal(model.isComputed('bar1'), false, 'isComputed attribute');
+        equal(model.isComputed('foo'), false, 'isComputed undefined');
+
         model.addComputeds('comp3', {
             deps: ['bar2'],
             get: function (bar2) {

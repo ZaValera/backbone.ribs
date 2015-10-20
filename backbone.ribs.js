@@ -1197,7 +1197,7 @@
 
             var attrs,attr,silent,unset,changes,changing,changed,current,prev,i;
 
-            var compAttrs,realAttrs,compAttrsNames,hasCompInAttrs,
+            var compAttrs,realAttrs,hasCompInAttrs,
                 computeds,computedsToUpdate,changedAttrs,compChanges,needUnset,path,escapedPath,item,l;
 
             if (typeof key === 'object') {
@@ -1225,10 +1225,7 @@
             computeds       = this._ribs.computeds;
             hasCompInAttrs  = false;
             compChanges     = [];
-            compAttrsNames  = [];
             changedAttrs    = [];
-            compAttrs       = {};
-            realAttrs       = {};
 
             if (!changing) {
                 if (this.deepPrevious) {
@@ -1240,21 +1237,29 @@
                 this.changed = {};
             }
 
-            //разделяем computeds и обычные атрибуты
-            for (attr in attrs) {
-                if (attrs.hasOwnProperty(attr)) {
-                    if (computeds.hasOwnProperty(attr)) {
-                        compAttrs[attr] = attrs[attr];
-                        hasCompInAttrs = true;
-                    } else {
-                        realAttrs[attr] = attrs[attr];
+            if (unset) {
+                this._removeComputeds(attrs);
+                realAttrs = attrs;
+            } else {
+                //разделяем computeds и обычные атрибуты
+                realAttrs = {};
+                compAttrs = {};
+
+                for (attr in attrs) {
+                    if (attrs.hasOwnProperty(attr)) {
+                        if (computeds.hasOwnProperty(attr)) {
+                            compAttrs[attr] = attrs[attr];
+                            hasCompInAttrs = true;
+                        } else {
+                            realAttrs[attr] = attrs[attr];
+                        }
                     }
                 }
-            }
 
-            //Заменяем все computeds на обычные аргументы
-            if (hasCompInAttrs && !unset) {
-                _.extend(realAttrs, this._convertComputedsToArguments(compAttrs));
+                //Заменяем все computeds на обычные аргументы
+                if (hasCompInAttrs) {
+                    _.extend(realAttrs, this._convertComputedsToArguments(compAttrs));
+                }
             }
 
             current = this.attributes;
@@ -1298,35 +1303,6 @@
                 }
             }
 
-            //удаляем computeds
-            if (hasCompInAttrs && unset) {
-                this._removeComputeds(compAttrs);
-
-                for (attr in compAttrs) {
-                    if (compAttrs.hasOwnProperty(attr)) {
-                        compAttrsNames.push(attr);
-                        val = compAttrs[attr];
-
-                        if (!_.isEqual(current[attr], val)) {
-                            compChanges.push({
-                                attr: attr,
-                                val: undefined
-                            });
-                        }
-
-                        if (!_.isEqual(prev[attr], val)) {
-                            changed[attr] = val;
-                        } else {
-                            delete changed[attr];
-                        }
-
-                        delete current[attr];
-                    }
-                }
-
-                changedAttrs.push.apply(changedAttrs, compAttrsNames);
-            }
-
             //обновляем computeds
             computedsToUpdate = this._getComputedsToUpdate(changedAttrs);
             this._updateComputeds(computedsToUpdate);
@@ -1353,24 +1329,26 @@
 
             this.id = this.get(this.idAttribute);
 
-            if (!silent && changes.length) {
-                this._pending = options;
+            if (!silent) {
+                if (changes.length) {
+                    this._pending = options;
 
-                for (i = 0, l = changes.length; i < l; i++) {
-                    item = changes[i];
+                    for (i = 0, l = changes.length; i < l; i++) {
+                        item = changes[i];
 
-                    this.trigger('change:' + item.attr, this, item.val, options);
+                        this.trigger('change:' + item.attr, this, item.val, options);
 
-                    if (options.propagation) {
-                        this._propagationTrigger(item, options);
+                        if (options.propagation) {
+                            this._propagationTrigger(item, options);
+                        }
                     }
                 }
-            }
 
-            if (!silent && compChanges.length) {
-                for (i = 0, l = compChanges.length; i < l; i++) {
-                    item = compChanges[i];
-                    this.trigger('change:' + item.attr, this, item.val, options);
+                if (compChanges.length) {
+                    for (i = 0, l = compChanges.length; i < l; i++) {
+                        item = compChanges[i];
+                        this.trigger('change:' + item.attr, this, item.val, options);
+                    }
                 }
             }
 
@@ -1574,10 +1552,14 @@
                     }
                 }
 
-                delete this._ribs.computeds[name];
+                delete computeds[name];
             }
 
             return this;
+        },
+
+        isComputed: function (attr) {
+            return this._ribs.computeds.hasOwnProperty(attr);
         },
 
         //redundant
