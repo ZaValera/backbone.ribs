@@ -208,6 +208,19 @@
         };
     };
 
+    var getAttrs = function (key, val) {
+        var attrs;
+
+        if (typeof key === 'string') {
+            attrs = {};
+            attrs[key] = val;
+        } else {
+            attrs = key;
+        }
+
+        return attrs;
+    };
+
     //optimized
     var Computed = function (data, name, model) {
         this.name = name;
@@ -1275,15 +1288,9 @@
         //optimized
         addComputeds: function (key, val) {
             var computedsDeps = this._ribs.computedsDeps,
+                attrs = getAttrs(key, val),
                 deps, dep, computed, computedsDep,
-                depArr, nextDepArr, name, attrs, i, j, l1, l2;
-
-            if (typeof key === 'string') {
-                attrs = {};
-                attrs[key] = val;
-            } else {
-                attrs = key;
-            }
+                depArr, nextDepArr, name, i, j, l1, l2;
 
             for (name in attrs) {
                 if (attrs.hasOwnProperty(name)) {
@@ -1660,31 +1667,24 @@
 
         addBindings: function (key, val) {
             var ribsBindings = this._ribs.bindings,
-                bindings,
+                attrs = getAttrs(key, val),
+                bindingTypes,
                 selector,
-                types,
-                attrs;
-
-            if (typeof key === 'string') {
-                attrs = {};
-                attrs[key] = val;
-            } else {
-                attrs = key;
-            }
+                types;
 
             for (selector in attrs) {
                 if (attrs.hasOwnProperty(selector)) {
-                    bindings = attrs[selector];
+                    bindingTypes = attrs[selector];
 
-                    if (typeof bindings !== 'object' || _.isEmpty(bindings)) {
-                        throw new Error('wrong binging format for "' + selector + '" - ' + JSON.stringify(bindings));
+                    if (typeof bindingTypes !== 'object' || _.isEmpty(bindingTypes)) {
+                        throw new Error('wrong binging format for "' + selector + '" - ' + JSON.stringify(bindingTypes));
                     }
 
                     if (ribsBindings.hasOwnProperty(selector)) {
                         types = [];
 
-                        for (var type in bindings) {
-                            if (bindings.hasOwnProperty(type)) {
+                        for (var type in bindingTypes) {
+                            if (bindingTypes.hasOwnProperty(type)) {
                                 types.push(type);
                             }
                         }
@@ -1692,7 +1692,7 @@
                         this.removeBindings(selector, types);
                     }
 
-                    ribsBindings[selector] = new Binding(this, selector, bindings);
+                    ribsBindings[selector] = new Binding(this, selector, bindingTypes);
                 }
             }
         },
@@ -1704,27 +1704,16 @@
 
         removeBindings: function (key, val) {
             var bindings = this._ribs.bindings,
-                types,
-                attrs;
+                attrs = getAttrs(key, val),
+                types, s;
 
-            if (typeof key === 'string') {
-                attrs = {};
-                attrs[key] = val;
-            } else {
-                attrs = key;
-            }
-
-            for (var s in bindings) {
-                if (bindings.hasOwnProperty(s)) {
+            for (s in bindings) {
+                if (bindings.hasOwnProperty(s) && !(attrs && !attrs.hasOwnProperty(s))) {
                     if (attrs) {
-                        if (attrs.hasOwnProperty(s)) {
-                            types = attrs[s];
+                        types = attrs[s];
 
-                            if (typeof types === 'string') {
-                                types = [types];
-                            }
-                        } else {
-                            continue;
+                        if (typeof types === 'string') {
+                            types = [types];
                         }
                     }
 
@@ -1739,26 +1728,16 @@
 
         updateBindings: function (key, val) {
             var bindings = this._ribs.bindings,
-                types, attrs;
-
-            if (typeof key === 'string') {
-                attrs = {};
-                attrs[key] = val;
-            } else {
-                attrs = key;
-            }
+                attrs = getAttrs(key, val),
+                types;
 
             for (var s in bindings) {
                 if (bindings.hasOwnProperty(s) && !(attrs && !attrs.hasOwnProperty(s))) {
                     if (attrs) {
-                        if (attrs.hasOwnProperty(s)) {
-                            types = attrs[s];
+                        types = attrs[s];
 
-                            if (typeof types === 'string') {
-                                types = [types];
-                            }
-                        } else {
-                            continue;
+                        if (typeof types === 'string') {
+                            types = [types];
                         }
                     }
 

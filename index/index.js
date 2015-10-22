@@ -46,7 +46,7 @@ require([
             }
         };
 
-        var MMM = Backbone.Ribs.Model.extend({
+        /*var MMM = Backbone.Ribs.Model.extend({
             defaults: {
                 foo: 'a'
             },
@@ -76,7 +76,7 @@ require([
 
         mmm.on('change:foo', function (model, value) {console.log('foo:', value)});
         mmm.on('change:comp', function (model, value) {console.log('comp:', value)});
-        mmm.on('change:comp2', function (model, value) {console.log('comp2:', value)});
+        mmm.on('change:comp2', function (model, value) {console.log('comp2:', value)});*/
 
 
         /*var model = window.model = new (Backbone.Ribs.Model.extend(_.cloneDeep(extend)));
@@ -275,7 +275,7 @@ require([
             }
         }));*/
 
-        var model = window.m2 = new (Backbone.Ribs.Model.extend({
+        /*var model = window.m2 = new (Backbone.Ribs.Model.extend({
             defaults: {
                 bar1: 10,
                 bar2: 20
@@ -356,7 +356,7 @@ require([
         m2.on('change:comp2', function (model, value) {console.log('comp2:', value)});
         m2.on('change:comp3', function (model, value) {console.log('comp3:', value)});
         m2.on('change:comp4', function (model, value) {console.log('comp4:', value)});
-        m2.on('change:comp5', function (model, value) {console.log('comp5:', value)});
+        m2.on('change:comp5', function (model, value) {console.log('comp5:', value)});*/
 
         /*var TestView = Backbone.Ribs.View.extend({
 
@@ -439,5 +439,25 @@ require([
         });*/
 
         //window.view.appendTo($('body'));
+
+
+        var v = new Backbone.Ribs.View();
+
+        v.model = new Backbone.Ribs.Model();
+
+        v.addBindings({
+            '.test': {
+                text: 'model.text',
+                toggle: 'model.active'
+            },
+            '.foo': {
+                text: 'model.text',
+                toggle: 'model.active'
+            }
+        });
+
+        v.updateBindings('.foo', ['text']);
+
+        v.removeBindings('.foo', ['text']);
     });
 });
