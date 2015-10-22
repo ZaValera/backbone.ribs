@@ -387,39 +387,35 @@ require([
 
         window.v =  new TestView();*/
 
-       /* var View = Backbone.Ribs.View.extend({
+        var View = Backbone.Ribs.View.extend({
             el: '<div class="toggle">' +
-                    '<div class="indom">first</div>' +
-                    '<input class="second">' +
-                    '<div class="indom">third</div>' +
+                    '<div class="first">first</div>' +
+                    '<div class="second">second</div>' +
+                    '<span class="second">second</span>' +
+                    '<div class="third">third</div>' +
                 '</div>',
 
             bindings: {
                 'el': {
-                    inDOM: 'model.main',
-                    classes: {
-                        'test-class': 'model.hasClass'
-                    }
+                    inDOM: 'model.main'
+                },
+                '.first': {
+                    inDOM: 'model.first'
                 },
                 '.second': {
-                    value: {
-                        data: 'model.second',
-                        filter: function (second) {
-                            console.log('binding');
-                            return second;
-                        }
-                    }
+                    inDOM: 'model.second'
+                },
+                '.third': {
+                    inDOM: 'model.third'
                 }
             },
 
             initialize: function () {
                 window.model = this.model = new Backbone.Ribs.Model({
-                    second: 'tada',
-                    hasClass: true,
-                    main: true,
-                    'la.la': {
-                        foo: 'bar'
-                    }
+                    first: true,
+                    second: true,
+                    third: true,
+                    main: true
                 });
 
                 this.model.on('change:second', function () {
@@ -432,7 +428,7 @@ require([
             }
         });
 
-        window.view = new View();*/
+        window.view = new View();
 
         /*window.view.removeBindings2({
             el: 'classes'
@@ -441,7 +437,7 @@ require([
         //window.view.appendTo($('body'));
 
 
-        var v = new Backbone.Ribs.View();
+        /*var v = window.v = new Backbone.Ribs.View();
 
         v.model = new Backbone.Ribs.Model();
 
@@ -458,6 +454,6 @@ require([
 
         v.updateBindings('.foo', ['text']);
 
-        v.removeBindings('.foo', ['text']);
+        v.removeBindings('.foo', ['text']);*/
     });
 });

@@ -9,6 +9,7 @@
 /* globals module: false */
 /* globals require: false */
 /* globals define: false */
+/* globals console: false */
 
 (function (root, factory) {
     'use strict';
@@ -33,192 +34,429 @@
         version: '0.4.6'
     };
 
-    var _toString = Object.prototype.toString,
-        _tags = {
-            array: _toString.call([]),
-            object: _toString.call({})
+    var ViewProto = Backbone.View.prototype;
+
+    var toString = Object.prototype.toString,
+        tags = {
+            array: toString.call([]),
+            object: toString.call({})
         };
 
-    var _cloneDeep = function (obj) {
-        var tag = _toString.call(obj),
-            result;
+    var commonMethods = {
+        cloneDeep: function cloneDeep(obj) {
+            var tag = toString.call(obj),
+                result;
 
-        switch (tag) {
-            case _tags.object:
-                result = {};
-                for (var v in obj) {
-                    if (obj.hasOwnProperty(v)) {
-                        result[v] = _cloneDeep(obj[v]);
+            switch (tag) {
+                case tags.object:
+                    result = {};
+                    for (var v in obj) {
+                        if (obj.hasOwnProperty(v)) {
+                            result[v] = cloneDeep(obj[v]);
+                        }
                     }
-                }
-                return result;
+                    return result;
 
-            case _tags.array:
-                result = [];
-                for (var i = obj.length; i--;) {
-                    result[i] = _cloneDeep(obj[i]);
-                }
-                return result;
+                case tags.array:
+                    result = [];
+                    for (var i = obj.length; i--;) {
+                        result[i] = cloneDeep(obj[i]);
+                    }
+                    return result;
 
-            default:
-                return obj;
-        }
-    };
+                default:
+                    return obj;
+            }
+        },
+        split: function (str) {
+            if (str.indexOf('!.') === -1) {
+                return str.split('.');
+            }
 
-    var _super = function (self, method, args) {
-        return self._super.prototype[method].apply(self, args);
-    };
+            var res = [],
+                length, _length, l,
+                last, s,
+                i, j;
 
-    //optimized
-    var _split = function (str) {
-        if (str.indexOf('!.') === -1) {
-            return str.split('.');
-        }
+            str = str.split('!.');
+            length = str.length;
 
-        var res = [],
-            length, _length, l,
-            last, s,
-            i, j;
+            for (i = 0; i < length; i++) {
+                s = str[i].split('.');
+                _length = s.length;
 
-        str = str.split('!.');
-        length = str.length;
+                if (last !== undefined) {
+                    last += '.' + s[0];
 
-        for (i = 0; i < length; i++) {
-            s = str[i].split('.');
-            _length = s.length;
-
-            if (last !== undefined) {
-                last += '.' + s[0];
-
-                if (_length > 1) {
-                    res.push(last);
-                } else {
-                    if (i + 1 === length) {
+                    if (_length > 1) {
                         res.push(last);
+                    } else {
+                        if (i + 1 === length) {
+                            res.push(last);
+                        }
+                        continue;
                     }
-                    continue;
-                }
 
-                j = 1;
-            } else {
-                j = 0;
-            }
-
-            if (i + 1 < length) {
-                l = _length - 1;
-                last = s[_length - 1];
-            } else {
-                l = _length;
-            }
-
-            for (; j < l; j++) {
-                res.push(s[j]);
-            }
-        }
-
-        return res;
-    };
-
-    //optimized
-    var getPath = function (path, obj) {
-        var p, i, l;
-
-        if (typeof path === 'string') {
-            path = _split(path);
-        }
-
-        if (path.length === 1) {
-            return obj[path[0]];
-        }
-
-        for (i = 0, l = path.length; i < l; i++) {
-            p = path[i];
-
-            if (obj.hasOwnProperty(p)) {
-                obj = obj[p];
-            } else {
-                if (l > i + 1) {
-                    throw new Error('can\'t get "' + path[i + 1] + '" of "' + p + '", "' + p +'" is undefined');
+                    j = 1;
                 } else {
-                    return undefined;
+                    j = 0;
+                }
+
+                if (i + 1 < length) {
+                    l = _length - 1;
+                    last = s[_length - 1];
+                } else {
+                    l = _length;
+                }
+
+                for (; j < l; j++) {
+                    res.push(s[j]);
                 }
             }
-        }
 
-        return obj;
-    };
+            return res;
+        },
+        getPath: function (path, obj) {
+            var p, i, l;
 
-    //optimized
-    var deletePath = function (path, obj) {
-        var p;
+            if (typeof path === 'string') {
+                path = commonMethods.split(path);
+            }
 
-        for (var i = 0, l = path.length; i < l; i++) {
-            p = path[i];
+            if (path.length === 1) {
+                return obj[path[0]];
+            }
 
-            if (i + 1 === l) {
-                delete obj[p];
-            } else {
+            for (i = 0, l = path.length; i < l; i++) {
+                p = path[i];
+
                 if (obj.hasOwnProperty(p)) {
                     obj = obj[p];
                 } else {
+                    if (l > i + 1) {
+                        throw new Error('can\'t get "' + path[i + 1] + '" of "' + p + '", "' + p +'" is undefined');
+                    } else {
+                        return undefined;
+                    }
+                }
+            }
+
+            return obj;
+        },
+        deletePath: function (path, obj) {
+            var p;
+
+            for (var i = 0, l = path.length; i < l; i++) {
+                p = path[i];
+
+                if (i + 1 === l) {
+                    delete obj[p];
+                } else {
+                    if (obj.hasOwnProperty(p)) {
+                        obj = obj[p];
+                    } else {
+                        break;
+                    }
+                }
+            }
+        },
+        setPath: function (path, val, obj) {
+            var p;
+
+            path = path.slice();
+
+            while (path.length) {
+                p = path.shift();
+
+                if (path.length) {
+                    if (!(obj.hasOwnProperty(p) && obj[p] instanceof Object)) {
+                        throw new Error('set: can\'t set anything to "' + p + '", typeof == "' + typeof obj[p] + '"');
+                    }
+
+                    obj = obj[p];
+                } else {
+                    obj[p] = val;
+                }
+            }
+        },
+        splitModelAttr: function (modelAttr) {
+            var parsed = modelAttr.match(/^(?:!\.|[^.])+/),
+                model,
+                attr;
+
+            if (parsed !== null) {
+                model = parsed[0];
+                attr = modelAttr.slice(model.length + 1);
+            }
+
+            if (!model || !attr || !model.length || !attr.length) {
+                throw new Error('wrong binging data - "' + modelAttr + '"');
+            }
+
+            return {
+                model: model,
+                attr: attr
+            };
+        },
+        getAttrs: function (key, val) {
+            var attrs;
+
+            if (typeof key === 'string') {
+                attrs = {};
+                attrs[key] = val;
+            } else {
+                attrs = key;
+            }
+
+            return attrs;
+        },
+        showDeprecationWarning: function (oldMet, newMet) {
+            if (console !== null && typeof console === 'object' && typeof console.warn === 'function') {
+                console.warn('Deprecation warning: method "%s()" is redundant. Please use "%s()".', oldMet, newMet);
+            }
+        }
+    };
+
+    var modelMethods = {
+        propagationTrigger: function (attr, options) {
+            var escapedPath = attr.escapedPath.slice();
+
+            if (escapedPath.length) {
+                while (escapedPath.length - 1) {
+                    escapedPath.length--;
+
+                    this.trigger('change:' + escapedPath.join('.'), this, undefined, options);
+                }
+            }
+        },
+
+        initComputeds: function (attrs) {
+            var computeds= this._ribs.computeds,
+                realAttrs = [],
+                compAttrs = [],
+                toUpdate,
+                attr;
+
+            //преваращаем computeds в обычные атрибуты
+            for (attr in attrs) {
+                if (attrs.hasOwnProperty(attr)) {
+                    compAttrs.push(attr);
+                }
+            }
+
+            while (compAttrs.length) {
+                attr = compAttrs.pop();
+
+                if (attr in computeds) {
+                    Array.prototype.push.apply(compAttrs, computeds[attr].deps);
+                } else {
+                    if (realAttrs.indexOf(attr) === -1) {
+                        realAttrs.push(attr);
+                    }
+                }
+            }
+            //////////////////////////////////////////
+
+            toUpdate = modelMethods.getComputedsToUpdate.call(this, realAttrs);
+
+            modelMethods.updateComputeds.call(this, toUpdate);
+
+            for (var i = 0, l = toUpdate.length; i < l; i++) {
+                attr = toUpdate[i];
+                this.attributes[attr] = computeds[attr].get();
+            }
+        },
+
+        checkForLoop: function (newComputeds) {
+            var computeds = this._ribs.computeds,
+                loopref;
+
+            var find = function (name, computed, computeds) {
+                var deps = computed.deps,
+                    loop = computed.name;
+
+                if (!deps) {
+                    return false;
+                }
+
+                if (deps.indexOf(name) !== -1) {
+                    return loop;
+                }
+
+                for (var i = 0; i < deps.length; i++) {
+                    var dep = deps[i];
+
+                    if (computeds.hasOwnProperty(dep)) {
+                        loop = find(name, computeds[dep], computeds);
+
+                        if (loop) {
+                            return loop;
+                        }
+                    }
+                }
+
+                return false;
+            };
+
+            for (var name in newComputeds) {
+                if (newComputeds.hasOwnProperty(name)) {
+                    loopref = find(name, computeds[name], computeds);
+
+                    if (loopref) {
+                        throw new Error('addComputeds(): a circular references in computeds "' + name + ' <-> ' + loopref +'"');
+                    }
+                }
+            }
+        },
+
+        convertComputedsToArguments: function (attrs) {
+            var newAttrs = {},
+                computeds = this._ribs.computeds,
+                attr,
+                newValue,
+                realAttrs,
+                hasComputed;
+
+            _.extend(newAttrs, attrs);
+
+            do {
+                hasComputed = false;
+                realAttrs = {};
+
+                for (attr in newAttrs) {
+                    if (newAttrs.hasOwnProperty(attr)) {
+                        if (attr in computeds) {
+                            hasComputed = true;
+                            newValue = newAttrs[attr];
+
+                            _.extend(realAttrs, computeds[attr].set(newValue));
+
+                            delete newAttrs[attr];
+                        }
+                    }
+                }
+
+                _.extend(newAttrs, realAttrs);
+            } while (hasComputed);
+
+            return newAttrs;
+        },
+
+        getComputedsToUpdate: function (deps) {
+            var computedsDeps = this._ribs.computedsDeps,
+                toUpdate = [],
+                prev, dep, index, i;
+
+            if (!deps.length) {
+                return toUpdate;
+            }
+
+            var findDeps = function (attrs) {
+                var newDeps = [],
+                    deps, i, j, l1, l2;
+
+                for (i = 0, l1 = attrs.length; i < l1; i++) {
+                    deps = computedsDeps[attrs[i]];
+
+                    if (deps) {
+                        for (j = 0, l2 = deps.length; j < l2; j++) {
+                            dep = deps[j];
+
+                            if (newDeps.indexOf(dep) === -1) {
+                                newDeps.push(dep);
+                            }
+                        }
+                    }
+                }
+
+                return newDeps;
+            };
+
+            while (true) {
+                deps = findDeps(deps);
+
+                if (!deps.length) {
                     break;
                 }
-            }
-        }
-    };
 
-    var setPath = function (path, val, obj) {
-        var p;
+                prev = toUpdate[toUpdate.length - 1];
 
-        path = path.slice();
+                if (prev) {
+                    for (i = 0; i < deps.length; i++) {
+                        index = prev.indexOf(deps[i]);
 
-        while (path.length) {
-            p = path.shift();
-
-            if (path.length) {
-                if (!(obj.hasOwnProperty(p) && obj[p] instanceof Object)) {
-                    throw new Error('set: can\'t set anything to "' + p + '", typeof == "' + typeof obj[p] + '"');
+                        if (index !== -1) {
+                            prev.splice(index, 1);
+                        }
+                    }
                 }
 
-                obj = obj[p];
-            } else {
-                obj[p] = val;
+                toUpdate.push(deps);
             }
+
+            return Array.prototype.concat.apply([], toUpdate);
+        },
+
+        updateComputeds: function (attrs) {
+            var computeds = this._ribs.computeds,
+                computed, attr;
+
+            //направление не менять
+            for (var i = 0, l = attrs.length; i < l; i++) {
+                attr = attrs[i];
+                computed = computeds[attr];
+                computed.update();
+            }
+        },
+
+        removeComputeds: function (attrs) {
+            var names = [],
+                computeds = this._ribs.computeds,
+                removeAll = true,
+                attr;
+
+            for (attr in computeds) {
+                if (computeds.hasOwnProperty(attr)) {
+                    if (attrs.hasOwnProperty(attr)) {
+                        names.push(attr);
+                    } else {
+                        removeAll = false;
+                    }
+                }
+            }
+
+            if (removeAll) {
+                this._ribs.computedsDeps = {};
+                this._ribs.computeds = {};
+                return this;
+            }
+
+            var computedsDeps = this._ribs.computedsDeps,
+                dep, index, name, i, l;
+
+            for (i = 0, l = names.length; i < l; i++) {
+                name = names[i];
+
+                for (attr in computedsDeps) {
+                    if (computedsDeps.hasOwnProperty(attr)) {
+                        dep = computedsDeps[attr];
+                        index = dep.indexOf(name);
+
+                        if (index !== -1) {
+                            dep.splice(index, 1);
+                        }
+
+                        if (!dep.length) {
+                            delete computedsDeps[attr];
+                        }
+                    }
+                }
+
+                delete computeds[name];
+            }
+
+            return this;
         }
-    };
-
-    //optimized
-    var splitModelAttr = function (modelAttr) {
-        var parsed = modelAttr.match(/^(?:!\.|[^.])+/),
-            model,
-            attr;
-
-        if (parsed !== null) {
-            model = parsed[0];
-            attr = modelAttr.slice(model.length + 1);
-        }
-
-        if (!model || !attr || !model.length || !attr.length) {
-            throw new Error('wrong binging data - "' + modelAttr + '"');
-        }
-
-        return {
-            model: model,
-            attr: attr
-        };
-    };
-
-    var getAttrs = function (key, val) {
-        var attrs;
-
-        if (typeof key === 'string') {
-            attrs = {};
-            attrs[key] = val;
-        } else {
-            attrs = key;
-        }
-
-        return attrs;
     };
 
     //optimized
@@ -478,13 +716,13 @@
 
             //Формируем paths - массив объектов model-attr
             if (typeof binding === 'string') {
-                paths.push(splitModelAttr(binding));
+                paths.push(commonMethods.splitModelAttr(binding));
             } else {
                 if (typeof data === 'string') {
-                    paths.push(splitModelAttr(data));
+                    paths.push(commonMethods.splitModelAttr(data));
                 } else if (_.isArray(data)) {
                     for (i = 0, l = data.length; i < l; i++) {
-                        paths.push(splitModelAttr(data[i]));
+                        paths.push(commonMethods.splitModelAttr(data[i]));
                     }
                 } else {
                     throw new Error('wrong binging format ' + JSON.stringify(binding));
@@ -584,7 +822,7 @@
                 modelName = path.model;
                 model = this.view[modelName];
                 attr = path.attr;
-                attrArray = _split(attr);
+                attrArray = commonMethods.split(attr);
                 ch = '';
                 changeAttr = changeAttrs[modelName] || (changeAttrs[modelName] = []);
 
@@ -799,9 +1037,7 @@
                 this.dummies = [];
 
                 for (var i = 0; i < this.$el.length; i++) {
-                    dummy = document.createElement('div');
-                    dummy.style.display = 'none';
-                    dummy.className = 'ribsDummy';
+                    dummy = document.createComment(this.$el[i].tagName);
                     this.dummies.push(dummy);
                 }
 
@@ -1020,8 +1256,6 @@
     };
 
     Ribs.Model = Backbone.Model.extend({
-        _super: Backbone.Model,
-
         constructor: function RibsModel(attributes, options) {
             this._ribs = {
                 computeds: {},
@@ -1068,7 +1302,7 @@
                 return computeds[attr].get();
             }
 
-            return getPath(attr, this.attributes);
+            return commonMethods.getPath(attr, this.attributes);
         },
 
         set: function (key, val, options) {
@@ -1110,7 +1344,7 @@
 
             if (!changing) {
                 if (this.deepPrevious) {
-                    this._previousAttributes = _cloneDeep(this.attributes);
+                    this._previousAttributes = commonMethods.cloneDeep(this.attributes);
                 } else {
                     this._previousAttributes = _.clone(this.attributes);
                 }
@@ -1119,7 +1353,7 @@
             }
 
             if (unset) {
-                this._removeComputeds(attrs);
+                modelMethods.removeComputeds.call(this, attrs);
                 realAttrs = attrs;
             } else {
                 //разделяем computeds и обычные атрибуты
@@ -1139,7 +1373,7 @@
 
                 //Заменяем все computeds на обычные аргументы
                 if (hasCompInAttrs) {
-                    _.extend(realAttrs, this._convertComputedsToArguments(compAttrs));
+                    _.extend(realAttrs, modelMethods.convertComputedsToArguments.call(this, compAttrs));
                 }
             }
 
@@ -1152,9 +1386,9 @@
                 if (realAttrs.hasOwnProperty(attr)) {
                     needUnset = unset && attrs.hasOwnProperty(attr);
                     val = realAttrs[attr];
-                    path = _split(attr);
+                    path = commonMethods.split(attr);
 
-                    if (!_.isEqual(getPath(path, current), val)) {
+                    if (!_.isEqual(commonMethods.getPath(path, current), val)) {
                         escapedPath = [];
 
                         for (i = path.length; i--;) {
@@ -1170,23 +1404,23 @@
                         changedAttrs.push(attr);
                     }
 
-                    if (!_.isEqual(getPath(path, prev), val)) {
+                    if (!_.isEqual(commonMethods.getPath(path, prev), val)) {
                         changed[attr] = val;
                     } else {
                         delete changed[attr];
                     }
 
                     if (needUnset) {
-                        deletePath(path, current);
+                        commonMethods.deletePath(path, current);
                     } else {
-                        setPath(path, val, current);
+                        commonMethods.setPath(path, val, current);
                     }
                 }
             }
 
             //обновляем computeds
-            computedsToUpdate = this._getComputedsToUpdate(changedAttrs);
-            this._updateComputeds(computedsToUpdate);
+            computedsToUpdate = modelMethods.getComputedsToUpdate.call(this, changedAttrs);
+            modelMethods.updateComputeds.call(this, computedsToUpdate);
 
             for (i = 0, l = computedsToUpdate.length; i < l; i++) {
                 attr = computedsToUpdate[i];
@@ -1220,7 +1454,7 @@
                         this.trigger('change:' + item.attr, this, item.val, options);
 
                         if (options.propagation) {
-                            this._propagationTrigger(item, options);
+                            modelMethods.propagationTrigger.call(this, item, options);
                         }
                     }
                 }
@@ -1255,7 +1489,7 @@
             }
 
             if (this.deepPrevious) {
-                return getPath(attr, this._previousAttributes);
+                return commonMethods.getPath(attr, this._previousAttributes);
             } else {
                 return this._previousAttributes[attr];
             }
@@ -1263,7 +1497,7 @@
 
         previousAttributes: function () {
             if (this.deepPrevious) {
-                return _cloneDeep(this._previousAttributes);
+                return commonMethods.cloneDeep(this._previousAttributes);
             } else {
                 return _.clone(this._previousAttributes);
             }
@@ -1288,7 +1522,7 @@
         //optimized
         addComputeds: function (key, val) {
             var computedsDeps = this._ribs.computedsDeps,
-                attrs = getAttrs(key, val),
+                attrs = commonMethods.getAttrs(key, val),
                 deps, dep, computed, computedsDep,
                 depArr, nextDepArr, name, i, j, l1, l2;
 
@@ -1303,7 +1537,7 @@
                     deps = computed.deps;
 
                     for (i = 0, l1 = deps.length; i < l1; i++) {
-                        depArr = _split(deps[i]);
+                        depArr = commonMethods.split(deps[i]);
                         dep = depArr[0].replace(/\./g, '!.');
 
                         for (j = 0, l2 = depArr.length; j < l2; j++) {
@@ -1327,10 +1561,10 @@
                 }
             }
 
-            this._checkForLoop(attrs);
+            modelMethods.checkForLoop.call(this, attrs);
 
             if (!this._ribs.init) {
-                this._initComputeds(attrs);
+                modelMethods.initComputeds.call(this, attrs);
             }
 
             return this;
@@ -1365,260 +1599,20 @@
             return this._ribs.computeds.hasOwnProperty(attr);
         },
 
-        _propagationTrigger: function (attr, options) {
-            var escapedPath = attr.escapedPath.slice();
-
-            if (escapedPath.length) {
-                while (escapedPath.length - 1) {
-                    escapedPath.length--;
-
-                    this.trigger('change:' + escapedPath.join('.'), this, undefined, options);
-                }
-            }
-        },
-
-        _initComputeds: function (attrs) {
-            var computeds= this._ribs.computeds,
-                realAttrs = [],
-                compAttrs = [],
-                toUpdate,
-                attr;
-
-            //преваращаем computeds в обычные атрибуты
-            for (attr in attrs) {
-                if (attrs.hasOwnProperty(attr)) {
-                    compAttrs.push(attr);
-                }
-            }
-
-            while (compAttrs.length) {
-                attr = compAttrs.pop();
-
-                if (attr in computeds) {
-                    Array.prototype.push.apply(compAttrs, computeds[attr].deps);
-                } else {
-                    if (realAttrs.indexOf(attr) === -1) {
-                        realAttrs.push(attr);
-                    }
-                }
-            }
-            //////////////////////////////////////////
-
-            toUpdate = this._getComputedsToUpdate(realAttrs);
-
-            this._updateComputeds(toUpdate);
-
-            for (var i = 0, l = toUpdate.length; i < l; i++) {
-                attr = toUpdate[i];
-                this.attributes[attr] = computeds[attr].get();
-            }
-        },
-
-        _checkForLoop: function (newComputeds) {
-            var computeds = this._ribs.computeds,
-                loopref;
-
-            var find = function (name, computed, computeds) {
-                var deps = computed.deps,
-                    loop = computed.name;
-
-                if (!deps) {
-                    return false;
-                }
-
-                if (deps.indexOf(name) !== -1) {
-                    return loop;
-                }
-
-                for (var i = 0; i < deps.length; i++) {
-                    var dep = deps[i];
-
-                    if (computeds.hasOwnProperty(dep)) {
-                        loop = find(name, computeds[dep], computeds);
-
-                        if (loop) {
-                            return loop;
-                        }
-                    }
-                }
-
-                return false;
-            };
-
-            for (var name in newComputeds) {
-                if (newComputeds.hasOwnProperty(name)) {
-                    loopref = find(name, computeds[name], computeds);
-
-                    if (loopref) {
-                        throw new Error('addComputeds(): a circular references in computeds "' + name + ' <-> ' + loopref +'"');
-                    }
-                }
-            }
-        },
-
-        _convertComputedsToArguments: function (attrs) {
-            var newAttrs = {},
-                computeds = this._ribs.computeds,
-                attr,
-                newValue,
-                realAttrs,
-                hasComputed;
-
-            _.extend(newAttrs, attrs);
-
-            do {
-                hasComputed = false;
-                realAttrs = {};
-
-                for (attr in newAttrs) {
-                    if (newAttrs.hasOwnProperty(attr)) {
-                        if (attr in computeds) {
-                            hasComputed = true;
-                            newValue = newAttrs[attr];
-
-                            _.extend(realAttrs, computeds[attr].set(newValue));
-
-                            delete newAttrs[attr];
-                        }
-                    }
-                }
-
-                _.extend(newAttrs, realAttrs);
-            } while (hasComputed);
-
-            return newAttrs;
-        },
-
-        _getComputedsToUpdate: function (deps) {
-            var computedsDeps = this._ribs.computedsDeps,
-                toUpdate = [],
-                prev, dep, index, i;
-
-            if (!deps.length) {
-                return toUpdate;
-            }
-
-            var findDeps = function (attrs) {
-                var newDeps = [],
-                    deps, i, j, l1, l2;
-
-                for (i = 0, l1 = attrs.length; i < l1; i++) {
-                    deps = computedsDeps[attrs[i]];
-
-                    if (deps) {
-                        for (j = 0, l2 = deps.length; j < l2; j++) {
-                            dep = deps[j];
-
-                            if (newDeps.indexOf(dep) === -1) {
-                                newDeps.push(dep);
-                            }
-                        }
-                    }
-                }
-
-                return newDeps;
-            };
-
-            while (true) {
-                deps = findDeps(deps);
-
-                if (!deps.length) {
-                    break;
-                }
-
-                prev = toUpdate[toUpdate.length - 1];
-
-                if (prev) {
-                    for (i = 0; i < deps.length; i++) {
-                        index = prev.indexOf(deps[i]);
-
-                        if (index !== -1) {
-                            prev.splice(index, 1);
-                        }
-                    }
-                }
-
-                toUpdate.push(deps);
-            }
-
-            return Array.prototype.concat.apply([], toUpdate);
-        },
-
-        _updateComputeds: function (attrs) {
-            var computeds = this._ribs.computeds,
-                computed, attr;
-
-            //направление не менять
-            for (var i = 0, l = attrs.length; i < l; i++) {
-                attr = attrs[i];
-                computed = computeds[attr];
-                computed.update();
-            }
-        },
-
-        _removeComputeds: function (attrs) {
-            var names = [],
-                computeds = this._ribs.computeds,
-                removeAll = true,
-                attr;
-
-            for (attr in computeds) {
-                if (computeds.hasOwnProperty(attr)) {
-                    if (attrs.hasOwnProperty(attr)) {
-                        names.push(attr);
-                    } else {
-                        removeAll = false;
-                    }
-                }
-            }
-
-            if (removeAll) {
-                this._ribs.computedsDeps = {};
-                this._ribs.computeds = {};
-                return this;
-            }
-
-            var computedsDeps = this._ribs.computedsDeps,
-                dep, index, name, i, l;
-
-            for (i = 0, l = names.length; i < l; i++) {
-                name = names[i];
-
-                for (attr in computedsDeps) {
-                    if (computedsDeps.hasOwnProperty(attr)) {
-                        dep = computedsDeps[attr];
-                        index = dep.indexOf(name);
-
-                        if (index !== -1) {
-                            dep.splice(index, 1);
-                        }
-
-                        if (!dep.length) {
-                            delete computedsDeps[attr];
-                        }
-                    }
-                }
-
-                delete computeds[name];
-            }
-
-            return this;
-        },
-
         //redundant
         addComputed: function () {
+            commonMethods.showDeprecationWarning('addComputed', 'addComputeds');
             this.addComputeds.apply(this, arguments);
         },
 
         //redundant
         removeComputed: function (name) {
+            commonMethods.showDeprecationWarning('removeComputed', 'removeComputeds');
             this.removeComputeds(name);
         }
     });
 
     Ribs.View = Backbone.View.extend({
-        _super: Backbone.View,
-
         deepPrevious: false,
 
         _$el: null,
@@ -1638,7 +1632,7 @@
             _.extend(this.filters, filters);
             _.extend(this.handlers, handlers);
 
-            _super(this, 'constructor', arguments);
+            ViewProto.constructor.apply(this, arguments);
 
             if (!this._ribs.preventBindings) {
                 this.applyBindings();
@@ -1655,19 +1649,25 @@
             }
 
             $el.append(this.getEl());
+
+            return this;
         },
 
         preventBindings: function () {
             this._ribs.preventBindings = true;
+
+            return this;
         },
 
         applyBindings: function () {
             this.addBindings(this._ribs._bindings);
+
+            return this;
         },
 
         addBindings: function (key, val) {
             var ribsBindings = this._ribs.bindings,
-                attrs = getAttrs(key, val),
+                attrs = commonMethods.getAttrs(key, val),
                 bindingTypes,
                 selector,
                 types;
@@ -1695,16 +1695,13 @@
                     ribsBindings[selector] = new Binding(this, selector, bindingTypes);
                 }
             }
-        },
 
-        //redundant
-        addBinding: function (selector, bindings) {
-            this.addBindings.apply(this, arguments);
+            return this;
         },
 
         removeBindings: function (key, val) {
             var bindings = this._ribs.bindings,
-                attrs = getAttrs(key, val),
+                attrs = commonMethods.getAttrs(key, val),
                 types, s;
 
             for (s in bindings) {
@@ -1724,11 +1721,13 @@
                     }
                 }
             }
+
+            return this;
         },
 
         updateBindings: function (key, val) {
             var bindings = this._ribs.bindings,
-                attrs = getAttrs(key, val),
+                attrs = commonMethods.getAttrs(key, val),
                 types;
 
             for (var s in bindings) {
@@ -1744,15 +1743,8 @@
                     bindings[s].update(types);
                 }
             }
-        },
 
-        //redundant
-        applyCollection: function (selector, collection, View, data) {
-            this.addBindings(selector, {collection: {
-                col: collection,
-                view: View,
-                data: data
-            }});
+            return this;
         },
 
         renderCollection: function (col, selector) {
@@ -1770,6 +1762,8 @@
                     }
                 }
             }
+
+            return this;
         },
 
         getCollectionViews: function (selector) {
@@ -1785,7 +1779,23 @@
         remove: function () {
             this.removeBindings();
 
-            return _super(this, 'remove', arguments);
+            return ViewProto.remove.apply(this, arguments);
+        },
+
+        //redundant
+        addBinding: function (selector, bindings) {
+            commonMethods.showDeprecationWarning('addBinding', 'addBindings');
+            this.addBindings.apply(this, arguments);
+        },
+
+        //redundant
+        applyCollection: function (selector, collection, View, data) {
+            commonMethods.showDeprecationWarning('applyCollection', 'addBindings');
+            this.addBindings(selector, {collection: {
+                col: collection,
+                view: View,
+                data: data
+            }});
         }
     });
 
