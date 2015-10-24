@@ -388,9 +388,9 @@ require([
         window.v =  new TestView();*/
 
         var View = Backbone.Ribs.View.extend({
-            el: '<div class="toggle">' +
+            el: '<div class="toggle" style="display: inline-block;">' +
                     '<div class="first">first</div>' +
-                    '<div class="second">second</div>' +
+                    '<div class="parent"><div class="second"><span class="text"></span></div></div>' +
                     '<span class="second">second</span>' +
                     '<div class="third">third</div>' +
                 '</div>',
@@ -399,23 +399,24 @@ require([
                 'el': {
                     inDOM: 'model.main'
                 },
-                '.first': {
+                /*'.first': {
                     inDOM: 'model.first'
-                },
+                },*/
                 '.second': {
                     inDOM: 'model.second'
-                },
+                }/*,
                 '.third': {
                     inDOM: 'model.third'
-                }
+                }*/
             },
 
             initialize: function () {
                 window.model = this.model = new Backbone.Ribs.Model({
                     first: true,
-                    second: true,
+                    second: false,
                     third: true,
-                    main: true
+                    main: false,
+                    text: 'asdfasdf'
                 });
 
                 this.model.on('change:second', function () {

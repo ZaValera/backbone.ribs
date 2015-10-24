@@ -214,6 +214,74 @@
             if (console !== null && typeof console === 'object' && typeof console.warn === 'function') {
                 console.warn('Deprecation warning: method "%s()" is redundant. Please use "%s()".', oldMet, newMet);
             }
+        },
+        reverseElsInDOM: function (view) {
+            var _ribs = view._ribs,
+                bindings = _ribs.bindings,
+                wasReversed = false,
+                binding, $el, i;
+
+            if (!_ribs.hasInDOMHandler) {
+                return;
+            }
+
+            var mainReverse = function () {
+                commonMethods.reverseDummy(view.el, _ribs.dummy);
+                _ribs.needBack =_ribs.outOfDOM = !_ribs.outOfDOM;
+            };
+
+            if (!_ribs.outOfDOM) {
+                mainReverse();
+                wasReversed = true;
+            }
+
+            for (var selector in bindings) {
+                if (bindings.hasOwnProperty(selector)) {
+                    binding = bindings[selector];
+
+                    if ( !binding.hasInDOMHandler ||
+                         selector === 'el' ||
+                         !binding.needBack && !binding.outOfDOM) {
+                        continue;
+                    }
+
+                    $el = binding.$el;
+                    binding.needBack = binding.outOfDOM;
+
+                    for (i = 0; i < $el.length; i++) {
+                        commonMethods.reverseDummy($el[i], binding.dummies[i]);
+                    }
+
+                    binding.outOfDOM = !binding.outOfDOM;
+                }
+            }
+
+            if (!wasReversed && _ribs.needBack) {
+                mainReverse();
+            }
+        },
+        reverseDummy: function (el, dummy, shouldByInDom) {
+            if (el.parentNode && !shouldByInDom) {
+                el.parentNode.replaceChild(dummy, el);
+            } else if (dummy.parentNode) {
+                dummy.parentNode.replaceChild(el, dummy);
+            }
+        },
+        updateInDOMInfo: function (view) {
+            var _ribs = view._ribs,
+                bindings = _ribs.bindings,
+                hasInDOMHandler = false;
+
+            for (var s in bindings) {
+                if (bindings.hasOwnProperty(s)) {
+                    if (bindings[s].hasInDOMHandler) {
+                        hasInDOMHandler = true;
+                        break;
+                    }
+                }
+            }
+
+            _ribs.hasInDOMHandler = hasInDOMHandler;
         }
     };
 
@@ -517,14 +585,20 @@
 
     //optimized
     var Binding = function (view, selector, bindings) {
-        var binding;
+        var hasInDOMHandler = bindings.hasOwnProperty('inDOM'),
+            binding;
 
         this.selector = selector;
         this.view = view;
         this.mods = {};
-        this._hasInDOMHandler = bindings.hasOwnProperty('inDOM');
-        this._setEl();
+        this.hasInDOMHandler = hasInDOMHandler;
         this.handlers = {};
+
+        if (hasInDOMHandler) {
+            view._ribs.hasInDOMHandler = true;
+        }
+
+        this._setEl();
 
         for (var type in bindings) {
             if (bindings.hasOwnProperty(type)) {
@@ -910,7 +984,9 @@
                 model, i, l;
 
             for (var type in handlers) {
-                if (handlers.hasOwnProperty(type) && !(types && types.indexOf('all') === -1 && types.indexOf(type) === -1)) {
+                if ( handlers.hasOwnProperty(type) &&
+                     !(types && types.indexOf('all') === -1 &&
+                     types.indexOf(type) === -1)) {
                     handler = handlers[type];
                     setter = handler.setter;
                     events = handler.events;
@@ -957,28 +1033,27 @@
                         }
                     }
 
+                    delete handlers[type];
+
                     if (type === 'inDOM') {
                         var $el = this.$el,
                             dummies = this.dummies,
-                            el, dummy;
+                            el;
 
                         for (i = 0, l = $el.length; i < l; i++) {
-                            el = $el[i];
-                            dummy = dummies[i];
-
-                            if (!el.parentNode && dummy.parentNode) {
-                                dummy.parentNode.replaceChild(el, dummy);
-                            }
+                            commonMethods.reverseDummy($el[i], dummies[i], true);
                         }
 
                         if (this.selector === 'el') {
                             this.view._ribs.outOfDOM = false;
                         }
 
+                        this.hasInDOMHandler = false;
+
+                        commonMethods.updateInDOMInfo(this.view);
+
                         this.dummies = [];
                     }
-
-                    delete handlers[type];
                 }
             }
         },
@@ -1007,8 +1082,7 @@
         //optimized
         _setEl: function () {
             var selector = this.selector,
-                dummy,
-                $el;
+                dummy;
 
             if (selector === 'el') {
                 this.$el = this.view.$el;
@@ -1016,37 +1090,12 @@
                 this.$el = this.view.$(selector);
             }
 
-            var bindings = this.view._ribs.bindings,
-                binding;
-
-            for (binding in bindings) {
-                if (bindings.hasOwnProperty(binding)) {
-                    binding = bindings[binding];
-
-                    if (binding._hasInDOMHandler) {
-                        $el = binding.$el.find(selector);
-
-                        if ($el.length) {
-                            this.$el = this.$el.add($el);
-                        }
-                    }
-                }
-            }
-
-            if (this._hasInDOMHandler) {
+            if (this.hasInDOMHandler) {
                 this.dummies = [];
 
                 for (var i = 0; i < this.$el.length; i++) {
                     dummy = document.createComment(this.$el[i].tagName);
                     this.dummies.push(dummy);
-                }
-
-                if (selector === 'el') {
-                    this.view._$el = $(this.dummies[0]);
-                    this.view._el = this.view._$el[0];
-                } else {
-                    this.view._$el = null;
-                    this.view._el = null;
                 }
             }
         },
@@ -1157,12 +1206,15 @@
         },
 
         inDOM: function ($el, value) {
-            var dummy,
+            var outOfDOM = !value,
+                dummy,
                 el;
 
             if (this.selector === 'el') {
-                this.view._ribs.outOfDOM = !value;
+                this.view._ribs.outOfDOM = outOfDOM;
             }
+
+            this.outOfDOM = outOfDOM;
 
             for (var i = 0; i < $el.length; i++) {
                 el = $el[i];
@@ -1615,13 +1667,13 @@
     Ribs.View = Backbone.View.extend({
         deepPrevious: false,
 
-        _$el: null,
-
-        _el: null,
-
         constructor: function RibsView(attributes, options) {
+            var dummy = document.createComment('');
+
             this._ribs = {
                 _bindings: _.clone(this.bindings) || {},
+                dummy: dummy,
+                $dummy: $(dummy),
                 bindings: {},
                 collections: {}
             };
@@ -1639,8 +1691,34 @@
             }
         },
 
+        $: function(selector) {
+            var simple = true;
+
+            if (this._ribs.hasInDOMHandler) {
+                var bindings = this._ribs.bindings;
+
+                for (var s in bindings) {
+                    if (bindings.hasOwnProperty(s)) {
+                        if (bindings[s].outOfDOM) {
+                            simple = false;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (simple) {
+                return this.$el.find(selector);
+            }
+
+            commonMethods.reverseElsInDOM(this);
+            var res = this.$el.find(selector);
+            commonMethods.reverseElsInDOM(this);
+            return res;
+        },
+
         getEl: function () {
-            return this._ribs.outOfDOM ? this._$el : this.$el;
+            return this._ribs.outOfDOM ? this._ribs.$dummy : this.$el;
         },
 
         appendTo: function ($el) {

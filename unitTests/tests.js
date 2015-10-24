@@ -132,7 +132,7 @@ $(function () {
         equal(model.previous('foo2'), undefined, 'Set new field previous');
         equal(model.changed.foo2, 'bar22', 'Set new field changed');
 
-        //Сети два поля одновременно (объект)
+        //Сетим два поля одновременно (объект)
         model.set({foo1: 'bar111', foo3: 'bar333'});
 
         equal(model.attributes.foo1, 'bar111', 'Set object field');
@@ -1129,4 +1129,92 @@ $(function () {
         bindingView.appendTo($('.wrapper'));
         strictEqual($('.wrapper').find('.met-bind')[0], bindingView.el, 'appendTo method');
     });
+
+    test('inDOM binding', function () {
+        var View = Backbone.Ribs.View.extend({
+            el: '<div class="in-dom">' +
+            '<div class="in-dom-first"><div class="in-dom-second"><span class="in-dom-third"></span></div></div>' +
+            '</div>',
+
+            bindings: {
+                'el': {
+                    inDOM: 'model.isVisible'
+                 }
+            },
+
+            initialize: function () {
+                this.model = new Backbone.Ribs.Model({
+                    isVisible: false,
+                    text: 'foo'
+                });
+
+                this.appendTo($('body'));
+            }
+        });
+
+        var view = new View();
+
+        equal($('.in-dom').length, 0, 'el init');
+        view.model.set('isVisible', true);
+        equal($('.in-dom').length, 1, 'el set visible');
+        view.model.set('isVisible', false);
+        equal($('.in-dom').length, 0, 'el set invisible');
+        view.removeBindings();
+        equal($('.in-dom').length, 1, 'el set visible with removeBindings');
+        view.addBindings('el', {
+            inDOM: 'model.isVisible'
+        });
+        equal($('.in-dom').length, 0, 'el set invisible with addBindings');
+        equal(view.$('.in-dom-first .in-dom-third').length, 1, 'select sub child in invisible el');
+        view.addBindings('.in-dom-third', {
+            text: 'model.text'
+        });
+        view.model.set('isVisible', true);
+        equal($('.in-dom-third').text(), 'foo', 'add binding to sub child in invisible el');
+
+        view.remove();
+
+        View = Backbone.Ribs.View.extend({
+            el: '<div class="in-dom">' +
+            '<div class="in-dom-first"><div class="in-dom-second"><span class="in-dom-third"></span></div></div>' +
+            '</div>',
+
+            bindings: {
+                '.in-dom-second': {
+                    inDOM: 'model.second'
+                }
+            },
+
+            initialize: function () {
+                this.model = new Backbone.Ribs.Model({
+                    second: false,
+                    text: 'foo'
+                });
+
+                this.appendTo($('body'));
+            }
+        });
+
+        view = new View();
+
+        equal($('.in-dom-second').length, 0, 'child el init');
+        view.model.set('second', true);
+        equal($('.in-dom-second').length, 1, 'child el set visible');
+        view.model.set('second', false);
+        equal($('.in-dom-second').length, 0, 'child el set invisible');
+        view.removeBindings();
+        equal($('.in-dom-second').length, 1, 'child el set visible with removeBindings');
+        view.addBindings('.in-dom-second', {
+            inDOM: 'model.second'
+        });
+        equal($('.in-dom-second').length, 0, 'child el set invisible with addBindings');
+        equal(view.$('.in-dom-first .in-dom-third').length, 1, 'select sub child in invisible el');
+        view.addBindings('.in-dom-third', {
+            text: 'model.text'
+        });
+        view.model.set('second', true);
+        equal($('.in-dom-third').text(), 'foo', 'add binding to sub child in invisible el');
+
+        view.remove();
+    })
 });

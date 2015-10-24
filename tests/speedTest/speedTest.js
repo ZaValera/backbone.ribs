@@ -34,9 +34,6 @@ define([
                             second: val[1]
                         }
                     }
-                },
-                time: function () {
-                    return (+new Date());
                 }
             }
         });
@@ -67,7 +64,7 @@ define([
             bindings: {
                 'input[type="checkbox"]': {
                     checked: 'model.checked',
-                    attr: {'data-time': 'model.time'}
+                    attr: {'data-text': 'model.text'}
                 },
                 '.span-text': {
                     text: {filter: 'mlt', data: 'model.text'},
@@ -82,7 +79,8 @@ define([
                     value: {
                         data: 'model.inputText',
                         events: 'keyup change'
-                    }
+                    },
+                    inDOM: 'model.active'
                 }
             },
 
