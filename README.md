@@ -45,6 +45,18 @@ Binding collection is useful in cases when you need to create a view for a colle
 During applying binding, for each model in the collection will be created its own instance of ItemView. The root element of the newly created view will be added inside the element, which selector was described in binding.
 
 ### Change Log
+v0.5.0 - 25.10.2015
+* Compatibility with Backbone 1.2.3
+* Computed attributes: computed attributes in `model.attributes` hash (**significant change**)
+* Computed attributes: deprecate computed attribute without `deps` (**significant change**)
+* Computed attributes: fixed problem with triggering excess `change` events
+* Computed attributes: new method `isComputed`
+* Bindings: binding callback
+* Bindings: updated bindings earlier than other handlers
+* Bindings: `inDOM` - fixed many problems. And now you can use it ;)
+* Binding Collection: allow waterfall adding views to DOM
+* Allow to get previous model's attributes on any depth by `deepPrevious` flag (this slows down the `model.set`, be careful)
+
 v0.4.6 - 25.03.2015
 * forwarding event object into `get` binding handler
 
