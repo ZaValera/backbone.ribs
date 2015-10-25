@@ -471,11 +471,11 @@ $(function () {
         });
 
         equal(model.get('comp3'), '2', 'addComputeds');
-        model.removeComputed('comp1');
+        model.removeComputeds('comp1');
         model.set('bar1', 30);
-        equal(model.get('comp1'), undefined, 'removeComputed');
+        equal(model.get('comp1'), undefined, 'removeComputeds');
         model.set('comp1', 40);
-        equal(model.attributes.comp1, 40, 'Set attr after removeComputed');
+        equal(model.attributes.comp1, 40, 'Set attr after removeComputeds');
         model.set('comp1', 50, {unset: true});
         model.addComputeds('comp1', {
             deps: ['bar1'],

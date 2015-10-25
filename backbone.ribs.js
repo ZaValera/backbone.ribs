@@ -780,7 +780,8 @@
                 getFilter, setFilter,
                 getCallback, setCallback,
                 path, model, modelName, attr, attrArray, modelAttr, ch, changeAttr,
-                setter, getter,
+                setter, getter, multi,
+                pathsLength,
                 i, l, j, l2;
 
             if (typeof setHandler !== 'function') {
@@ -802,6 +803,9 @@
                     throw new Error('wrong binging format ' + JSON.stringify(binding));
                 }
             }
+
+            pathsLength = paths.length;
+            multi = pathsLength > 1;
             //////////////////////////////////////////////
 
             //Определяемся с фильтром
@@ -839,9 +843,9 @@
                 setter = function () {
                     var attrs = [],
                         view = self.view,
-                        model, attr, path, i, l;
+                        model, attr, path, i;
 
-                    for (i = 0, l = paths.length; i < l; i++) {
+                    for (i = 0; i < pathsLength; i++) {
                         path = paths[i];
                         model = path.model;
                         attr = path.attr;
@@ -870,28 +874,33 @@
 
             //Определяем обработчик при изменении DOM-элемента
             if (getHandler) {
-                if (paths.length > 1) {
-                    throw new Error('wrong binging format ' + JSON.stringify(binding));
+                if (multi && !setFilter) {
+                    throw new Error('wrong binging format ' + JSON.stringify(binding) + ', `set` filter is required');
                 }
 
                 getter = function (e) {
                     var val = getHandler.call(self, self.$el, e),
-                        view = self.view;
+                        view = self.view,
+                        i;
 
                     if (setFilter) {
                         val = setFilter.call(self.view, val);
                     }
 
-                    view[paths[0].model].set(attr, val, options);
+                    for (i = 0; i < pathsLength; i++) {
+                        path = paths[i];
+
+                        view[path.model].set(path.attr, multi ? val[i] : val, options);
+                    }
 
                     if (setCallback) {
-                        setCallback.call(view, attr, val);
+                        setCallback.call(view, paths, val);
                     }
                 };
             }
             ///////////////////////////////////////////////////
 
-            for (i = 0, l = paths.length; i < l; i++) {
+            for (i = 0; i < pathsLength; i++) {
                 path = paths[i];
                 modelName = path.model;
                 model = this.view[modelName];
@@ -1308,6 +1317,12 @@
     };
 
     Ribs.Model = Backbone.Model.extend({
+        /**
+         * Represents a Ribs.Model
+         * @constructs Ribs.Model
+         * @param {object} [attributes] - hash of model's attributes
+         * @param {object} [options] - hash of options
+         */
         constructor: function RibsModel(attributes, options) {
             this._ribs = {
                 computeds: {},
@@ -1343,6 +1358,17 @@
             this.initialize.apply(this, arguments);
         },
 
+        /**
+         * Allow to get previous model's attributes on any depth
+         * @type {boolean}
+         */
+        deepPrevious: false,
+
+        /**
+         * Getting model's attribute
+         * @param {string} attr - attribute name
+         * @returns {*} - attribute value
+         */
         get: function (attr) {
             if (attr == null) {
                 return undefined;
@@ -1357,6 +1383,14 @@
             return commonMethods.getPath(attr, this.attributes);
         },
 
+        /**
+         * Setting model's attribute
+         * @param {string} key - attribute name or hash of attributes
+         * @param {object} key - hash of attributes
+         * @param {*} [val] - attribute value
+         * @param {object} [options] - hash of options
+         * @returns {Ribs.Model|boolean}
+         */
         set: function (key, val, options) {
             if (key == null) {
                 return this;
@@ -1535,6 +1569,11 @@
             return this;
         },
 
+        /**
+         * Getting previous model's attribute
+         * @param {string} attr - attribute name
+         * @returns {*} - attribute value
+         */
         previous: function (attr) {
             if (attr == null || !this._previousAttributes) {
                 return null;
@@ -1547,6 +1586,10 @@
             }
         },
 
+        /**
+         * Getting all previous model attributes
+         * @returns {*} - hash of previous model's attributes
+         */
         previousAttributes: function () {
             if (this.deepPrevious) {
                 return commonMethods.cloneDeep(this._previousAttributes);
@@ -1555,6 +1598,11 @@
             }
         },
 
+        /**
+         * Returns a shallow copy of the model's attributes for JSON stringification.
+         * @param {object} [options] - hash of options
+         * @returns {object} - JSON
+         */
         toJSON: function (options) {
             var computeds = this._ribs.computeds,
                 json = {};
@@ -1571,10 +1619,20 @@
 
             return json;
         },
-        //optimized
-        addComputeds: function (key, val) {
+
+        /**
+         * Add new computed attributes to model
+         * @param {string} key - name of computed attribute
+         * @param {object} key - hash of computed attributes
+         * @param {object} [params]
+         * @param {string[]} params.deps - array of computed dependencies
+         * @param {function} params.get - computed getter (will receive values of dependencies)
+         * @param {function} [params.set] - computed setter (must to return a hash of model's attributes)
+         * @returns {Ribs.Model}
+         */
+        addComputeds: function (key, params) {
             var computedsDeps = this._ribs.computedsDeps,
-                attrs = commonMethods.getAttrs(key, val),
+                attrs = commonMethods.getAttrs(key, params),
                 deps, dep, computed, computedsDep,
                 depArr, nextDepArr, name, i, j, l1, l2;
 
@@ -1622,6 +1680,12 @@
             return this;
         },
 
+        /**
+         * Remove computed attributes from model
+         * @param {string} names - name of removing computed attribute
+         * @param {string[]} names - names of removing computed attributes
+         * @returns {Ribs.Model}
+         */
         removeComputeds: function (names) {
             var attrs = {};
 
@@ -1646,18 +1710,27 @@
 
             return this.set(attrs, {unset: true});
         },
-        //optimized
+
+        /**
+         * Is the attribute is computed
+         * @param {string} attr - name of attribute
+         * @returns {boolean}
+         */
         isComputed: function (attr) {
             return this._ribs.computeds.hasOwnProperty(attr);
         },
 
-        //redundant
+        /**
+         * @deprecated since version 0.4.0
+         */
         addComputed: function () {
             commonMethods.showDeprecationWarning('addComputed', 'addComputeds');
             this.addComputeds.apply(this, arguments);
         },
 
-        //redundant
+        /**
+         * @deprecated since version 0.4.0
+         */
         removeComputed: function (name) {
             commonMethods.showDeprecationWarning('removeComputed', 'removeComputeds');
             this.removeComputeds(name);
@@ -1665,9 +1738,12 @@
     });
 
     Ribs.View = Backbone.View.extend({
-        deepPrevious: false,
-
-        constructor: function RibsView(attributes, options) {
+        /**
+         * Represents a Ribs.View
+         * @constructs Ribs.View
+         * @param {object} [options] - hash of options
+         */
+        constructor: function RibsView(options) {
             var dummy = document.createComment('');
 
             this._ribs = {
@@ -1691,6 +1767,11 @@
             }
         },
 
+        /**
+         * Get the descendants of each element in the view's element
+         * @param {string} selector - selector expression to match elements against
+         * @returns {jQuery}
+         */
         $: function(selector) {
             var simple = true;
 
@@ -1717,48 +1798,68 @@
             return res;
         },
 
+        /**
+         * Returns the view's element
+         * @returns {jQuery}
+         */
         getEl: function () {
             return this._ribs.outOfDOM ? this._ribs.$dummy : this.$el;
         },
 
-        appendTo: function ($el) {
-            if (!($el instanceof $)) {
-                $el = $($el);
-            }
-
-            $el.append(this.getEl());
+        /**
+         * Append the view's element to passed element
+         * @param {string|Element|jQuery} target - Selector or Element or jQuery
+         * @returns {Ribs.View}
+         */
+        appendTo: function (target) {
+            this.getEl().appendTo(target);
 
             return this;
         },
 
+        /**
+         * Prevent to applying bindings after initialization
+         * @returns {Ribs.View}
+         */
         preventBindings: function () {
             this._ribs.preventBindings = true;
 
             return this;
         },
 
+        /**
+         * Apply bindings which were described in the `bindings` section
+         * @returns {Ribs.View}
+         */
         applyBindings: function () {
             this.addBindings(this._ribs._bindings);
 
             return this;
         },
 
-        addBindings: function (key, val) {
+        /**
+         * Add new bindings to view
+         * @param {string} selector - selector expression to match elements
+         * @param {object} selector - hash of bindings
+         * @param {object} [params] - declaration of bindings
+         * @returns {Ribs.View}
+         */
+        addBindings: function (selector, params) {
             var ribsBindings = this._ribs.bindings,
-                attrs = commonMethods.getAttrs(key, val),
+                attrs = commonMethods.getAttrs(selector, params),
                 bindingTypes,
-                selector,
+                _selector,
                 types;
 
-            for (selector in attrs) {
-                if (attrs.hasOwnProperty(selector)) {
-                    bindingTypes = attrs[selector];
+            for (_selector in attrs) {
+                if (attrs.hasOwnProperty(_selector)) {
+                    bindingTypes = attrs[_selector];
 
                     if (typeof bindingTypes !== 'object' || _.isEmpty(bindingTypes)) {
-                        throw new Error('wrong binging format for "' + selector + '" - ' + JSON.stringify(bindingTypes));
+                        throw new Error('wrong binging format for "' + _selector + '" - ' + JSON.stringify(bindingTypes));
                     }
 
-                    if (ribsBindings.hasOwnProperty(selector)) {
+                    if (ribsBindings.hasOwnProperty(_selector)) {
                         types = [];
 
                         for (var type in bindingTypes) {
@@ -1767,19 +1868,26 @@
                             }
                         }
 
-                        this.removeBindings(selector, types);
+                        this.removeBindings(_selector, types);
                     }
 
-                    ribsBindings[selector] = new Binding(this, selector, bindingTypes);
+                    ribsBindings[_selector] = new Binding(this, _selector, bindingTypes);
                 }
             }
 
             return this;
         },
 
-        removeBindings: function (key, val) {
+        /**
+         * Remove bindings from view
+         * @param {string} [selector] - selector that was used when creating the binding
+         * @param {string} [name] - name of removing bindings
+         * @param {string[]} [name] - names of removing bindings
+         * @returns {Ribs.View}
+         */
+        removeBindings: function (selector, name) {
             var bindings = this._ribs.bindings,
-                attrs = commonMethods.getAttrs(key, val),
+                attrs = commonMethods.getAttrs(selector, name),
                 types, s;
 
             for (s in bindings) {
@@ -1803,9 +1911,16 @@
             return this;
         },
 
-        updateBindings: function (key, val) {
+        /**
+         * Updates bindings with actual data
+         * @param {string} selector - selector that was used when creating the binding
+         * @param {string} name - name of updating bindings
+         * @param {string[]} name - names of updating bindings
+         * @returns {Ribs.View}
+         */
+        updateBindings: function (selector, name) {
             var bindings = this._ribs.bindings,
-                attrs = commonMethods.getAttrs(key, val),
+                attrs = commonMethods.getAttrs(selector, name),
                 types;
 
             for (var s in bindings) {
@@ -1825,7 +1940,13 @@
             return this;
         },
 
-        renderCollection: function (col, selector) {
+        /**
+         * Updates the interface of the actual state of the collection
+         * @param {Backbone.Collection} collection - collection which was used in binding
+         * @param {string} selector - selector that was used when creating the binding
+         * @returns {Ribs.View}
+         */
+        renderCollection: function (collection, selector) {
             var bindings = this._ribs.bindings,
                 binding,
                 bindCol;
@@ -1835,7 +1956,7 @@
                     binding = bindings[s];
                     bindCol = binding.handlers.collection;
 
-                    if (bindCol && (!col || bindCol.collection === col)) {
+                    if (bindCol && (!collection || bindCol.collection === collection)) {
                         binding.update(['collection']);
                     }
                 }
@@ -1844,6 +1965,11 @@
             return this;
         },
 
+        /**
+         * Returns a hash of all `view`
+         * @param {string} selector - selector that was used when creating the binding
+         * @returns {object}
+         */
         getCollectionViews: function (selector) {
             var binding = this._ribs.bindings[selector];
 
@@ -1854,19 +1980,28 @@
             return undefined;
         },
 
+        /**
+         * Remove this view by taking the element out of the DOM, and removing any
+         * applicable Backbone.Events listeners.
+         * @returns {Ribs.View}
+         */
         remove: function () {
             this.removeBindings();
 
             return ViewProto.remove.apply(this, arguments);
         },
 
-        //redundant
+        /**
+         * @deprecated since version 0.3.1
+         */
         addBinding: function (selector, bindings) {
             commonMethods.showDeprecationWarning('addBinding', 'addBindings');
             this.addBindings.apply(this, arguments);
         },
 
-        //redundant
+        /**
+         * @deprecated since version 0.3.1
+         */
         applyCollection: function (selector, collection, View, data) {
             commonMethods.showDeprecationWarning('applyCollection', 'addBindings');
             this.addBindings(selector, {collection: {

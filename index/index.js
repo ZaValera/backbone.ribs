@@ -387,7 +387,7 @@ require([
 
         window.v =  new TestView();*/
 
-        var View = Backbone.Ribs.View.extend({
+        /*var View = Backbone.Ribs.View.extend({
             el: '<div class="toggle" style="display: inline-block;">' +
                     '<div class="first">first</div>' +
                     '<div class="parent"><div class="second"><span class="text"></span></div></div>' +
@@ -399,15 +399,15 @@ require([
                 'el': {
                     inDOM: 'model.main'
                 },
-                /*'.first': {
+                '.first': {
                     inDOM: 'model.first'
-                },*/
+                },
                 '.second': {
                     inDOM: 'model.second'
-                }/*,
+                },
                 '.third': {
                     inDOM: 'model.third'
-                }*/
+                }
             },
 
             initialize: function () {
@@ -424,12 +424,10 @@ require([
                 });
 
                 this.appendTo($('body'));
-
-                //this.setElement('.toggle');
             }
         });
 
-        window.view = new View();
+        window.view = new View();*/
 
         /*window.view.removeBindings2({
             el: 'classes'
@@ -456,5 +454,38 @@ require([
         v.updateBindings('.foo', ['text']);
 
         v.removeBindings('.foo', ['text']);*/
+
+
+        var View = Backbone.Ribs.View.extend({
+            bindings: {
+                '.bind-input': {
+                    value: {
+                        data: ['model.first!.bla', 'model.second'],
+                        filter: {
+                            get: function (first, second) {
+                                return first + ';' + second;
+                            },
+                            set: function (val) {
+                                val = val.split(';');
+
+                                return [val[0], val[1]];
+                            }
+                        }
+                    }
+                }
+            },
+
+            initialize: function () {
+                this.setElement('.content');
+
+                this.model = new Backbone.Ribs.Model({
+                    'first.bla': 'lala1',
+                    first: {bla: 'lala2'},
+                    second: 'ffff'
+                });
+            }
+        });
+
+        window.view = new View();
     });
 });
