@@ -45,6 +45,10 @@ Binding collection is useful in cases when you need to create a view for a colle
 During applying binding, for each model in the collection will be created its own instance of ItemView. The root element of the newly created view will be added inside the element, which selector was described in binding.
 
 ### Change Log
+v0.5.1 - 29.10.2015
+* Bindings: `bindings`, `handlers` and `filters` can be a function
+* Bindings: custom `events` in custom `handlers`
+
 v0.5.0 - 25.10.2015
 * Compatibility with Backbone 1.2.3
 * Computed attributes: computed attributes in `model.attributes` hash (**significant change**)

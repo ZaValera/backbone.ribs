@@ -1,4 +1,4 @@
-//     Backbone.Ribs.js 0.5.0
+//     Backbone.Ribs.js 0.5.1
 
 //     (c) 2014 Valeriy Zaytsev
 //     Ribs may be freely distributed under the MIT license.
@@ -31,7 +31,7 @@
     var $ = Backbone.$;
 
     var Ribs = Backbone.Ribs = {
-        version: '0.5.0'
+        version: '0.5.1'
     };
 
     var ViewProto = Backbone.View.prototype;
@@ -682,7 +682,7 @@
 
                 if (wfa) {
                     if (self._toAddArr) {
-                        self._addViewToEl();
+                        self._addViewsToEl();
                     }
                 } else {
                     if (self._toAdd) {
@@ -699,7 +699,7 @@
             this._fillElByCollection();
         },
 
-        _addViewToEl: function () {
+        _addViewsToEl: function () {
             var ribsCol = this.handlers.collection,
                 collection = ribsCol.collection,
                 views = ribsCol.views,
@@ -769,13 +769,13 @@
                 filter = binding.filter,
                 options = binding.options || {},
                 callback = binding.callback,
-                events = binding.events || 'change',
                 filters = this.view.filters,
                 paths = [], attrs = [], col = [], changeAttrs = {}, self = this,
                 handler = {
                     changeAttrs: changeAttrs
                 },
                 setHandler = this.view.handlers[type],
+                events = binding.events || setHandler.events || 'change',
                 getHandler,
                 getFilter, setFilter,
                 getCallback, setCallback,
@@ -1747,18 +1747,15 @@
             var dummy = document.createComment('');
 
             this._ribs = {
-                _bindings: _.clone(this.bindings) || {},
+                _bindings: _.extend({}, _.result(this, 'bindings')),
                 dummy: dummy,
                 $dummy: $(dummy),
                 bindings: {},
                 collections: {}
             };
 
-            this.filters = this.filters || {};
-            this.handlers = this.handlers || {};
-
-            _.extend(this.filters, filters);
-            _.extend(this.handlers, handlers);
+            this.handlers = _.extend({}, handlers, _.result(this, 'handlers'));
+            this.filters = _.extend({}, filters, _.result(this, 'filters'));
 
             ViewProto.constructor.apply(this, arguments);
 

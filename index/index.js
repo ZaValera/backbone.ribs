@@ -475,6 +475,12 @@ require([
                 }
             },
 
+            handlers: {
+                text: function ($el, value) {
+                    $el.text('asdfasdfhlasdhflajshdf');
+                }
+            },
+
             initialize: function () {
                 this.setElement('.content');
 
