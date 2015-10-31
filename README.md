@@ -45,6 +45,11 @@ Binding collection is useful in cases when you need to create a view for a colle
 During applying binding, for each model in the collection will be created its own instance of ItemView. The root element of the newly created view will be added inside the element, which selector was described in binding.
 
 ### Change Log
+v0.5.2 - 31.10.2015
+* Computeds: `toJSON` flag in declaration
+* Bindings: some optimizations
+* Deep get/set: bug fix
+
 v0.5.1 - 29.10.2015
 * Bindings: `bindings`, `handlers` and `filters` can be a function
 * Bindings: custom `events` in custom `handlers`
