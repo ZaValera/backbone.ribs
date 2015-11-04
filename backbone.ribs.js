@@ -1,4 +1,4 @@
-//     Backbone.Ribs.js 0.5.2
+//     Backbone.Ribs.js 0.5.3
 
 //     (c) 2014 Valeriy Zaytsev
 //     Ribs may be freely distributed under the MIT license.
@@ -31,7 +31,7 @@
     var $ = Backbone.$;
 
     var Ribs = Backbone.Ribs = {
-        version: '0.5.2'
+        version: '0.5.3'
     };
 
     var ViewProto = Backbone.View.prototype;
@@ -295,13 +295,15 @@
 
     var modelMethods = {
         propagationTrigger: function (attr, options) {
-            var escapedPath = attr.escapedPath.slice();
+            var escapedPath = attr.escapedPath.slice(),
+                path;
 
             if (escapedPath.length) {
                 while (escapedPath.length - 1) {
                     escapedPath.length--;
+                    path = escapedPath.join('.');
 
-                    this.trigger('change:' + escapedPath.join('.'), this, undefined, options);
+                    this.trigger('change:' + path, this, undefined, options, path);
                 }
             }
         },
@@ -1417,7 +1419,8 @@
             var attrs,attr,silent,unset,changes,changing,changed,current,prev,i;
 
             var compAttrs,realAttrs,hasCompInAttrs,
-                computeds,computedsToUpdate,changedAttrs,compChanges,needUnset,path,escapedPath,item,l;
+                computeds,computedsToUpdate,changedAttrs,compChanges,
+                needUnset,path,escapedPath,item,l;
 
             if (typeof key === 'object') {
                 attrs = key;
@@ -1555,7 +1558,7 @@
                     for (i = 0, l = changes.length; i < l; i++) {
                         item = changes[i];
 
-                        this.trigger('change:' + item.attr, this, item.val, options);
+                        this.trigger('change:' + item.attr, this, item.val, options, item.attr);
 
                         if (options.propagation) {
                             modelMethods.propagationTrigger.call(this, item, options);
@@ -1566,7 +1569,7 @@
                 if (compChanges.length) {
                     for (i = 0, l = compChanges.length; i < l; i++) {
                         item = compChanges[i];
-                        this.trigger('change:' + item.attr, this, item.val, options);
+                        this.trigger('change:' + item.attr, this, item.val, options, item.attr);
                     }
                 }
             }

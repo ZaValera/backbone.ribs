@@ -19,31 +19,6 @@ require([
     'epoxy'
 ], function() {
     $(document).ready(function() {
-        var View = Backbone.Ribs.View.extend({
-            bindings: {
-                el: {
-                    text: {
-                        data: 'model.text',
-                        filter: function (text) {
-                            debugger;
-                            return text;
-                        }
-                    }
-                }
-            },
-
-            initialize: function () {
-                this.model = window.m = new Backbone.Model();
-            }
-        });
-
-        var v = new View();
-
-
-
-
-
-
         var extend = {
             defaults: {
                 bar: 10,
@@ -481,7 +456,7 @@ require([
         v.removeBindings('.foo', ['text']);*/
 
 
-        /*var View = Backbone.Ribs.View.extend({
+        var View = Backbone.Ribs.View.extend({
             bindings: {
                 '.bind-input': {
                     value: {
@@ -517,6 +492,6 @@ require([
             }
         });
 
-        window.view = new View();*/
+        window.view = new View();
     });
 });
