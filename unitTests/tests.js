@@ -323,9 +323,7 @@ $(function () {
                         return bar1 * 10;
                     },
                     set: function (val) {
-                        return {
-                            bar1:  val/10
-                        }
+                        return val/10;
                     }
                 },
 
@@ -337,10 +335,7 @@ $(function () {
                     set: function (val) {
                         val = val.split(' ');
 
-                        return {
-                            bar1:  parseInt(val[0]),
-                            bar2: parseInt(val[1])
-                        }
+                        return [parseInt(val[0]), parseInt(val[1])];
                     }
                 },
 
@@ -352,10 +347,7 @@ $(function () {
                     set: function (val) {
                         val = val.split('-');
 
-                        return {
-                            bar1:  parseInt(val[0]),
-                            comp2: val[1]
-                        }
+                        return [parseInt(val[0]), val[1]];
                     }
                 }
             },
@@ -623,13 +615,13 @@ $(function () {
                 },
                 '.bind-with-filter': {
                     text: {
-                        filter: 'summ',
+                        processor: 'summ',
                         data: ['model.num', 'model.num2', 'model2.num']
                     }
                 },
                 '.bind-col-filter': {
                     text: {
-                        filter: 'colFilter',
+                        processor: 'colFilter',
                         data: ['col.a', 'col2.b']
                     }
                 },
@@ -648,19 +640,19 @@ $(function () {
                 },
                 '.bind-with-not-filter': {
                     toggle: {
-                        filter: 'not',
+                        processor: 'not',
                         data: 'model.toggle1'
                     }
                 },
                 '.bind-with-length-filter': {
                     text: {
-                        filter: 'length',
+                        processor: 'length',
                         data: 'model.ar'
                     }
                 },
                 '.bind-with-get-filter': {
                     text: {
-                        filter: function (val) {
+                        processor: function (val) {
                             return val.toUpperCase();
                         },
                         data: 'model.lowerCase'
@@ -668,7 +660,7 @@ $(function () {
                 },
                 '.bind-with-get-set-filter': {
                     value: {
-                        filter: {
+                        processor: {
                             get: function (val) {
                                 return val.toUpperCase();
                             },
@@ -696,7 +688,7 @@ $(function () {
                 }
             },
 
-            filters: {
+            processors: {
                 summ: function (a, b, c) {
                     return a + b + c;
                 },
@@ -714,13 +706,11 @@ $(function () {
             },
 
             handlers: {
-                single: {
-                    set: function ($el, value) {
-                        $el.addClass(value);
-                    }
+                single: function ($el, value) {
+                    $el.addClass(value);
                 },
                 multiple: {
-                    set: function ($el, value, name) {
+                    get: function ($el, value, name) {
                         $el.attr('data-' + name, value);
                     },
                     multiple: true

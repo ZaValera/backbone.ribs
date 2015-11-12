@@ -248,8 +248,8 @@
                     binding = bindings[selector];
 
                     if ( !binding.hasInDOMHandler ||
-                         selector === 'el' ||
-                         !binding.needBack && !binding.outOfDOM) {
+                        selector === 'el' ||
+                        !binding.needBack && !binding.outOfDOM) {
                         continue;
                     }
 
@@ -390,10 +390,8 @@
         convertComputedsToArguments: function (attrs) {
             var newAttrs = {},
                 computeds = this._ribs.computeds,
-                attr,
-                newValue,
-                realAttrs,
-                hasComputed;
+                compAttrs, computed, deps, hasComputed,
+                attr, newValue, realAttrs;
 
             _.extend(newAttrs, attrs);
 
@@ -405,9 +403,25 @@
                     if (newAttrs.hasOwnProperty(attr)) {
                         if (attr in computeds) {
                             hasComputed = true;
-                            newValue = newAttrs[attr];
+                            computed = computeds[attr];
+                            deps = computed.deps;
+                            newValue = computed.set(newAttrs[attr]);
+                            compAttrs = {};
 
-                            _.extend(realAttrs, computeds[attr].set(newValue));
+                            if (computed.multi) {
+                                if (!_.isArray(newValue)) {
+                                    throw new Error('`set` computed must return an array of values');
+                                }
+
+                                for (var i = 0; i < deps.length; i++) {
+                                    compAttrs[deps[i]] = newValue[i];
+                                }
+                            } else {
+                                compAttrs[deps[0]] = newValue;
+                            }
+
+
+                            _.extend(realAttrs, compAttrs);
 
                             delete newAttrs[attr];
                         }
@@ -548,7 +562,11 @@
         var deps = data.deps;
 
         if (!_.isArray(deps)) {
-            throw new Error('init computed: computed "' + name + '" - "deps" must be an array');
+            deps = [deps];
+        }
+
+        if (deps.length > 1) {
+            this.multi = true;
         }
 
         this.deps = deps;
@@ -595,7 +613,7 @@
     });
 
     //optimized
-    var filters = {
+    var processors = {
         not: {
             set: function (val) {
                 return !val;
@@ -621,32 +639,32 @@
         },
 
         value: {
-            set: function ($el, value) {
+            get: function ($el, value) {
                 if ($el.val() !== value) {
                     $el.val(value);
                 }
             },
-            get: function ($el) {
+            set: function ($el) {
                 return $el.val();
             }
         },
 
         css: {
-            set: function ($el, value, style) {
+            get: function ($el, value, style) {
                 $el.css(style, value);
             },
             multiple: true
         },
 
         attr: {
-            set: function ($el, value, attr) {
+            get: function ($el, value, attr) {
                 $el.attr(attr, value);
             },
             multiple: true
         },
 
         classes: {
-            set: function ($el, value, cl) {
+            get: function ($el, value, cl) {
                 $el.toggleClass(cl, !!value);
             },
             multiple: true
@@ -696,7 +714,7 @@
         },
 
         checked: {
-            set: function ($el, value) {
+            get: function ($el, value) {
                 $el.prop('checked', false);
 
                 if (_.isArray(value)) {
@@ -710,7 +728,7 @@
                 }
             },
 
-            get: function ($el) {
+            set: function ($el) {
                 var type = $el.attr('type'),
                     checkedEl = $el.filter(':checked');
 
@@ -733,17 +751,17 @@
         },
 
         options: {
-            set: function ($el, value) {
+            get: function ($el, value) {
                 $el.val(value);
             },
 
-            get: function ($el) {
+            set: function ($el) {
                 return $el.val() || [];
             }
         },
 
         mod: {
-            set: function ($el, value, cl, binding) {
+            get: function ($el, value, cl, binding) {
                 var modifier = this.mods[binding];
 
                 if (modifier) {
@@ -939,27 +957,27 @@
         },
 
         //optimized
-        addHandler: function (type, setHandler, binding, bindAttr) {
+        addHandler: function (type, getHandler, binding, bindAttr) {
             var data = binding.data,
-                filter = binding.filter,
+                processor = binding.processor,
                 options = binding.options || {},
                 getCallback = binding.callback,
                 paths = [], attrs = [], col = [], changeAttrs = {}, self = this,
                 handler = {
                     changeAttrs: changeAttrs
                 },
-                events = binding.events || setHandler.events || 'change',
-                getHandler,
-                getFilter, setFilter,
+                events = binding.events || getHandler.events || 'change',
+                setHandler,
+                getProcessor, setProcessor,
                 setCallback,
                 path, model, modelName, attr, attrArray, modelAttr, ch, changeAttr,
-                setter, getter, multi,
+                getter, setter, multi,
                 pathsLength,
                 i, l, j, l2;
 
-            if (typeof setHandler !== 'function') {
-                getHandler = setHandler.get;
-                setHandler = setHandler.set;
+            if (typeof getHandler !== 'function') {
+                setHandler = getHandler.set;
+                getHandler = getHandler.get;
             }
 
             //Формируем paths - массив объектов model-attr
@@ -982,20 +1000,20 @@
             //////////////////////////////////////////////
 
             //Определяемся с фильтром
-            if (filter) {
-                if (typeof filter === 'string') {
-                    getFilter = this.view.filters[filter] || filters[filter];
+            if (processor) {
+                if (typeof processor === 'string') {
+                    getProcessor = this.view.processors[processor] || processors[processor];
 
-                    if (!getFilter) {
-                        throw new Error('unknown filter "' + filter + '"');
+                    if (!getProcessor) {
+                        throw new Error('unknown processor "' + processor + '"');
                     }
                 } else {
-                    getFilter = filter;
+                    getProcessor = processor;
                 }
 
-                if (typeof getFilter !== 'function') {
-                    setFilter = getFilter.set;
-                    getFilter = getFilter.get;
+                if (typeof getProcessor !== 'function') {
+                    setProcessor = getProcessor.set;
+                    getProcessor = getProcessor.get;
                 }
             }
             //////////////////////////////
@@ -1010,8 +1028,8 @@
             //////////////////////////////
 
             //Определяем обработчик события при изменении модели/коллекции
-            if (setHandler) {
-                setter = function () {
+            if (getHandler) {
+                getter = function () {
                     if (self.empty) {
                         return;
                     }
@@ -1032,13 +1050,13 @@
                         }
                     }
 
-                    if (getFilter) {
-                        attr = getFilter.apply(view, attrs);
+                    if (getProcessor) {
+                        attr = getProcessor.apply(view, attrs);
                     } else {
                         attr = attrs[0];
                     }
 
-                    setHandler.call(self, self.$el, attr, bindAttr, binding);
+                    getHandler.call(self, self.$el, attr, bindAttr, binding);
 
                     if (getCallback) {
                         getCallback.call(view);
@@ -1048,18 +1066,22 @@
             //////////////////////////////////////////////////////////////
 
             //Определяем обработчик при изменении DOM-элемента
-            if (getHandler) {
-                if (multi && !setFilter) {
-                    throw new Error('wrong binging format ' + JSON.stringify(binding) + ', `set` filter is required');
+            if (setHandler) {
+                if (multi && !setProcessor) {
+                    throw new Error('wrong binging format ' + JSON.stringify(binding) + ', `set` processor is required');
                 }
 
-                getter = function (e) {
-                    var val = getHandler.call(self, self.$el, e),
+                setter = function (e) {
+                    var val = setHandler.call(self, self.$el, e),
                         view = self.view,
                         i;
 
-                    if (setFilter) {
-                        val = setFilter.call(self.view, val);
+                    if (setProcessor) {
+                        val = setProcessor.call(self.view, val);
+                    }
+
+                    if (multi && !_.isArray(val)) {
+                        throw new Error('`set` processor must return an array of values');
                     }
 
                     for (i = 0; i < pathsLength; i++) {
@@ -1087,17 +1109,17 @@
                 if (model instanceof Backbone.Collection) {
                     attrs.push(model.pluck(attr));
 
-                    if (setHandler) {
+                    if (getHandler) {
                         if (col.indexOf(modelName) === -1) {
                             col.push(modelName);
-                            model.on('add remove reset sort', setter);
+                            model.on('add remove reset sort', getter);
                         }
                     }
                 } else {
                     attrs.push(model.get(attr));
                 }
 
-                if (setHandler) {
+                if (getHandler) {
                     for (j = 0, l2 = attrArray.length; j < l2; j++) {
                         if (ch) {
                             ch += '.';
@@ -1106,33 +1128,33 @@
                         ch += attrArray[j];
                         changeAttr.push(ch);
 
-                        model.on('change:' + ch, setter);
-                        this._normalizeModelEvents(model, 'change:' + ch, setter);
+                        model.on('change:' + ch, getter);
+                        this._normalizeModelEvents(model, 'change:' + ch, getter);
                     }
                 }
             }
 
-            if (setHandler) {
+            if (getHandler) {
                 if (!this.empty) {
-                    if (getFilter) {
-                        modelAttr = getFilter.apply(this.view, attrs);
+                    if (getProcessor) {
+                        modelAttr = getProcessor.apply(this.view, attrs);
                     } else {
                         modelAttr = attrs[0];
                     }
 
-                    setHandler.call(this, this.$el, modelAttr, bindAttr, binding);
+                    getHandler.call(this, this.$el, modelAttr, bindAttr, binding);
 
                     if (getCallback) {
                         getCallback.call(this.view);
                     }
                 }
 
-                handler.setter = setter;
+                handler.getter = getter;
             }
 
-            if (getHandler) {
-                this.view.$el.on(events + '.bindingHandlers', this.selector, getter);
-                handler.getter = getter;
+            if (setHandler) {
+                this.view.$el.on(events + '.bindingHandlers', this.selector, setter);
+                handler.setter = setter;
                 handler.events = events;
             }
 
@@ -1166,22 +1188,22 @@
             var handlers = this.handlers,
                 col = [],
                 changeAttrs, changeAttr,
-                handler, setter, events,
+                handler, getter, events,
                 model, i, l;
 
             for (var type in handlers) {
                 if ( handlers.hasOwnProperty(type) &&
-                     !(types && types.indexOf('all') === -1 &&
-                     types.indexOf(type) === -1)) {
+                    !(types && types.indexOf('all') === -1 &&
+                    types.indexOf(type) === -1)) {
                     handler = handlers[type];
-                    setter = handler.setter;
+                    getter = handler.getter;
                     events = handler.events;
 
                     if (events) {
-                        this.view.$el.off(events + '.bindingHandlers', this.selector, handler.getter);
+                        this.view.$el.off(events + '.bindingHandlers', this.selector, handler.setter);
                     }
 
-                    if (typeof setter === 'function') {
+                    if (typeof getter === 'function') {
                         changeAttrs = handler.changeAttrs;
 
                         for (model in changeAttrs) {
@@ -1189,14 +1211,14 @@
                                 if (this.view[model] instanceof Backbone.Collection) {
                                     if (col.indexOf(model) === -1) {
                                         col.push(model);
-                                        this.view[model].off('add remove reset sort', setter);
+                                        this.view[model].off('add remove reset sort', getter);
                                     }
                                 }
 
                                 changeAttr = changeAttrs[model];
 
                                 for (i = 0, l = changeAttr.length; i < l; i++) {
-                                    this.view[model].off('change:' + changeAttr[i], setter);
+                                    this.view[model].off('change:' + changeAttr[i], getter);
                                 }
                             }
                         }
@@ -1246,16 +1268,16 @@
 
         update: function (types) {
             var handlers = this.handlers,
-                handler, setter;
+                handler, getter;
 
             for (var type in handlers) {
                 if (handlers.hasOwnProperty(type) && !(types && types.indexOf('all') === -1 && types.indexOf(type) === -1)) {
                     handler = handlers[type];
-                    setter = handler.setter;
+                    getter = handler.getter;
 
-                    if (typeof setter === 'function') {
+                    if (typeof getter === 'function') {
                         this._setEl();
-                        setter();
+                        getter();
                     }
 
                     if (type === 'collection') {
@@ -1631,8 +1653,8 @@
             for (var attr in this.attributes) {
                 if (this.attributes.hasOwnProperty(attr)) {
                     if ( computeds.hasOwnProperty(attr) &&
-                         ((!options || !options.computeds) && !computeds[attr].toJSON ||
-                         options && options.computeds === false)) {
+                        ((!options || !options.computeds) && !computeds[attr].toJSON ||
+                        options && options.computeds === false)) {
                         continue;
                     }
 
@@ -1778,7 +1800,7 @@
             };
 
             this.handlers = _.result(this, 'handlers') || {};
-            this.filters = _.result(this, 'filters') || {};
+            this.processors = _.result(this, 'processors') || {};
 
             Backbone.View.apply(this, arguments);
 

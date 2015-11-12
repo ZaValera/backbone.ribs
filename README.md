@@ -45,6 +45,10 @@ Binding collection is useful in cases when you need to create a view for a colle
 During applying binding, for each model in the collection will be created its own instance of ItemView. The root element of the newly created view will be added inside the element, which selector was described in binding.
 
 ### Change Log
+v1.0.0
+* Set and Get: in `handlers, computeds and processors` method `set` return value, which will be set to model. `get` participates in the inverse operation.
+* Binding's `filter` renamed to `processor`
+
 v0.5.3 - 04.11.2015
 * Model: pass changed attribute's name into event's callback
 * NOTE: next release will be 1.0.0 and it will be incompatible with this release
