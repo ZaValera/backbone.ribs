@@ -1257,8 +1257,93 @@ QUnit.module('Bindings', {
             assert.equal($el.text(), 'bar', 'Text');
         });
 
-        QUnit.test('$(), getEl() and appendTo()', function (assert) {
+        QUnit.test('$()', function (assert) {
+            var model = new Backbone.Model({
+                isVisible: false
+            });
 
+            this.bindingView = new (Backbone.Ribs.View.extend({
+                bindings: {
+                    '.bind-second': {
+                        inDOM: 'model.isVisible'
+                    }
+                },
+
+                el: '<div class="bind-first">' +
+                    '<div class="bind-second">' +
+                        '<div class="bind-third">ribs</div>' +
+                    '</div>' +
+                '</div>',
+
+                initialize: function () {
+                    this.model = model;
+                    this.$el.appendTo('body');
+                }
+            }))();
+
+            var $el1 = $('.bind-second .bind-third');
+            var $el2 = this.bindingView.$('.bind-second .bind-third');
+
+            assert.equal($el1.length, 0);
+            assert.equal($el2.length, 1);
+        });
+
+        QUnit.test('getEl()', function (assert) {
+            var model = new Backbone.Model({
+                isVisible: false
+            });
+
+            this.bindingView = new (Backbone.Ribs.View.extend({
+                bindings: {
+                    'el': {
+                        inDOM: 'model.isVisible'
+                    }
+                },
+
+                el: '<div class="bind-first">ribs</div>',
+
+                initialize: function () {
+                    this.model = model;
+                    this.$el.appendTo('body');
+                }
+            }))();
+
+            var $el1 = $('.bind-first');
+            var $el2 = this.bindingView.getEl();
+
+            assert.equal($el1.length, 0);
+            assert.equal($el2.parent()[0], $('body')[0]);
+        });
+
+        QUnit.test('appendTo()', function (assert) {
+            var model = new Backbone.Model({
+                isVisible: false
+            });
+
+            this.bindingView = new (Backbone.Ribs.View.extend({
+                bindings: {
+                    'el': {
+                        inDOM: 'model.isVisible'
+                    }
+                },
+
+                el: '<div class="bind-first">ribs</div>',
+
+                initialize: function () {
+                    this.model = model;
+                }
+            }))();
+
+            this.bindingView.appendTo('body');
+
+            var $el;
+
+            $el = $('.bind-first');
+            assert.equal($el.length, 0);
+
+            model.set('isVisible', true);
+            $el = $('.bind-first');
+            assert.equal($el.length, 1);
         });
     });
 });

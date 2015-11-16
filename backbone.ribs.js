@@ -1308,9 +1308,13 @@
             if (this.hasInDOMHandler) {
                 this.dummies = [];
 
-                for (var i = 0; i < this.$el.length; i++) {
-                    dummy = document.createComment(this.$el[i].tagName);
-                    this.dummies.push(dummy);
+                if (selector === 'el') {
+                    this.dummies.push(this.view._ribs.dummy);
+                } else {
+                    for (var i = 0; i < this.$el.length; i++) {
+                        dummy = document.createComment(this.$el[i].tagName);
+                        this.dummies.push(dummy);
+                    }
                 }
             }
         },
