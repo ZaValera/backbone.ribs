@@ -46,37 +46,29 @@ require([
             }
         };
 
-        /*var MMM = Backbone.Ribs.Model.extend({
+        var MMM = Backbone.Ribs.Model.extend({
             defaults: {
-                foo: 'a'
+                foo: {
+                    bar: 123
+                }
             },
 
             computeds: {
                 comp: {
                     deps: ['foo'],
                     get: function (foo) {
-                        return foo + '_comp';
+                        return foo.bar;
                     },
                     set: function (val) {
                         return {
                             foo: val.split('_')[0]
                         };
                     }
-                },
-                comp2: {
-                    deps: ['comp'],
-                    get: function (comp) {
-                        return comp + '_123';
-                    }
                 }
             }
         });
 
         window.mmm = new MMM();
-
-        mmm.on('change:foo', function (model, value) {console.log('foo:', value)});
-        mmm.on('change:comp', function (model, value) {console.log('comp:', value)});
-        mmm.on('change:comp2', function (model, value) {console.log('comp2:', value)});*/
 
 
         /*var model = window.model = new (Backbone.Ribs.Model.extend(_.cloneDeep(extend)));
@@ -456,7 +448,7 @@ require([
         v.removeBindings('.foo', ['text']);*/
 
 
-        var View = Backbone.Ribs.View.extend({
+        /*var View = Backbone.Ribs.View.extend({
             bindings: {
                 '.bind-input': {
                     value: {
@@ -492,6 +484,6 @@ require([
             }
         });
 
-        window.view = new View();
+        window.view = new View();*/
     });
 });

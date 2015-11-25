@@ -35,6 +35,9 @@
     };
 
     var ViewProto = Backbone.View.prototype;
+    var ModelProto = Backbone.Model.prototype;
+
+    var eventSplitter = /\s+/;
 
     var toString = Object.prototype.toString,
         tags = {
@@ -248,8 +251,8 @@
                     binding = bindings[selector];
 
                     if ( !binding.hasInDOMHandler ||
-                         selector === 'el' ||
-                         !binding.needBack && !binding.outOfDOM) {
+                        selector === 'el' ||
+                        !binding.needBack && !binding.outOfDOM) {
                         continue;
                     }
 
@@ -542,7 +545,14 @@
         this.name = name;
 
         if (typeof data === 'function') {
-            throw new Error('init computed: computed "' + name + '" is a function. It is no longer available after v0.4.6');
+            console.warn('Deprecation warning: computed "' + name + '" is a function. It is redundant after v0.4.6.');
+
+            this.get = function () {return data.apply(model);};
+            this.set = function () {
+                throw new Error('set: computed "' + name + '" has no set method');
+            };
+            this._simple = true;
+            return this;
         }
 
         var deps = data.deps;
@@ -572,6 +582,10 @@
     _.extend(Computed.prototype, {
         //optimized
         update: function () {
+            if (this._simple) {
+                return;
+            }
+
             var deps = [],
                 val, i;
 
@@ -1171,8 +1185,8 @@
 
             for (var type in handlers) {
                 if ( handlers.hasOwnProperty(type) &&
-                     !(types && types.indexOf('all') === -1 &&
-                     types.indexOf(type) === -1)) {
+                    !(types && types.indexOf('all') === -1 &&
+                    types.indexOf(type) === -1)) {
                     handler = handlers[type];
                     setter = handler.setter;
                     events = handler.events;
@@ -1590,6 +1604,35 @@
             return this;
         },
 
+        /*trigger: function(name) {
+            if (name && eventSplitter.test(name)) {
+                var names = name.split(eventSplitter);
+
+                if (names.length) {
+                    var computedsDeps = this._ribs.computedsDeps;
+                    var computeds = this._ribs.computeds;
+
+                    for (var depName in computedsDeps) {
+                        if (computedsDeps.hasOwnProperty(depName)) {
+                            if (names.indexOf('change:' + depName)) {
+                                var deps = computedsDeps[depName],
+                                    computed;
+
+                                for (var i = 0, l = deps.length; i < l; i++) {
+                                    computed = computeds[deps[i]];
+                                    computed.update();
+
+                                    this.attributes[computed.name] = computed.get();
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            return ModelProto.trigger.apply(this, arguments);
+        },*/
+
         /**
          * Getting previous model's attribute
          * @param {string} attr - attribute name
@@ -1631,12 +1674,16 @@
             for (var attr in this.attributes) {
                 if (this.attributes.hasOwnProperty(attr)) {
                     if ( computeds.hasOwnProperty(attr) &&
-                         ((!options || !options.computeds) && !computeds[attr].toJSON ||
-                         options && options.computeds === false)) {
+                        ((!options || !options.computeds) && !computeds[attr].toJSON ||
+                        options && options.computeds === false)) {
                         continue;
                     }
 
-                    json[attr] = this.attributes[attr];
+                    if (computeds.hasOwnProperty(attr) && computeds[attr]._simple) {
+                        json[attr] = computeds[attr].get();
+                    } else {
+                        json[attr] = this.attributes[attr];
+                    }
                 }
             }
 
@@ -1666,6 +1713,10 @@
                     }
 
                     computed = this._ribs.computeds[name] = new Computed(attrs[name], name, this);
+
+                    if (computed._simple) {
+                        continue;
+                    }
 
                     deps = computed.deps;
 
