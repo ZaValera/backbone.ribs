@@ -1,4 +1,4 @@
-﻿require.config({
+﻿﻿require.config({
     paths: {
         jquery: '../vendor/jquery-1.9.0.min',
         underscore: '../vendor/lodash.min',

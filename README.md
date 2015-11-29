@@ -49,9 +49,12 @@ v1.0.0
 * Set and Get: in `handlers, computeds and processors` method `set` return value, which will be set to model. `get` participates in the inverse operation.
 * Binding's `filter` renamed to `processor`
 
+v0.5.4 - 29.11.2015
+* Computed attributes: returned computed attribute without `deps` for backward compatibility (**will be deleted in v1.0.0**)
+* Computed attributes: returned update computed attributes by triggering 'change' event
+
 v0.5.3 - 04.11.2015
 * Model: pass changed attribute's name into event's callback
-* NOTE: next release will be 1.0.0 and it will be incompatible with this release
 
 v0.5.2 - 31.10.2015
 * Computeds: `toJSON` flag in declaration
