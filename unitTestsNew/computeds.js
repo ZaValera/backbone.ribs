@@ -123,7 +123,10 @@ QUnit.module('Computeds', function () {
             this.model = new (Backbone.Ribs.Model.extend({
                 defaults: {
                     bar1: 1,
-                    bar2: 2
+                    bar2: 2,
+                    foo: {
+                        bar: 3
+                    }
                 },
 
                 computeds: {
@@ -158,6 +161,13 @@ QUnit.module('Computeds', function () {
                             val = val.split('-');
 
                             return [parseInt(val[0]), val[1]];
+                        }
+                    },
+
+                    comp4: {
+                        deps: 'foo',
+                        get: function (foo) {
+                            return foo.bar;
                         }
                     }
                 }
@@ -323,6 +333,32 @@ QUnit.module('Computeds', function () {
             model.set('comp3', '7-8 9');
 
             assert.equal(res.sort().join(' '), 'bar1 bar2 comp1 comp2 comp3', 'Set complex computed');
+        });
+
+        QUnit.test('Trigger change events', function (assert) {
+            var model = this.model,
+                attrChanged = false,
+                compChanged = false;
+
+            model.on('change:foo', function () {
+                attrChanged = true;
+            });
+
+            model.on('change:comp4', function () {
+                compChanged = true;
+            });
+
+            model.get('foo').bar = 4;
+
+            assert.equal(model.get('comp4'), 3, 'Computed after changing attr without set');
+            assert.equal(attrChanged, false, 'change attr event not fired');
+            assert.equal(compChanged, false, 'change comp event not fired');
+
+            model.trigger('change:foo');
+
+            assert.equal(model.get('comp4'), 4, 'Computed after triggering change event');
+            assert.equal(attrChanged, true, 'change attr event fired');
+            assert.equal(compChanged, true, 'change comp event fired');
         });
     });
 

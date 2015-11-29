@@ -1345,5 +1345,44 @@ QUnit.module('Bindings', {
             $el = $('.bind-first');
             assert.equal($el.length, 1);
         });
+
+        QUnit.test('remove()', function (assert) {
+            var model = new Backbone.Model({
+                foo: 'bar'
+            });
+
+            var flag = 0;
+
+            this.bindingView = new (Backbone.Ribs.View.extend({
+                bindings: {
+                    '.bind-text': {
+                        text: {
+                            data: 'model.foo',
+                            processor: function (foo) {
+                                flag++;
+
+                                return foo;
+                            }
+                        }
+                    }
+                },
+
+                el: '<div class="bind">' +
+                '<span class="bind-text">ribs</span>' +
+                '</div>',
+
+                initialize: function () {
+                    this.model = model;
+                    this.$el.appendTo('body');
+                }
+            }))();
+
+            model.set('foo', 'newBar');
+            assert.equal(flag, 2, 'Flag before removing');
+
+            this.bindingView.remove();
+            model.set('foo', 'ribs');
+            assert.equal(flag, 2, 'Flag after removing');
+        });
     });
 });

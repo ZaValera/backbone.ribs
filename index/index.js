@@ -1,4 +1,8 @@
-﻿﻿require.config({
+﻿//JSHint settings
+/* globals $: false */
+/* globals require: false */
+
+require.config({
     paths: {
         jquery: '../vendor/jquery-1.9.0.min',
         underscore: '../vendor/lodash.min',
@@ -18,6 +22,8 @@ require([
     'ribs',
     'epoxy'
 ], function() {
+    'use strict';
+
     $(document).ready(function() {
         var extend = {
             defaults: {
@@ -40,7 +46,7 @@ require([
                         return {
                             bar:  parseInt(val[0]),
                             foo: parseInt(val[1])
-                        }
+                        };
                     }
                 }
             }
