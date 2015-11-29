@@ -1,4 +1,4 @@
-//     Backbone.Ribs.js 0.5.3
+//     Backbone.Ribs.js 0.5.4
 
 //     (c) 2014 Valeriy Zaytsev
 //     Ribs may be freely distributed under the MIT license.
@@ -31,10 +31,13 @@
     var $ = Backbone.$;
 
     var Ribs = Backbone.Ribs = {
-        version: '0.5.3'
+        version: '0.5.4'
     };
 
     var ViewProto = Backbone.View.prototype;
+    var ModelProto = Backbone.Model.prototype;
+
+    var eventSplitter = /\s+/;
 
     var toString = Object.prototype.toString,
         tags = {
@@ -248,8 +251,8 @@
                     binding = bindings[selector];
 
                     if ( !binding.hasInDOMHandler ||
-                         selector === 'el' ||
-                         !binding.needBack && !binding.outOfDOM) {
+                        selector === 'el' ||
+                        !binding.needBack && !binding.outOfDOM) {
                         continue;
                     }
 
@@ -505,11 +508,13 @@
 
             if (removeAll) {
                 this._ribs.computedsDeps = {};
+                this._ribs.computedsDepsMap = {};
                 this._ribs.computeds = {};
                 return this;
             }
 
             var computedsDeps = this._ribs.computedsDeps,
+                computedsDepsMap = this._ribs.computedsDepsMap,
                 dep, index, name, i, l;
 
             for (i = 0, l = names.length; i < l; i++) {
@@ -526,6 +531,7 @@
 
                         if (!dep.length) {
                             delete computedsDeps[attr];
+                            delete computedsDepsMap[attr];
                         }
                     }
                 }
@@ -534,6 +540,81 @@
             }
 
             return this;
+        },
+
+        trigger: function (name) {
+            if (!name) {
+                return;
+            }
+
+            var names,
+                i, length;
+
+            if (eventSplitter.test(name)) {
+                names = name.split(eventSplitter);
+            } else {
+                names = [name];
+            }
+
+            length = names.length;
+
+            if (!length) {
+                return;
+            }
+
+            var computedsDepsMap = this._ribs.computedsDepsMap;
+            var realNames = [];
+
+            for (i = 0; i < length; i++) {
+                var currentName = computedsDepsMap[names[i]];
+
+                if (currentName) {
+                    realNames.push(currentName);
+                }
+            }
+
+            var toUpdate = modelMethods.getComputedsToUpdate.call(this, realNames);
+
+            length = toUpdate.length;
+
+            if (!length) {
+                return;
+            }
+
+            var computeds = this._ribs.computeds;
+            var compChanges = [];
+            var current = this.attributes;
+
+            var val, attr, computed, currentAttr, item;
+
+            for (i = 0; i < length; i++) {
+                attr = toUpdate[i];
+                computed = computeds[attr];
+                computed.update();
+
+                val = computed.get();
+                currentAttr = current[attr];
+
+                if (!_.isEqual(currentAttr, val)) {
+                    compChanges.push({
+                        attr: attr,
+                        val: val
+                    });
+                }
+
+                current[attr] = val;
+            }
+
+            length = compChanges.length;
+
+            if (!length) {
+                return;
+            }
+
+            for (i = 0; i < length; i++) {
+                item = compChanges[i];
+                ModelProto.trigger.call(this, 'change:' + item.attr, this, item.val, undefined, item.attr);
+            }
         }
     };
 
@@ -542,7 +623,14 @@
         this.name = name;
 
         if (typeof data === 'function') {
-            throw new Error('init computed: computed "' + name + '" is a function. It is no longer available after v0.4.6');
+            console.warn('Deprecation warning: computed "' + name + '" is a function. It is redundant after v0.4.6.');
+
+            this.get = function () {return data.apply(model);};
+            this.set = function () {
+                throw new Error('set: computed "' + name + '" has no set method');
+            };
+            this._simple = true;
+            return this;
         }
 
         var deps = data.deps;
@@ -572,6 +660,10 @@
     _.extend(Computed.prototype, {
         //optimized
         update: function () {
+            if (this._simple) {
+                return;
+            }
+
             var deps = [],
                 val, i;
 
@@ -1171,8 +1263,8 @@
 
             for (var type in handlers) {
                 if ( handlers.hasOwnProperty(type) &&
-                     !(types && types.indexOf('all') === -1 &&
-                     types.indexOf(type) === -1)) {
+                    !(types && types.indexOf('all') === -1 &&
+                    types.indexOf(type) === -1)) {
                     handler = handlers[type];
                     setter = handler.setter;
                     events = handler.events;
@@ -1347,6 +1439,7 @@
             this._ribs = {
                 computeds: {},
                 computedsDeps: {},
+                computedsDepsMap: {},
                 init: true
             };
 
@@ -1558,7 +1651,7 @@
                     for (i = 0, l = changes.length; i < l; i++) {
                         item = changes[i];
 
-                        this.trigger('change:' + item.attr, this, item.val, options, item.attr);
+                        ModelProto.trigger.call(this, 'change:' + item.attr, this, item.val, options, item.attr);
 
                         if (options.propagation) {
                             modelMethods.propagationTrigger.call(this, item, options);
@@ -1569,7 +1662,7 @@
                 if (compChanges.length) {
                     for (i = 0, l = compChanges.length; i < l; i++) {
                         item = compChanges[i];
-                        this.trigger('change:' + item.attr, this, item.val, options, item.attr);
+                        ModelProto.trigger.call(this, 'change:' + item.attr, this, item.val, options, item.attr);
                     }
                 }
             }
@@ -1582,12 +1675,18 @@
                 while (this._pending) {
                     options = this._pending;
                     this._pending = false;
-                    this.trigger('change', this, options);
+                    ModelProto.trigger.call(this, 'change', this, options);
                 }
             }
             this._pending = false;
             this._changing = false;
             return this;
+        },
+
+        trigger: function (name) {
+            modelMethods.trigger.call(this, name);
+
+            return ModelProto.trigger.apply(this, arguments);
         },
 
         /**
@@ -1631,12 +1730,16 @@
             for (var attr in this.attributes) {
                 if (this.attributes.hasOwnProperty(attr)) {
                     if ( computeds.hasOwnProperty(attr) &&
-                         ((!options || !options.computeds) && !computeds[attr].toJSON ||
-                         options && options.computeds === false)) {
+                        ((!options || !options.computeds) && !computeds[attr].toJSON ||
+                        options && options.computeds === false)) {
                         continue;
                     }
 
-                    json[attr] = this.attributes[attr];
+                    if (computeds.hasOwnProperty(attr) && computeds[attr]._simple) {
+                        json[attr] = computeds[attr].get();
+                    } else {
+                        json[attr] = this.attributes[attr];
+                    }
                 }
             }
 
@@ -1655,6 +1758,7 @@
          */
         addComputeds: function (key, params) {
             var computedsDeps = this._ribs.computedsDeps,
+                computedsDepsMap = this._ribs.computedsDepsMap,
                 attrs = commonMethods.getAttrs(key, params),
                 deps, dep, computed, computedsDep,
                 depArr, nextDepArr, name, i, j, l1, l2;
@@ -1666,6 +1770,10 @@
                     }
 
                     computed = this._ribs.computeds[name] = new Computed(attrs[name], name, this);
+
+                    if (computed._simple) {
+                        continue;
+                    }
 
                     deps = computed.deps;
 
@@ -1682,6 +1790,7 @@
                                 }
                             } else {
                                 computedsDeps[dep] = [name];
+                                computedsDepsMap['change:' + dep] = dep;
                             }
 
                             nextDepArr = depArr[j + 1];

@@ -1,4 +1,10 @@
-﻿require.config({
+﻿//JSHint settings
+/* globals $: false */
+/* globals Backbone: false */
+/* globals require: false */
+/* globals console: false */
+
+require.config({
     paths: {
         jquery: '../vendor/jquery-1.9.0.min',
         underscore: '../vendor/lodash.min',
@@ -18,6 +24,8 @@ require([
     'ribs',
     'epoxy'
 ], function() {
+    'use strict';
+
     $(document).ready(function() {
         var extend = {
             defaults: {
@@ -40,43 +48,78 @@ require([
                         return {
                             bar:  parseInt(val[0]),
                             foo: parseInt(val[1])
-                        }
+                        };
                     }
                 }
             }
         };
 
-        /*var MMM = Backbone.Ribs.Model.extend({
+        var MMM = Backbone.Ribs.Model.extend({
             defaults: {
-                foo: 'a'
+                foo: {
+                    bar: 123
+                },
+                test: 456,
+                ribs: 'lala'
             },
 
             computeds: {
                 comp: {
                     deps: ['foo'],
                     get: function (foo) {
-                        return foo + '_comp';
-                    },
-                    set: function (val) {
-                        return {
-                            foo: val.split('_')[0]
-                        };
+                        return foo.bar;
                     }
                 },
+
                 comp2: {
+                    deps: ['test'],
+                    get: function (test) {
+                        return test * 10;
+                    }
+                },
+
+                comp3: {
                     deps: ['comp'],
                     get: function (comp) {
-                        return comp + '_123';
+                        return comp * 10;
                     }
                 }
             }
         });
 
-        window.mmm = new MMM();
+        var mmm = window.mmm = new MMM();
 
-        mmm.on('change:foo', function (model, value) {console.log('foo:', value)});
-        mmm.on('change:comp', function (model, value) {console.log('comp:', value)});
-        mmm.on('change:comp2', function (model, value) {console.log('comp2:', value)});*/
+        mmm.on('change:foo', function () {
+            mmm.set('test', mmm.get('test') + 1);
+        });
+
+        mmm.on('change:test', function () {
+            mmm.trigger('change:ribs');
+        });
+
+
+
+
+
+        mmm.on('change:foo', function (m,v) {
+            console.log('change:foo', v);
+        });
+
+        mmm.on('change:test', function (m,v) {
+            console.log('change:test', v);
+        });
+
+        mmm.on('change:ribs', function (m,v) {
+            console.log('change:ribs', v);
+        });
+
+        mmm.on('change:comp', function (m,v) {
+            console.log('change:comp', v);
+        });
+
+        mmm.on('change:comp2', function (m,v) {
+            console.log('change:comp2', v);
+        });
 
 
         /*var model = window.model = new (Backbone.Ribs.Model.extend(_.cloneDeep(extend)));
@@ -456,7 +499,7 @@ require([
         v.removeBindings('.foo', ['text']);*/
 
 
-        var View = Backbone.Ribs.View.extend({
+        /*var View = Backbone.Ribs.View.extend({
             bindings: {
                 '.bind-input': {
                     value: {
@@ -492,6 +535,6 @@ require([
             }
         });
 
-        window.view = new View();
+        window.view = new View();*/
     });
 });
