@@ -8,7 +8,6 @@ $(function () {
 });
 
 $(function () {
-    module('Bindings');
 
     test('Collection Bindings', function () {
         var col = new Backbone.Collection([{a: 2},{a: 6},{a: 4}]);
@@ -43,67 +42,6 @@ $(function () {
 
         var $items = colView.$el.children('.item-view');
 
-        equal($items.length, 3, 'Init Coll Length');
-
-        equal($items.filter(':eq(0)').text(), 2, 'Init 1');
-        equal($items.filter(':eq(1)').text(), 6, 'Init 2');
-        equal($items.filter(':eq(2)').text(), 4, 'Init 3');
-
-        col.comparator = 'a';
-        col.sort();
-        $items = colView.$el.children('.item-view');
-        equal($items.filter(':eq(0)').text(), 2, 'Sort 1');
-        equal($items.filter(':eq(1)').text(), 4, 'Sort 2');
-        equal($items.filter(':eq(2)').text(), 6, 'Sort 3');
-
-        col.reset();
-        $items = colView.$el.children('.item-view');
-        equal($items.length, 0, 'Coll Length After reset');
-
-        col.add({a: 3});
-        col.comparator = undefined;
-        $items = colView.$el.children('.item-view');
-        equal($items.length, 1, 'Coll Length After add first');
-        equal($items.filter(':eq(0)').text(), 3, 'Add First');
-
-        col.add({a: 2});
-        $items = colView.$el.children('.item-view');
-        equal($items.length, 2, 'Coll Length After add second');
-        equal($items.filter(':eq(0)').text(), 3, 'Add Second 1');
-        equal($items.filter(':eq(1)').text(), 2, 'Add Second 2');
-
-        col.add({a: 4}, {at: 0});
-        $items = colView.$el.children('.item-view');
-        equal($items.length, 3, 'Coll Length After add at 0');
-        equal($items.filter(':eq(0)').text(), 4, 'Add at 0 1');
-        equal($items.filter(':eq(1)').text(), 3, 'Add at 0 2');
-        equal($items.filter(':eq(2)').text(), 2, 'Add at 0 3');
-
-        col.add({a: 5}, {at: 2});
-        $items = colView.$el.children('.item-view');
-        equal($items.length, 4, 'Coll Length After add at 2');
-        equal($items.filter(':eq(0)').text(), 4, 'Add at 2 1');
-        equal($items.filter(':eq(1)').text(), 3, 'Add at 2 2');
-        equal($items.filter(':eq(2)').text(), 5, 'Add at 2 3');
-        equal($items.filter(':eq(3)').text(), 2, 'Add at 2 4');
-
-        col.add({a: 6});
-        $items = colView.$el.children('.item-view');
-        equal($items.length, 5, 'Coll Length After add last');
-        equal($items.filter(':eq(0)').text(), 4, 'Add last 1');
-        equal($items.filter(':eq(1)').text(), 3, 'Add last 2');
-        equal($items.filter(':eq(2)').text(), 5, 'Add last 3');
-        equal($items.filter(':eq(3)').text(), 2, 'Add last 4');
-        equal($items.filter(':eq(4)').text(), 6, 'Add last 5');
-
-        col.remove(col.at(3));
-        $items = colView.$el.children('.item-view');
-        equal($items.length, 4, 'Coll Length After remove');
-        equal($items.filter(':eq(0)').text(), 4, 'Remove 1');
-        equal($items.filter(':eq(1)').text(), 3, 'Remove 2');
-        equal($items.filter(':eq(2)').text(), 5, 'Remove 3');
-        equal($items.filter(':eq(3)').text(), 6, 'Remove 4');
-
         colView.removeBindings();
         $items = colView.$el.children('.item-view');
         equal($items.length, 0, 'Coll Length After removing bindings');
@@ -111,15 +49,6 @@ $(function () {
         colView.applyBindings();
         $items = colView.$el.children('.item-view');
         equal($items.length, 4, 'Coll Length After applying bindings');
-
-        col.reset();
-        col.comparator = 'a';
-        col.add([{a: 4}, {a: 2}, {a: 5}]);
-        $items = colView.$el.children('.item-view');
-        equal($items.length, 3, 'Coll Length After multi add');
-        equal($items.filter(':eq(0)').text(), 2, 'Multi add 1');
-        equal($items.filter(':eq(1)').text(), 4, 'Multi add 2');
-        equal($items.filter(':eq(2)').text(), 5, 'Multi add 3');
     });
 
     test('Bindings methods', function () {

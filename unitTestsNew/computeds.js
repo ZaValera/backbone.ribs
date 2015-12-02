@@ -376,6 +376,9 @@ QUnit.module('Computeds', function () {
                         get: function (bar1) {
                             return bar1 * 10;
                         },
+                        set: function (val) {
+                            return val/10;
+                        },
                         toJSON: true
                     },
 
@@ -466,6 +469,13 @@ QUnit.module('Computeds', function () {
             assert.deepEqual(model.toJSON(), {bar1: 1, bar2: 2, comp1: 10}, 'toJSON in computed');
             assert.deepEqual(model.toJSON({computeds: true}), {bar1: 1, bar2: 2, comp1: 10, comp2: 20}, 'all computeds');
             assert.deepEqual(model.toJSON({computeds: false}), {bar1: 1, bar2: 2}, 'without computeds');
+        });
+
+        QUnit.test('clone()', function (assert) {
+            var model = this.model,
+                clonedModel = model.clone();
+
+            assert.deepEqual(clonedModel.attributes, {bar1: 1, bar2: 2, comp1: 10, comp2: 20}, 'cloned attributes');
         });
     });
 });
