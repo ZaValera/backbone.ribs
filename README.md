@@ -45,6 +45,9 @@ Binding collection is useful in cases when you need to create a view for a colle
 During applying binding, for each model in the collection will be created its own instance of ItemView. The root element of the newly created view will be added inside the element, which selector was described in binding.
 
 ### Change Log
+v0.5.5 - 02.12.2015
+* Computed attributes: fixed `model.clone()` bug
+
 v0.5.4 - 29.11.2015
 * Computed attributes: returned computed attribute without `deps` for backward compatibility (**will be deleted in v1.0.0**)
 * Computed attributes: returned update computed attributes by triggering 'change' event
