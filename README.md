@@ -49,6 +49,9 @@ v1.0.0
 * Set and Get: in `handlers, computeds and processors` method `set` return value, which will be set to model. `get` participates in the inverse operation.
 * Binding's `filter` renamed to `processor`
 
+v0.5.5 - 02.12.2015
+* Computed attributes: fixed `model.clone()` bug
+
 v0.5.4 - 29.11.2015
 * Computed attributes: returned computed attribute without `deps` for backward compatibility (**will be deleted in v1.0.0**)
 * Computed attributes: returned update computed attributes by triggering 'change' event

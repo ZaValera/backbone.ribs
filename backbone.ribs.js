@@ -1,4 +1,4 @@
-//     Backbone.Ribs.js 0.5.4
+//     Backbone.Ribs.js 0.5.5
 
 //     (c) 2014 Valeriy Zaytsev
 //     Ribs may be freely distributed under the MIT license.
@@ -31,7 +31,7 @@
     var $ = Backbone.$;
 
     var Ribs = Backbone.Ribs = {
-        version: '0.5.4'
+        version: '0.5.5'
     };
 
     var ViewProto = Backbone.View.prototype;
@@ -1876,6 +1876,24 @@
          */
         isComputed: function (attr) {
             return this._ribs.computeds.hasOwnProperty(attr);
+        },
+
+        /**
+         * Create a new model with identical attributes to this one.
+         * @returns {Object}
+         */
+        clone: function() {
+            var attrs = this.attributes,
+                newAttrs = {},
+                computeds = this._ribs.computeds;
+
+            for (var attr in attrs) {
+                if (attrs.hasOwnProperty(attr) && !computeds.hasOwnProperty(attr)) {
+                    newAttrs[attr] = attrs[attr];
+                }
+            }
+
+            return new this.constructor(newAttrs);
         },
 
         /**
