@@ -499,42 +499,28 @@ require([
         v.removeBindings('.foo', ['text']);*/
 
 
-        /*var View = Backbone.Ribs.View.extend({
+        var View = Backbone.Ribs.View.extend({
             bindings: {
-                '.bind-input': {
-                    value: {
-                        data: ['model.first!.bla', 'model.second'],
-                        filter: {
-                            get: function (first, second) {
-                                return first + ';' + second;
-                            },
-                            set: function (val) {
-                                val = val.split(';');
-
-                                return [val[0], val[1]];
-                            }
-                        }
+                '.in-dom-second': {
+                    toggleByClass: {
+                        data: 'model.inDOM'
                     }
                 }
             },
 
-            handlers: {
-                text: function ($el, value) {
-                    $el.text('asdfasdfhlasdhflajshdf');
-                }
-            },
+            el: '<div class="in-dom-first">' +
+            '<div class="in-dom-second"><div class="in-dom-third">text</div></div>' +
+            '</div>',
 
             initialize: function () {
-                this.setElement('.content');
-
-                this.model = new Backbone.Ribs.Model({
-                    'first.bla': 'lala1',
-                    first: {bla: 'lala2'},
-                    second: 'ffff'
+                window.m = this.model = new Backbone.Ribs.Model({
+                    inDOM: false
                 });
+
+                this.$el.appendTo('body');
             }
         });
 
-        window.view = new View();*/
+        window.view = new View();
     });
 });

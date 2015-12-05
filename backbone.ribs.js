@@ -1,4 +1,4 @@
-//     Backbone.Ribs.js 0.5.5
+//     Backbone.Ribs.js 0.5.6
 
 //     (c) 2014 Valeriy Zaytsev
 //     Ribs may be freely distributed under the MIT license.
@@ -31,13 +31,14 @@
     var $ = Backbone.$;
 
     var Ribs = Backbone.Ribs = {
-        version: '0.5.5'
+        version: '0.5.6'
     };
 
     var ViewProto = Backbone.View.prototype;
     var ModelProto = Backbone.Model.prototype;
 
     var eventSplitter = /\s+/;
+    var hiddenClassName = '__ribs-hidden';
 
     var toString = Object.prototype.toString,
         tags = {
@@ -229,21 +230,10 @@
         reverseElsInDOM: function (view) {
             var _ribs = view._ribs,
                 bindings = _ribs.bindings,
-                wasReversed = false,
                 binding, $el, i;
 
             if (!_ribs.hasInDOMHandler) {
                 return;
-            }
-
-            var mainReverse = function () {
-                commonMethods.reverseDummy(view.el, _ribs.dummy);
-                _ribs.needBack =_ribs.outOfDOM = !_ribs.outOfDOM;
-            };
-
-            if (!_ribs.outOfDOM) {
-                mainReverse();
-                wasReversed = true;
             }
 
             for (var selector in bindings) {
@@ -259,16 +249,14 @@
                     $el = binding.$el;
                     binding.needBack = binding.outOfDOM;
 
+                    $el.toggleClass(hiddenClassName, binding.needBack);
+
                     for (i = 0; i < $el.length; i++) {
                         commonMethods.reverseDummy($el[i], binding.dummies[i]);
                     }
 
                     binding.outOfDOM = !binding.outOfDOM;
                 }
-            }
-
-            if (!wasReversed && _ribs.needBack) {
-                mainReverse();
             }
         },
         reverseDummy: function (el, dummy, shouldByInDom) {
@@ -293,6 +281,24 @@
             }
 
             _ribs.hasInDOMHandler = hasInDOMHandler;
+        },
+        addStyle: function () {
+            if (!document) {
+                return;
+            }
+
+            var css = '.' + hiddenClassName + ' {display: none;}',
+                style = document.createElement('style');
+
+            style.type = 'text/css';
+
+            if (style.styleSheet){
+                style.styleSheet.cssText = css;
+            } else {
+                style.appendChild(document.createTextNode(css));
+            }
+
+            document.getElementsByTagName('head')[0].appendChild(style);
         }
     };
 
@@ -618,6 +624,8 @@
         }
     };
 
+    commonMethods.addStyle();
+
     //optimized
     var Computed = function (data, name, model) {
         this.name = name;
@@ -777,6 +785,10 @@
 
         toggle: function ($el, value) {
             $el.toggle(!!value);
+        },
+
+        toggleByClass: function ($el, value) {
+            $el.toggleClass(hiddenClassName, !value);
         },
 
         disabled: function ($el, value) {
