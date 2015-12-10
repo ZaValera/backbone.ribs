@@ -1,4 +1,4 @@
-//     Backbone.Ribs.js 0.5.6
+//     Backbone.Ribs.js 0.5.7
 
 //     (c) 2014 Valeriy Zaytsev
 //     Ribs may be freely distributed under the MIT license.
@@ -31,7 +31,7 @@
     var $ = Backbone.$;
 
     var Ribs = Backbone.Ribs = {
-        version: '0.5.6'
+        version: '0.5.7'
     };
 
     var ViewProto = Backbone.View.prototype;
@@ -287,7 +287,7 @@
                 return;
             }
 
-            var css = '.' + hiddenClassName + ' {display: none;}',
+            var css = '.' + hiddenClassName + ' {display: none !important;}',
                 style = document.createElement('style');
 
             style.type = 'text/css';
@@ -874,6 +874,8 @@
         this.handlers = {};
 
         if (hasInDOMHandler) {
+            console.warn('Deprecation warning: binding "inDOM" is redundant. Please use binding "toggleByClass".');
+
             view._ribs.hasInDOMHandler = true;
         }
 
@@ -1372,9 +1374,11 @@
         //optimized
         _setEl: function () {
             var selector = this.selector,
+                isEl = false,
                 dummy;
 
             if (selector === 'el') {
+                isEl = true;
                 this.$el = this.view.$el;
             } else {
                 this.$el = this.view.$(selector);
@@ -1388,11 +1392,15 @@
             this.empty = false;
 
             if (this.hasInDOMHandler) {
-                this.dummies = [];
+                if (isEl) {
+                    this.dummies = [this.view._ribs.dummy];
+                } else {
+                    this.dummies = [];
 
-                for (var i = 0; i < this.$el.length; i++) {
-                    dummy = document.createComment(this.$el[i].tagName);
-                    this.dummies.push(dummy);
+                    for (var i = 0; i < this.$el.length; i++) {
+                        dummy = document.createComment(this.$el[i].tagName);
+                        this.dummies.push(dummy);
+                    }
                 }
             }
         },

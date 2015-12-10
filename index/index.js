@@ -499,28 +499,52 @@ require([
         v.removeBindings('.foo', ['text']);*/
 
 
-        var View = Backbone.Ribs.View.extend({
+
+        var ItemView = Backbone.Ribs.View.extend({
             bindings: {
-                '.in-dom-second': {
-                    toggleByClass: {
-                        data: 'model.inDOM'
+                'el': {
+                    toggleByClass: 'model.visible',
+                    classes: {
+                        'list-item': 'model.list'
                     }
                 }
             },
 
-            el: '<div class="in-dom-first">' +
-            '<div class="in-dom-second"><div class="in-dom-third">text</div></div>' +
-            '</div>',
+            el: '<span>a</span>',
 
             initialize: function () {
                 window.m = this.model = new Backbone.Ribs.Model({
-                    inDOM: false
+                    list: true,
+                    visible: true
                 });
 
                 this.$el.appendTo('body');
             }
         });
 
-        window.view = new View();
+       /* var View = Backbone.Ribs.View.extend({
+            el: '<div></div>',
+
+            initialize: function (col) {
+                /!*window.m = this.model = new Backbone.Ribs.Model({
+                    visible: false
+                });*!/
+
+                this.$el.appendTo('body');
+
+                this.addBindings('el', {
+                    collection: {
+                        col: col,
+                        view: ItemView
+                    }
+                });
+
+
+            }
+        });
+
+        var col = window.col =  new Backbone.Collection([{id: 1, visible: false}]);*/
+
+        window.view = new ItemView();
     });
 });
