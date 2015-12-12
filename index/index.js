@@ -502,20 +502,48 @@ require([
 
         var ItemView = Backbone.Ribs.View.extend({
             bindings: {
-                'el': {
+                /*'el': {
                     toggleByClass: 'model.visible',
                     classes: {
                         'list-item': 'model.list'
                     }
-                }
+                }*/
             },
 
             el: '<span>a</span>',
 
             initialize: function () {
-                window.m = this.model = new Backbone.Ribs.Model({
+                window.m = this.model = new Backbone.Model({
                     list: true,
                     visible: true
+                });
+
+                /*this.model.on('change:test', function () {
+                    this.addBindings('el', {
+                        text: {
+                            data:'model.test',
+                            filter: function (test) {
+                                console.log('bind');
+                                return test;
+                            }
+                        }
+                    });
+                }, this);*/
+
+
+
+                this.model.on('change:test', function () {
+                    console.log('tada');
+                });
+
+                this.addBindings('el', {
+                    text: {
+                        data:'model.test',
+                        filter: function (test) {
+                            console.log('bind');
+                            return test;
+                        }
+                    }
                 });
 
                 this.$el.appendTo('body');
