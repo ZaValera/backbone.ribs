@@ -517,7 +517,8 @@ require([
         v.removeBindings('.foo', ['text']);*/
 
 
-        /*var View = Backbone.Ribs.View.extend({
+
+        var ItemView = Backbone.Ribs.View.extend({
             bindings: {
                 '.bind-input': {
                     value: {
@@ -532,26 +533,78 @@ require([
                                 return null; //[val[0], val[1]];
                             }
                         }
+
+                /*'el': {
+                    toggleByClass: 'model.visible',
+                    classes: {
+                        'list-item': 'model.list'
                     }
-                }
+                }*/
             },
 
-            handlers: {
-                text: function ($el, value) {
-                    $el.text('asdfasdfhlasdhflajshdf');
-                }
-            },
+            el: '<span>a</span>',
 
             initialize: function () {
-                this.setElement('.content');
-
-                this.model = new Backbone.Ribs.Model({
-                    first: 'aaaaa',
-                    second: 'bbbbb'
+                window.m = this.model = new Backbone.Model({
+                    list: true,
+                    visible: true
                 });
+
+                /*this.model.on('change:test', function () {
+                    this.addBindings('el', {
+                        text: {
+                            data:'model.test',
+                            filter: function (test) {
+                                console.log('bind');
+                                return test;
+                            }
+                        }
+                    });
+                }, this);*/
+
+
+
+                this.model.on('change:test', function () {
+                    console.log('tada');
+                });
+
+                this.addBindings('el', {
+                    text: {
+                        data:'model.test',
+                        filter: function (test) {
+                            console.log('bind');
+                            return test;
+                        }
+                    }
+                });
+
+                this.$el.appendTo('body');
             }
         });
 
-        window.view = new View();*/
+       /* var View = Backbone.Ribs.View.extend({
+            el: '<div></div>',
+
+            initialize: function (col) {
+                /!*window.m = this.model = new Backbone.Ribs.Model({
+                    visible: false
+                });*!/
+
+                this.$el.appendTo('body');
+
+                this.addBindings('el', {
+                    collection: {
+                        col: col,
+                        view: ItemView
+                    }
+                });
+
+
+            }
+        });
+
+        var col = window.col =  new Backbone.Collection([{id: 1, visible: false}]);*/
+
+        window.view = new ItemView();
     });
 });

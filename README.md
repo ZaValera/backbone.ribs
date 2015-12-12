@@ -49,6 +49,18 @@ v1.0.0
 * Set and Get: in `handlers, computeds and processors` method `set` return value, which will be set to model. `get` participates in the inverse operation.
 * Binding's `filter` renamed to `processor`
 
+v0.5.8 - 12.12.2015
+* Bindings: bug fixes
+* Bindings: using `Backbone.Model` for bindings is deprecated (**will be deleted in v1.0.0**)
+
+v0.5.7 - 11.12.2015
+* Bindings: binding `toggleByClass` - added `!important` declarations
+* Bindings: `inDOM` binding bug fixes (**will be deleted in v1.0.0**)
+
+v0.5.6 - 05.12.2015
+* Bindings: new binding type - `toggleByClass`
+* Bindings: `inDOM` binding bug fixes
+
 v0.5.5 - 02.12.2015
 * Computed attributes: fixed `model.clone()` bug
 

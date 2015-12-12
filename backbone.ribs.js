@@ -1,4 +1,4 @@
-//     Backbone.Ribs.js 0.5.5
+//     Backbone.Ribs.js 0.5.8
 
 //     (c) 2014 Valeriy Zaytsev
 //     Ribs may be freely distributed under the MIT license.
@@ -31,13 +31,14 @@
     var $ = Backbone.$;
 
     var Ribs = Backbone.Ribs = {
-        version: '0.5.5'
+        version: '0.5.8'
     };
 
     var ViewProto = Backbone.View.prototype;
     var ModelProto = Backbone.Model.prototype;
 
     var eventSplitter = /\s+/;
+    var hiddenClassName = '__ribs-hidden';
 
     var toString = Object.prototype.toString,
         tags = {
@@ -229,21 +230,10 @@
         reverseElsInDOM: function (view) {
             var _ribs = view._ribs,
                 bindings = _ribs.bindings,
-                wasReversed = false,
                 binding, $el, i;
 
             if (!_ribs.hasInDOMHandler) {
                 return;
-            }
-
-            var mainReverse = function () {
-                commonMethods.reverseDummy(view.el, _ribs.dummy);
-                _ribs.needBack =_ribs.outOfDOM = !_ribs.outOfDOM;
-            };
-
-            if (!_ribs.outOfDOM) {
-                mainReverse();
-                wasReversed = true;
             }
 
             for (var selector in bindings) {
@@ -259,16 +249,14 @@
                     $el = binding.$el;
                     binding.needBack = binding.outOfDOM;
 
+                    $el.toggleClass(hiddenClassName, binding.needBack);
+
                     for (i = 0; i < $el.length; i++) {
                         commonMethods.reverseDummy($el[i], binding.dummies[i]);
                     }
 
                     binding.outOfDOM = !binding.outOfDOM;
                 }
-            }
-
-            if (!wasReversed && _ribs.needBack) {
-                mainReverse();
             }
         },
         reverseDummy: function (el, dummy, shouldByInDom) {
@@ -293,6 +281,24 @@
             }
 
             _ribs.hasInDOMHandler = hasInDOMHandler;
+        },
+        addStyle: function () {
+            if (!document) {
+                return;
+            }
+
+            var css = '.' + hiddenClassName + ' {display: none !important;}',
+                style = document.createElement('style');
+
+            style.type = 'text/css';
+
+            if (style.styleSheet){
+                style.styleSheet.cssText = css;
+            } else {
+                style.appendChild(document.createTextNode(css));
+            }
+
+            document.getElementsByTagName('head')[0].appendChild(style);
         }
     };
 
@@ -556,13 +562,8 @@
             return this;
         },
 
-        trigger: function (name) {
-            if (!name) {
-                return;
-            }
-
-            var names,
-                i, length;
+        eventsApi: function (name) {
+            var names;
 
             if (eventSplitter.test(name)) {
                 names = name.split(eventSplitter);
@@ -570,7 +571,17 @@
                 names = [name];
             }
 
-            length = names.length;
+            return names;
+        },
+
+        trigger: function (name) {
+            if (!name) {
+                return;
+            }
+
+            var names = modelMethods.eventsApi(name),
+                length = names.length,
+                i;
 
             if (!length) {
                 return;
@@ -629,8 +640,80 @@
                 item = compChanges[i];
                 ModelProto.trigger.call(this, 'change:' + item.attr, this, item.val, undefined, item.attr);
             }
+        },
+
+        bindingsTrigger: function (name) {
+            var names = modelMethods.eventsApi(name),
+                events = this._ribs.events,
+                i, j, l1, l2;
+
+            for (i = 0, l1 = names.length; i < l1; i++) {
+                var ev = events[names[i]];
+
+                if (ev) {
+                    for (j = 0, l2 = ev.length; j < l2; j++) {
+                        ev[j]();
+                    }
+                }
+            }
+        },
+
+        on: function (model, name, callback) {
+            if (!model._ribs) {
+                model._ribs = {
+                    events: {}
+                };
+            }
+
+            var events = model._ribs.events,
+                names = modelMethods.eventsApi(name),
+                eventName, i, l;
+
+            for (i = 0, l = names.length; i < l; i++) {
+                eventName = names[i];
+
+                if (!events.hasOwnProperty(eventName)) {
+                    events[eventName] = [callback];
+                } else {
+                    events[eventName].push(callback);
+                }
+            }
+
+            if (!(model instanceof Ribs.Model) && !model._ribs.on) {
+                var originalTrigger = model.trigger;
+
+                model._ribs.on = true;
+                model.trigger = function (name) {
+                    modelMethods.bindingsTrigger.call(model, name);
+
+                    return originalTrigger.apply(this, arguments);
+                };
+            }
+        },
+
+        off: function (model, name, callback) {
+            var names = modelMethods.eventsApi(name),
+                events, i, j;
+
+            for (i = names.length; i--;) {
+                events = model._ribs.events[names[i]];
+
+                if (!events) {
+                    continue;
+                }
+
+                for (j = events.length; j--;) {
+                    var cb = events[j];
+
+                    if (cb === callback) {
+                        events.splice(j, 1);
+                    }
+                }
+            }
         }
     };
+
+    commonMethods.addStyle();
 
     //optimized
     var Computed = function (data, name, model) {
@@ -797,6 +880,10 @@
             $el.toggle(!!value);
         },
 
+        toggleByClass: function ($el, value) {
+            $el.toggleClass(hiddenClassName, !value);
+        },
+
         disabled: function ($el, value) {
             $el.prop('disabled', !!value);
         },
@@ -880,6 +967,8 @@
         this.handlers = {};
 
         if (hasInDOMHandler) {
+            console.warn('Deprecation warning: binding "inDOM" is redundant. Please use binding "toggleByClass".');
+
             view._ribs.hasInDOMHandler = true;
         }
 
@@ -1198,13 +1287,18 @@
                 ch = '';
                 changeAttr = changeAttrs[modelName] || (changeAttrs[modelName] = []);
 
+                if (!(model instanceof Ribs.Model)) {
+                    console.warn('Deprecation warning: use only "Ribs.Model" for bindings.');
+                }
+
                 if (model instanceof Backbone.Collection) {
                     attrs.push(model.pluck(attr));
 
                     if (getHandler) {
                         if (col.indexOf(modelName) === -1) {
                             col.push(modelName);
-                            model.on('add remove reset sort', getter);
+
+                            modelMethods.on(model, 'add remove reset sort', getter);
                         }
                     }
                 } else {
@@ -1220,8 +1314,7 @@
                         ch += attrArray[j];
                         changeAttr.push(ch);
 
-                        model.on('change:' + ch, getter);
-                        this._normalizeModelEvents(model, 'change:' + ch, getter);
+                        modelMethods.on(model, 'change:' + ch, getter);
                     }
                 }
             }
@@ -1253,35 +1346,12 @@
             this.handlers[type] = handler;
         },
 
-        _normalizeModelEvents: function (model, name, callback) {
-            if (!model._events) {
-                return;
-            }
-
-            var events = model._events[name],
-                event;
-
-            if (!events) {
-                return;
-            }
-
-            for (var i = 0; i < events.length; i++) {
-                event = events[i];
-
-                if (event.callback === callback) {
-                    events.splice(i, 1);
-                    events.unshift(event);
-                    break;
-                }
-            }
-        },
-
         unbind: function (types) {
             var handlers = this.handlers,
                 col = [],
                 changeAttrs, changeAttr,
                 handler, getter, events,
-                model, i, l;
+                modelName, model, i, l;
 
             for (var type in handlers) {
                 if ( handlers.hasOwnProperty(type) &&
@@ -1298,19 +1368,22 @@
                     if (typeof getter === 'function') {
                         changeAttrs = handler.changeAttrs;
 
-                        for (model in changeAttrs) {
-                            if (changeAttrs.hasOwnProperty(model)) {
-                                if (this.view[model] instanceof Backbone.Collection) {
-                                    if (col.indexOf(model) === -1) {
-                                        col.push(model);
-                                        this.view[model].off('add remove reset sort', getter);
+                        for (modelName in changeAttrs) {
+                            if (changeAttrs.hasOwnProperty(modelName)) {
+                                model = this.view[modelName];
+
+                                if (model instanceof Backbone.Collection) {
+                                    if (col.indexOf(modelName) === -1) {
+                                        col.push(modelName);
+
+                                        modelMethods.off(model, 'add remove reset sort', getter);
                                     }
                                 }
 
-                                changeAttr = changeAttrs[model];
+                                changeAttr = changeAttrs[modelName];
 
                                 for (i = 0, l = changeAttr.length; i < l; i++) {
-                                    this.view[model].off('change:' + changeAttr[i], getter);
+                                    modelMethods.off(model, 'change:' + changeAttr[i], getter);
                                 }
                             }
                         }
@@ -1382,9 +1455,11 @@
         //optimized
         _setEl: function () {
             var selector = this.selector,
+                isEl = false,
                 dummy;
 
             if (selector === 'el') {
+                isEl = true;
                 this.$el = this.view.$el;
             } else {
                 this.$el = this.view.$(selector);
@@ -1398,11 +1473,11 @@
             this.empty = false;
 
             if (this.hasInDOMHandler) {
-                this.dummies = [];
-
-                if (selector === 'el') {
-                    this.dummies.push(this.view._ribs.dummy);
+                if (isEl) {
+                    this.dummies = [this.view._ribs.dummy];
                 } else {
+                    this.dummies = [];
+
                     for (var i = 0; i < this.$el.length; i++) {
                         dummy = document.createComment(this.$el[i].tagName);
                         this.dummies.push(dummy);
@@ -1466,7 +1541,8 @@
                 computeds: {},
                 computedsDeps: {},
                 computedsDepsMap: {},
-                init: true
+                init: true,
+                events: {}
             };
 
             var attrs = attributes || {};
@@ -1677,6 +1753,8 @@
                     for (i = 0, l = changes.length; i < l; i++) {
                         item = changes[i];
 
+                        modelMethods.bindingsTrigger.call(this, 'change:' + item.attr);
+
                         ModelProto.trigger.call(this, 'change:' + item.attr, this, item.val, options, item.attr);
 
                         if (options.propagation) {
@@ -1688,6 +1766,9 @@
                 if (compChanges.length) {
                     for (i = 0, l = compChanges.length; i < l; i++) {
                         item = compChanges[i];
+
+                        modelMethods.bindingsTrigger.call(this, 'change:' + item.attr);
+
                         ModelProto.trigger.call(this, 'change:' + item.attr, this, item.val, options, item.attr);
                     }
                 }
@@ -1711,6 +1792,7 @@
 
         trigger: function (name) {
             modelMethods.trigger.call(this, name);
+            modelMethods.bindingsTrigger.call(this, name);
 
             return ModelProto.trigger.apply(this, arguments);
         },
