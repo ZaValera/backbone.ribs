@@ -36,6 +36,7 @@
 
     var ViewProto = Backbone.View.prototype;
     var ModelProto = Backbone.Model.prototype;
+    var CollectionProto = Backbone.Collection.prototype;
 
     var eventSplitter = /\s+/;
     var hiddenClassName = '__ribs-hidden';
@@ -299,6 +300,32 @@
             }
 
             document.getElementsByTagName('head')[0].appendChild(style);
+        },
+        eventsApi: function (name) {
+            var names;
+
+            if (eventSplitter.test(name)) {
+                names = name.split(eventSplitter);
+            } else {
+                names = [name];
+            }
+
+            return names;
+        },
+        bindingsTrigger: function (name) {
+            var names = commonMethods.eventsApi(name),
+                events = this._ribs.events,
+                i, j, l1, l2;
+
+            for (i = 0, l1 = names.length; i < l1; i++) {
+                var ev = events[names[i]];
+
+                if (ev) {
+                    for (j = 0, l2 = ev.length; j < l2; j++) {
+                        ev[j]();
+                    }
+                }
+            }
         }
     };
 
@@ -562,24 +589,12 @@
             return this;
         },
 
-        eventsApi: function (name) {
-            var names;
-
-            if (eventSplitter.test(name)) {
-                names = name.split(eventSplitter);
-            } else {
-                names = [name];
-            }
-
-            return names;
-        },
-
         trigger: function (name) {
             if (!name) {
                 return;
             }
 
-            var names = modelMethods.eventsApi(name),
+            var names = commonMethods.eventsApi(name),
                 length = names.length,
                 i;
 
@@ -642,22 +657,6 @@
             }
         },
 
-        bindingsTrigger: function (name) {
-            var names = modelMethods.eventsApi(name),
-                events = this._ribs.events,
-                i, j, l1, l2;
-
-            for (i = 0, l1 = names.length; i < l1; i++) {
-                var ev = events[names[i]];
-
-                if (ev) {
-                    for (j = 0, l2 = ev.length; j < l2; j++) {
-                        ev[j]();
-                    }
-                }
-            }
-        },
-
         on: function (model, name, callback) {
             if (!model._ribs) {
                 model._ribs = {
@@ -666,7 +665,7 @@
             }
 
             var events = model._ribs.events,
-                names = modelMethods.eventsApi(name),
+                names = commonMethods.eventsApi(name),
                 eventName, i, l;
 
             for (i = 0, l = names.length; i < l; i++) {
@@ -679,12 +678,13 @@
                 }
             }
 
-            if (!(model instanceof Ribs.Model) && !model._ribs.on) {
+            //ToDo: remove in 1.0.0
+            if (!(model instanceof Ribs.Model || model instanceof Ribs.Collection) && !model._ribs.on) {
                 var originalTrigger = model.trigger;
 
                 model._ribs.on = true;
                 model.trigger = function (name) {
-                    modelMethods.bindingsTrigger.call(model, name);
+                    commonMethods.bindingsTrigger.call(model, name);
 
                     return originalTrigger.apply(this, arguments);
                 };
@@ -692,7 +692,7 @@
         },
 
         off: function (model, name, callback) {
-            var names = modelMethods.eventsApi(name),
+            var names = commonMethods.eventsApi(name),
                 events, i, j;
 
             for (i = names.length; i--;) {
@@ -1287,8 +1287,8 @@
                 ch = '';
                 changeAttr = changeAttrs[modelName] || (changeAttrs[modelName] = []);
 
-                if (!(model instanceof Ribs.Model)) {
-                    console.warn('Deprecation warning: use only "Ribs.Model" for bindings.');
+                if (!(model instanceof Ribs.Model || model instanceof Ribs.Collection)) {
+                    console.warn('Deprecation warning: use only "Ribs.Model" or "Ribs.Collectino" for bindings.');
                 }
 
                 if (model instanceof Backbone.Collection) {
@@ -1753,7 +1753,7 @@
                     for (i = 0, l = changes.length; i < l; i++) {
                         item = changes[i];
 
-                        modelMethods.bindingsTrigger.call(this, 'change:' + item.attr);
+                        commonMethods.bindingsTrigger.call(this, 'change:' + item.attr);
 
                         ModelProto.trigger.call(this, 'change:' + item.attr, this, item.val, options, item.attr);
 
@@ -1767,7 +1767,7 @@
                     for (i = 0, l = compChanges.length; i < l; i++) {
                         item = compChanges[i];
 
-                        modelMethods.bindingsTrigger.call(this, 'change:' + item.attr);
+                        commonMethods.bindingsTrigger.call(this, 'change:' + item.attr);
 
                         ModelProto.trigger.call(this, 'change:' + item.attr, this, item.val, options, item.attr);
                     }
@@ -1792,7 +1792,7 @@
 
         trigger: function (name) {
             modelMethods.trigger.call(this, name);
-            modelMethods.bindingsTrigger.call(this, name);
+            commonMethods.bindingsTrigger.call(this, name);
 
             return ModelProto.trigger.apply(this, arguments);
         },
@@ -2264,6 +2264,28 @@
                 view: View,
                 data: data
             }});
+        }
+    });
+
+    Ribs.Collection = Backbone.Collection.extend({
+        /**
+         * Represents a Ribs.Collection
+         * @constructs Ribs.Collection
+         * @param {array} [models] - array of models
+         * @param {object} [options] - hash of options
+         */
+        constructor: function RibsCollection(models, options) {
+            this._ribs = {
+                events: {}
+            };
+
+            Backbone.Collection.apply(this, arguments);
+        },
+
+        trigger: function (name) {
+            commonMethods.bindingsTrigger.call(this, name);
+
+            return CollectionProto.trigger.apply(this, arguments);
         }
     });
 

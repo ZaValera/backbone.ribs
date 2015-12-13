@@ -15,7 +15,7 @@ QUnit.module('Bindings', {
     QUnit.module('Standart', function () {
 
         QUnit.test('toggle', function (assert) {
-            var model = new Backbone.Model({
+            var model = new Backbone.Ribs.Model({
                 toggle1: true,
                 toggle2: false
             });
@@ -53,7 +53,7 @@ QUnit.module('Bindings', {
         });
 
         QUnit.test('text', function (assert) {
-            var model = new Backbone.Model({
+            var model = new Backbone.Ribs.Model({
                 foo: 'bar'
             });
 
@@ -84,7 +84,7 @@ QUnit.module('Bindings', {
         });
 
         QUnit.test('value', function (assert) {
-            var model = new Backbone.Model({
+            var model = new Backbone.Ribs.Model({
                 foo: 'bar'
             });
 
@@ -118,11 +118,11 @@ QUnit.module('Bindings', {
         });
 
         QUnit.test('css', function (assert) {
-            var model = new Backbone.Model({
+            var model = new Backbone.Ribs.Model({
                 color: 'red'
             });
 
-            var model2 = new Backbone.Model({
+            var model2 = new Backbone.Ribs.Model({
                 weight: 900
             });
 
@@ -158,11 +158,11 @@ QUnit.module('Bindings', {
         });
 
         QUnit.test('attr', function (assert) {
-            var model = new Backbone.Model({
+            var model = new Backbone.Ribs.Model({
                 type: 'someType'
             });
 
-            var model2 = new Backbone.Model({
+            var model2 = new Backbone.Ribs.Model({
                 id: '13'
             });
 
@@ -200,11 +200,11 @@ QUnit.module('Bindings', {
         });
 
         QUnit.test('classes', function (assert) {
-            var model = new Backbone.Model({
+            var model = new Backbone.Ribs.Model({
                 active: true
             });
 
-            var model2 = new Backbone.Model({
+            var model2 = new Backbone.Ribs.Model({
                 passive: false
             });
 
@@ -242,7 +242,7 @@ QUnit.module('Bindings', {
         });
 
         QUnit.test('html', function (assert) {
-            var model = new Backbone.Model({
+            var model = new Backbone.Ribs.Model({
                 template: '<div class="bind-template">fooBar</div>'
             });
 
@@ -273,7 +273,7 @@ QUnit.module('Bindings', {
         });
 
         QUnit.test('disabled', function (assert) {
-            var model = new Backbone.Model({
+            var model = new Backbone.Ribs.Model({
                 disabled1: true,
                 disabled2: false
             });
@@ -314,7 +314,7 @@ QUnit.module('Bindings', {
         });
 
         QUnit.test('enabled', function (assert) {
-            var model = new Backbone.Model({
+            var model = new Backbone.Ribs.Model({
                 enabled1: false,
                 enabled2: true
             });
@@ -354,7 +354,7 @@ QUnit.module('Bindings', {
         });
 
         QUnit.test('checked single', function (assert) {
-            var model = new Backbone.Model({
+            var model = new Backbone.Ribs.Model({
                 checked: true
             });
 
@@ -388,7 +388,7 @@ QUnit.module('Bindings', {
         });
 
         QUnit.test('checked multi', function (assert) {
-            var model = new Backbone.Model({
+            var model = new Backbone.Ribs.Model({
                 checked: ['second', 'third']
             });
 
@@ -431,7 +431,7 @@ QUnit.module('Bindings', {
         });
 
         QUnit.test('checked radio', function (assert) {
-            var model = new Backbone.Model({
+            var model = new Backbone.Ribs.Model({
                 checked: 'second'
             });
 
@@ -480,7 +480,7 @@ QUnit.module('Bindings', {
                 }
             });
 
-            var model2 = new Backbone.Model({
+            var model2 = new Backbone.Ribs.Model({
                 mod: 'active'
             });
 
@@ -541,7 +541,7 @@ QUnit.module('Bindings', {
         });
 
         QUnit.test('options', function (assert) {
-            var model = new Backbone.Model({
+            var model = new Backbone.Ribs.Model({
                 optionsSingle: '3',
                 optionsMultiple: ['2', '4']
             });
@@ -594,7 +594,7 @@ QUnit.module('Bindings', {
         });
 
         QUnit.test('inDOM el', function (assert) {
-            var model = new Backbone.Model({
+            var model = new Backbone.Ribs.Model({
                 isVisible: false,
                 text: 'foo'
             });
@@ -646,7 +646,7 @@ QUnit.module('Bindings', {
         });
 
         QUnit.test('inDOM child el', function (assert) {
-            var model = new Backbone.Model({
+            var model = new Backbone.Ribs.Model({
                 second: false,
                 text: 'foo'
             });
@@ -703,7 +703,7 @@ QUnit.module('Bindings', {
     QUnit.module('Processors', function () {
 
         QUnit.test('not', function (assert) {
-            var model = new Backbone.Model({
+            var model = new Backbone.Ribs.Model({
                 toggle: true
             });
 
@@ -735,7 +735,7 @@ QUnit.module('Bindings', {
         });
 
         QUnit.test('length', function (assert) {
-            var model = new Backbone.Model({
+            var model = new Backbone.Ribs.Model({
                 ar: [1, 2, 3]
             });
 
@@ -772,12 +772,12 @@ QUnit.module('Bindings', {
         });
 
         QUnit.test('custom processor', function (assert) {
-            var model = new Backbone.Model({
+            var model = new Backbone.Ribs.Model({
                 num: 15,
                 num2: 10
             });
 
-            var model2 = new Backbone.Model({
+            var model2 = new Backbone.Ribs.Model({
                 num: 13
             });
 
@@ -818,8 +818,12 @@ QUnit.module('Bindings', {
         });
 
         QUnit.test('custom col processor', function (assert) {
-            var col = new Backbone.Collection([{a: 2},{a: 4},{a: 3}]);
-            var col2 = new Backbone.Collection([{b: 7},{b: 5},{b: 6}]);
+            /*var Col = Backbone.Collection.extend({
+                model: Backbone.Ribs.Model
+            });
+*/
+            var col = new Backbone.Ribs.Collection([{a: 2},{a: 4},{a: 3}]);
+            var col2 = new Backbone.Ribs.Collection([{b: 7},{b: 5},{b: 6}]);
 
             this.bindingView = new (Backbone.Ribs.View.extend({
                 bindings: {
@@ -892,7 +896,7 @@ QUnit.module('Bindings', {
         });
 
         QUnit.test('get processor', function (assert) {
-            var model = new Backbone.Model({
+            var model = new Backbone.Ribs.Model({
                 lowerCase: 'bar'
             });
 
@@ -934,11 +938,11 @@ QUnit.module('Bindings', {
         });
 
         QUnit.test('set processor', function (assert) {
-            var model = new Backbone.Model({
+            var model = new Backbone.Ribs.Model({
                 foo: 'ribs'
             });
 
-            var model2 = new Backbone.Model({
+            var model2 = new Backbone.Ribs.Model({
                 bar: 'test'
             });
 
@@ -997,7 +1001,7 @@ QUnit.module('Bindings', {
     QUnit.module('Handlers', function () {
 
         QUnit.test('single get', function (assert) {
-            var model = new Backbone.Model({
+            var model = new Backbone.Ribs.Model({
                 single: 'single-attr'
             });
 
@@ -1034,7 +1038,7 @@ QUnit.module('Bindings', {
         });
 
         QUnit.test('single set', function (assert) {
-            var model = new Backbone.Model({
+            var model = new Backbone.Ribs.Model({
                 single: 'foo'
             });
 
@@ -1079,7 +1083,7 @@ QUnit.module('Bindings', {
         });
 
         QUnit.test('multiple', function (assert) {
-            var model = new Backbone.Model({
+            var model = new Backbone.Ribs.Model({
                 multiple1: 'foo',
                 multiple2: 'bar'
             });
@@ -1129,7 +1133,7 @@ QUnit.module('Bindings', {
 
     QUnit.module('Methods', function () {
         QUnit.test('preventBindings() and applyBindings()', function (assert) {
-            var model = new Backbone.Model({
+            var model = new Backbone.Ribs.Model({
                 foo: 'bar'
             });
 
@@ -1160,7 +1164,7 @@ QUnit.module('Bindings', {
         });
 
         QUnit.test('addBindings()', function (assert) {
-            var model = new Backbone.Model({
+            var model = new Backbone.Ribs.Model({
                 foo: 'bar'
             });
 
@@ -1197,7 +1201,7 @@ QUnit.module('Bindings', {
         });
 
         QUnit.test('updateBindings()', function (assert) {
-            var model = new Backbone.Model({
+            var model = new Backbone.Ribs.Model({
                 foo: 'bar'
             });
 
@@ -1227,7 +1231,7 @@ QUnit.module('Bindings', {
         });
 
         QUnit.test('removeBindings()', function (assert) {
-            var model = new Backbone.Model({
+            var model = new Backbone.Ribs.Model({
                 foo: 'bar'
             });
 
@@ -1258,7 +1262,7 @@ QUnit.module('Bindings', {
         });
 
         QUnit.test('$()', function (assert) {
-            var model = new Backbone.Model({
+            var model = new Backbone.Ribs.Model({
                 isVisible: false
             });
 
@@ -1289,7 +1293,7 @@ QUnit.module('Bindings', {
         });
 
         QUnit.test('getEl()', function (assert) {
-            var model = new Backbone.Model({
+            var model = new Backbone.Ribs.Model({
                 isVisible: false
             });
 
@@ -1316,7 +1320,7 @@ QUnit.module('Bindings', {
         });
 
         QUnit.test('appendTo()', function (assert) {
-            var model = new Backbone.Model({
+            var model = new Backbone.Ribs.Model({
                 isVisible: false
             });
 
@@ -1347,7 +1351,7 @@ QUnit.module('Bindings', {
         });
 
         QUnit.test('remove()', function (assert) {
-            var model = new Backbone.Model({
+            var model = new Backbone.Ribs.Model({
                 foo: 'bar'
             });
 
@@ -1383,6 +1387,164 @@ QUnit.module('Bindings', {
             this.bindingView.remove();
             model.set('foo', 'ribs');
             assert.equal(flag, 2, 'Flag after removing');
+        });
+    });
+
+    QUnit.module('Features', function () {
+        QUnit.test('bindings at first', function (assert) {
+            var model = new Backbone.Ribs.Model({
+                foo: 'bar'
+            });
+
+            var res = '';
+
+            this.bindingView = new (Backbone.Ribs.View.extend({
+                el: '<div class="bind">' +
+                '<span class="bind-text">ribs</span>' +
+                '</div>',
+
+                initialize: function () {
+                    this.model = model;
+                    this.$el.appendTo('body');
+                }
+            }))();
+
+            model.on('change:foo', function () {
+                res += 'on';
+            }, this);
+
+            this.bindingView.addBindings('.bind-text', {
+                text: {
+                    data:'model.foo',
+                    processor: function (foo) {
+                        res += 'bind';
+                        return foo;
+                    }
+                }
+            });
+
+            model.set('foo', 'ribs');
+
+            assert.equal(res, 'bindbindon');
+        });
+
+        QUnit.test('bindings at first 2', function (assert) {
+            var model = new Backbone.Ribs.Model({
+                foo: 'bar'
+            });
+
+            var res = '';
+
+            this.bindingView = new (Backbone.Ribs.View.extend({
+                el: '<div class="bind">' +
+                    '<span class="bind-text">ribs</span>' +
+                '</div>',
+
+                initialize: function () {
+                    this.model = model;
+                    this.$el.appendTo('body');
+                }
+            }))();
+
+            model.once('change:foo', function () {
+                this.bindingView.addBindings('.bind-text', {
+                    text: {
+                        data:'model.foo',
+                        processor: function (foo) {
+                            res += 'bind';
+                            return foo;
+                        }
+                    }
+                });
+            }, this);
+
+            model.on('change:foo', function () {
+                res += 'on';
+            }, this);
+
+            model.set('foo', 'ribs');
+            model.set('foo', 'ribs2');
+
+            assert.equal(res, 'bindonbindon');
+        });
+
+        QUnit.test('getCallback', function (assert) {
+            var model = new Backbone.Ribs.Model({
+                foo: 'bar'
+            });
+
+            var res = [];
+
+            this.bindingView = new (Backbone.Ribs.View.extend({
+                bindings: {
+                    '.bind-text': {
+                        text: {
+                            data: 'model.foo',
+                            callback: function () {
+                                res.push($('.bind-text').text());
+                            }
+                        }
+                    }
+                },
+
+                el: '<div class="bind">' +
+                    '<span class="bind-text"></span>' +
+                '</div>',
+
+                initialize: function () {
+                    this.model = model;
+                    this.$el.appendTo('body');
+                }
+            }))();
+
+            model.set('foo', 'ribs');
+
+            assert.deepEqual(res, ['bar', 'ribs']);
+        });
+
+        QUnit.test('setCallback', function (assert) {
+            var model = new Backbone.Ribs.Model({
+                foo: 'bar'
+            });
+
+            var getRes = [];
+            var setRes = [];
+
+            this.bindingView = new (Backbone.Ribs.View.extend({
+                bindings: {
+                    '.bind-value': {
+                        value: {
+                            data: 'model.foo',
+                            callback: {
+                                get: function () {
+                                    getRes.push($('.bind-value').val());
+                                },
+                                set: function () {
+                                    setRes.push(model.get('foo'));
+                                }
+                            }
+                        }
+                    }
+                },
+
+                el: '<div class="bind">' +
+                    '<input class="bind-value" />' +
+                '</div>',
+
+                initialize: function () {
+                    this.model = model;
+                    this.$el.appendTo('body');
+                }
+            }))();
+
+            model.set('foo', 'ribs');
+            assert.deepEqual(getRes, ['bar', 'ribs']);
+            assert.deepEqual(setRes, []);
+
+            $('.bind-value').val('ribsNew').change();
+
+            assert.deepEqual(getRes, ['bar', 'ribs', 'ribsNew']);
+            assert.deepEqual(setRes, ['ribsNew']);
         });
     });
 });

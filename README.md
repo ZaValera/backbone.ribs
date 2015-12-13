@@ -46,6 +46,7 @@ During applying binding, for each model in the collection will be created its ow
 
 ### Change Log
 v1.0.0
+* Ribs.Collection
 * Set and Get: in `handlers, computeds and processors` method `set` return value, which will be set to model. `get` participates in the inverse operation.
 * Binding's `filter` renamed to `processor`
 
