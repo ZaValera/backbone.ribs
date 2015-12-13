@@ -501,49 +501,24 @@ require([
 
 
         var ItemView = Backbone.Ribs.View.extend({
-            bindings: {
-                /*'el': {
+            /*bindings: {
+                'el': {
                     toggleByClass: 'model.visible',
                     classes: {
                         'list-item': 'model.list'
                     }
-                }*/
-            },
+                }
+            },*/
 
-            el: '<span>a</span>',
+            el: '<span><input class="bind-in"></span>',
 
             initialize: function () {
-                window.m = this.model = new Backbone.Model({
-                    list: true,
-                    visible: true
+                window.m = this.model = new Backbone.Ribs.Model({
+                    test: '123'
                 });
 
-                /*this.model.on('change:test', function () {
-                    this.addBindings('el', {
-                        text: {
-                            data:'model.test',
-                            filter: function (test) {
-                                console.log('bind');
-                                return test;
-                            }
-                        }
-                    });
-                }, this);*/
-
-
-
-                this.model.on('change:test', function () {
-                    console.log('tada');
-                });
-
-                this.addBindings('el', {
-                    text: {
-                        data:'model.test',
-                        filter: function (test) {
-                            console.log('bind');
-                            return test;
-                        }
-                    }
+                this.addBindings('.bind-in', {
+                    value: 'model.test'
                 });
 
                 this.$el.appendTo('body');

@@ -628,7 +628,7 @@
             }
         },
 
-        bindingsTrigger: function (name) {
+        bindingsTrigger: function (name, model, value, options) {
             var names = modelMethods.eventsApi(name),
                 events = this._ribs.events,
                 i, j, l1, l2;
@@ -638,7 +638,7 @@
 
                 if (ev) {
                     for (j = 0, l2 = ev.length; j < l2; j++) {
-                        ev[j]();
+                        ev[j](options);
                     }
                 }
             }
@@ -670,7 +670,7 @@
 
                 model._ribs.on = true;
                 model.trigger = function (name) {
-                    modelMethods.bindingsTrigger.call(model, name);
+                    modelMethods.bindingsTrigger.apply(model, arguments);
 
                     return originalTrigger.apply(this, arguments);
                 };
@@ -942,6 +942,7 @@
         var hasInDOMHandler = bindings.hasOwnProperty('inDOM'),
             binding;
 
+        this.cid = _.uniqueId('bind');
         this.selector = selector;
         this.view = view;
         this.mods = {};
@@ -1138,6 +1139,8 @@
                 pathsLength,
                 i, l, j, l2;
 
+            options.byBinding = this.cid;
+
             if (typeof setHandler !== 'function') {
                 getHandler = setHandler.get;
                 setHandler = setHandler.set;
@@ -1192,8 +1195,8 @@
 
             //Определяем обработчик события при изменении модели/коллекции
             if (setHandler) {
-                setter = function () {
-                    if (self.empty) {
+                setter = function (options) {
+                    if (self.empty || options && options.byBinding === self.cid) {
                         return;
                     }
 
@@ -1591,7 +1594,7 @@
 
             var attrs,attr,silent,unset,changes,changing,changed,current,prev,i;
 
-            var compAttrs,realAttrs,hasCompInAttrs,
+            var args,compAttrs,realAttrs,hasCompInAttrs,
                 computeds,computedsToUpdate,changedAttrs,compChanges,
                 needUnset,path,escapedPath,item,l;
 
@@ -1731,9 +1734,10 @@
                     for (i = 0, l = changes.length; i < l; i++) {
                         item = changes[i];
 
-                        modelMethods.bindingsTrigger.call(this, 'change:' + item.attr);
+                        args = ['change:' + item.attr, this, item.val, options, item.attr];
 
-                        ModelProto.trigger.call(this, 'change:' + item.attr, this, item.val, options, item.attr);
+                        modelMethods.bindingsTrigger.apply(this, args);
+                        ModelProto.trigger.apply(this, args);
 
                         if (options.propagation) {
                             modelMethods.propagationTrigger.call(this, item, options);
@@ -1744,10 +1748,11 @@
                 if (compChanges.length) {
                     for (i = 0, l = compChanges.length; i < l; i++) {
                         item = compChanges[i];
+                        args = ['change:' + item.attr, this, item.val, options, item.attr];
 
-                        modelMethods.bindingsTrigger.call(this, 'change:' + item.attr);
+                        modelMethods.bindingsTrigger.apply(this, args);
 
-                        ModelProto.trigger.call(this, 'change:' + item.attr, this, item.val, options, item.attr);
+                        ModelProto.trigger.apply(this, args);
                     }
                 }
             }
@@ -1770,7 +1775,7 @@
 
         trigger: function (name) {
             modelMethods.trigger.call(this, name);
-            modelMethods.bindingsTrigger.call(this, name);
+            modelMethods.bindingsTrigger.apply(this, arguments);
 
             return ModelProto.trigger.apply(this, arguments);
         },
