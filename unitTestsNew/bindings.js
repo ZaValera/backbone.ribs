@@ -1543,7 +1543,7 @@ QUnit.module('Bindings', {
 
             $('.bind-value').val('ribsNew').change();
 
-            assert.deepEqual(getRes, ['bar', 'ribs', 'ribsNew']);
+            assert.deepEqual(getRes, ['bar', 'ribs']);
             assert.deepEqual(setRes, ['ribsNew']);
         });
     });
