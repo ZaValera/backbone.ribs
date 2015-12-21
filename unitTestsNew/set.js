@@ -156,7 +156,8 @@ QUnit.module('SET', function () {
         var model = new (Backbone.Ribs.Model.extend({
             deepPrevious: true,
             defaults: {
-                foo: {bar: 1}
+                foo: {bar: 1},
+                arr: [1, 2]
             }
         }))();
 
@@ -171,6 +172,12 @@ QUnit.module('SET', function () {
         assert.equal(model.attributes.foo.bar2, 3, 'Set new field');
         assert.equal(model.previous('foo.bar2'), undefined, 'Set new field previous');
         assert.equal(model.changed['foo.bar2'], 3, 'Set new field changed');
+
+        model.set('arr.1', 4);
+
+        assert.equal(model.attributes.arr[1], 4, 'Set array item');
+        assert.equal(model.previous('arr.1'), 2, 'Set array item previous');
+        assert.equal(model.changed['arr.1'], 4, 'Set array item changed');
     });
 
     QUnit.test('Deep SET propagation', function (assert) {

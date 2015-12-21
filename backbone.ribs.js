@@ -223,11 +223,6 @@
 
             return attrs;
         },
-        showDeprecationWarning: function (oldMet, newMet) {
-            if (console !== null && typeof console === 'object' && typeof console.warn === 'function') {
-                console.warn('Deprecation warning: method "%s()" is redundant. Please use "%s()".', oldMet, newMet);
-            }
-        },
         reverseElsInDOM: function (view) {
             var _ribs = view._ribs,
                 bindings = _ribs.bindings,
@@ -1969,7 +1964,7 @@
          * Create a new model with identical attributes to this one.
          * @returns {Object}
          */
-        clone: function() {
+        clone: function () {
             var attrs = this.attributes,
                 newAttrs = {},
                 computeds = this._ribs.computeds;
@@ -1981,22 +1976,6 @@
             }
 
             return new this.constructor(newAttrs);
-        },
-
-        /**
-         * @deprecated since version 0.4.0
-         */
-        addComputed: function () {
-            commonMethods.showDeprecationWarning('addComputed', 'addComputeds');
-            this.addComputeds.apply(this, arguments);
-        },
-
-        /**
-         * @deprecated since version 0.4.0
-         */
-        removeComputed: function (name) {
-            commonMethods.showDeprecationWarning('removeComputed', 'removeComputeds');
-            this.removeComputeds(name);
         }
     });
 
@@ -2249,26 +2228,6 @@
             this.removeBindings();
 
             return ViewProto.remove.apply(this, arguments);
-        },
-
-        /**
-         * @deprecated since version 0.3.1
-         */
-        addBinding: function (selector, bindings) {
-            commonMethods.showDeprecationWarning('addBinding', 'addBindings');
-            this.addBindings.apply(this, arguments);
-        },
-
-        /**
-         * @deprecated since version 0.3.1
-         */
-        applyCollection: function (selector, collection, View, data) {
-            commonMethods.showDeprecationWarning('applyCollection', 'addBindings');
-            this.addBindings(selector, {collection: {
-                col: collection,
-                view: View,
-                data: data
-            }});
         }
     });
 

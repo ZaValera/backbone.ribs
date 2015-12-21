@@ -52,6 +52,44 @@ QUnit.module('Bindings', {
             assert.equal($('.bind-toggle2:visible').length, 1, 'ToggleFalse changed');
         });
 
+        QUnit.test('toggleByClass', function (assert) {
+            var model = new Backbone.Ribs.Model({
+                toggle1: true,
+                toggle2: false
+            });
+
+            this.bindingView = new (Backbone.Ribs.View.extend({
+                bindings: {
+                    '.bind-toggle1': {
+                        toggleByClass: 'model.toggle1'
+                    },
+                    '.bind-toggle2': {
+                        toggleByClass: 'model.toggle2'
+                    }
+                },
+
+                el: '<div class="bind">' +
+                '<div class="bind-toggle1">1</div>' +
+                '<div class="bind-toggle2">2</div>' +
+                '</div>',
+
+                initialize: function () {
+                    this.model = model;
+
+                    this.$el.appendTo('body');
+                }
+            }))();
+
+            assert.equal($('.bind-toggle1:visible').length, 1, 'ToggleTrue');
+            assert.equal($('.bind-toggle2:hidden').length, 1, 'ToggleFalse');
+
+            model.set('toggle1', false);
+            model.set('toggle2', true);
+
+            assert.equal($('.bind-toggle1:hidden').length, 1, 'ToggleTrue changed');
+            assert.equal($('.bind-toggle2:visible').length, 1, 'ToggleFalse changed');
+        });
+
         QUnit.test('text', function (assert) {
             var model = new Backbone.Ribs.Model({
                 foo: 'bar'
@@ -704,21 +742,21 @@ QUnit.module('Bindings', {
 
         QUnit.test('not', function (assert) {
             var model = new Backbone.Ribs.Model({
-                toggle: true
+                checked: true
             });
 
             this.bindingView = new (Backbone.Ribs.View.extend({
                 bindings: {
                     '.bind-not-processor': {
-                        toggle: {
+                        checked: {
                             processor: 'not',
-                            data: 'model.toggle'
+                            data: 'model.checked'
                         }
                     }
                 },
 
                 el: '<div class="bind">' +
-                    '<div class="bind-not-processor">1</div>' +
+                    '<input class="bind-not-processor" type="checkbox">' +
                 '</div>',
 
                 initialize: function () {
@@ -728,15 +766,20 @@ QUnit.module('Bindings', {
                 }
             }))();
 
-            assert.equal($('.bind-not-processor:hidden').length, 1, 'Toggle with not processor');
+            var $el = $('.bind-not-processor');
 
-            model.set('toggle', false);
-            assert.equal($('.bind-not-processor:visible').length, 1, 'Toggle changed with not processor');
+            assert.equal($el.prop('checked'), false, 'Checked with not processor');
+
+            model.set('checked', false);
+            assert.equal($el.prop('checked'), true, 'Checked changed by model with not processor');
+
+            $el.prop('checked', false).change();
+            assert.equal(model.get('checked'), true, 'Checked changed by ui with not processor');
         });
 
         QUnit.test('length', function (assert) {
             var model = new Backbone.Ribs.Model({
-                ar: [1, 2, 3]
+                value: [1, 2, 3]
             });
 
             this.bindingView = new (Backbone.Ribs.View.extend({
@@ -744,7 +787,7 @@ QUnit.module('Bindings', {
                     '.bind-length-processor': {
                         text: {
                             processor: 'length',
-                            data: 'model.ar'
+                            data: 'model.value'
                         }
                     }
                 },
@@ -764,11 +807,17 @@ QUnit.module('Bindings', {
 
             assert.equal($el.text(), 3, 'Text with length processor');
 
-            model.set('ar', [1, 2, 3, 4]);
+            model.set('value', [1, 2, 3, 4]);
             assert.equal($el.text(), 4, 'Text with length processor changed');
 
-            model.set('ar', '12');
+            model.set('value', '12');
             assert.equal($el.text(), 2, 'Text with length processor changed to string');
+
+            model.set('value', {length: 10});
+            assert.equal($el.text(), 10, 'Text with length processor changed to object with length');
+
+            model.set('value', {});
+            assert.equal($el.text(), 0, 'Text with length processor changed to object without length');
         });
 
         QUnit.test('custom processor', function (assert) {
