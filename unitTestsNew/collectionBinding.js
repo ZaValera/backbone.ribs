@@ -89,10 +89,10 @@ QUnit.module('Collection binding', {
             });
 
             var CollectionView = Backbone.Ribs.View.extend({
-                className: 'col-bind',
+                el: '<div class="col-bind"><div class="items"></div></div>',
 
                 bindings: {
-                    'el': {
+                    '.items': {
                         collection:{
                             col: col,
                             view: ItemView
@@ -107,7 +107,7 @@ QUnit.module('Collection binding', {
 
             this.colView = new CollectionView();
 
-            var $items = $('.col-bind .item');
+            var $items = $('.items .item');
 
             assert.equal($items.length, 3);
 
@@ -365,7 +365,7 @@ QUnit.module('Collection binding', {
             var col = new Backbone.Collection(),
                 res = '';
 
-            var ItemView = Backbone.View.extend({
+            var ItemView = Backbone.Ribs.View.extend({
                 initialize: function () {
                     this.setElement('<div class="item" data-id="' + this.model.id + '"></div>');
 

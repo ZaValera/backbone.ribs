@@ -167,8 +167,6 @@
                 } else {
                     if (obj.hasOwnProperty(p)) {
                         obj = obj[p];
-                    } else {
-                        break;
                     }
                 }
             }
@@ -380,36 +378,9 @@
             var computeds = this._ribs.computeds,
                 loopref;
 
-            var find = function (name, computed, computeds) {
-                var deps = computed.deps,
-                    loop = computed.name;
-
-                if (!deps) {
-                    return false;
-                }
-
-                if (deps.indexOf(name) !== -1) {
-                    return loop;
-                }
-
-                for (var i = 0; i < deps.length; i++) {
-                    var dep = deps[i];
-
-                    if (computeds.hasOwnProperty(dep)) {
-                        loop = find(name, computeds[dep], computeds);
-
-                        if (loop) {
-                            return loop;
-                        }
-                    }
-                }
-
-                return false;
-            };
-
             for (var name in newComputeds) {
                 if (newComputeds.hasOwnProperty(name)) {
-                    loopref = find(name, computeds[name], computeds);
+                    loopref = modelMethods.find(name, computeds[name], computeds);
 
                     if (loopref) {
                         throw new Error('addComputeds(): a circular references in computeds "' + name + ' <-> ' + loopref +'"');
@@ -585,17 +556,9 @@
         },
 
         trigger: function (name) {
-            if (!name) {
-                return;
-            }
-
             var names = commonMethods.eventsApi(name),
                 length = names.length,
                 i;
-
-            if (!length) {
-                return;
-            }
 
             var computedsDepsMap = this._ribs.computedsDepsMap;
             var realNames = [];
@@ -642,10 +605,6 @@
 
             length = compChanges.length;
 
-            if (!length) {
-                return;
-            }
-
             for (i = 0; i < length; i++) {
                 item = compChanges[i];
                 ModelProto.trigger.call(this, 'change:' + item.attr, this, item.val, undefined, item.attr);
@@ -653,12 +612,6 @@
         },
 
         on: function (model, name, callback) {
-            if (!model._ribs) {
-                model._ribs = {
-                    events: {}
-                };
-            }
-
             var events = model._ribs.events,
                 names = commonMethods.eventsApi(name),
                 eventName, i, l;
@@ -671,18 +624,6 @@
                 } else {
                     events[eventName].push(callback);
                 }
-            }
-
-            //ToDo: remove in 1.0.0
-            if (!(model instanceof Ribs.Model || model instanceof Ribs.Collection) && !model._ribs.on) {
-                var originalTrigger = model.trigger;
-
-                model._ribs.on = true;
-                model.trigger = function (name) {
-                    commonMethods.bindingsTrigger.apply(model, arguments);
-
-                    return originalTrigger.apply(this, arguments);
-                };
             }
         },
 
@@ -705,6 +646,29 @@
                     }
                 }
             }
+        },
+
+        find: function find(name, computed, computeds) {
+            var deps = computed.deps,
+                loop = computed.name;
+
+            if (deps.indexOf(name) !== -1) {
+                return loop;
+            }
+
+            for (var i = 0; i < deps.length; i++) {
+                var dep = deps[i];
+
+                if (computeds.hasOwnProperty(dep)) {
+                    loop = find(name, computeds[dep], computeds);
+
+                    if (loop) {
+                        return loop;
+                    }
+                }
+            }
+
+            return false;
         }
     };
 
@@ -712,17 +676,8 @@
 
     //optimized
     var Computed = function (data, name, model) {
-        this.name = name;
-
         if (typeof data === 'function') {
-            console.warn('Deprecation warning: computed "' + name + '" is a function. It is redundant after v0.4.6.');
-
-            this.get = function () {return data.apply(model);};
-            this.set = function () {
-                throw new Error('set: computed "' + name + '" has no set method');
-            };
-            this._simple = true;
-            return this;
+            throw new Error('init computed: computed "' + name + '" is a function. It is no longer available after v0.4.6');
         }
 
         var deps = data.deps;
@@ -735,6 +690,7 @@
             this.multi = true;
         }
 
+        this.name = name;
         this.deps = deps;
         this._get = data.get;
         this.toJSON = data.toJSON;
@@ -756,10 +712,6 @@
     _.extend(Computed.prototype, {
         //optimized
         update: function () {
-            if (this._simple) {
-                return;
-            }
-
             var deps = [],
                 val, i;
 
@@ -1843,11 +1795,7 @@
                         continue;
                     }
 
-                    if (computeds.hasOwnProperty(attr) && computeds[attr]._simple) {
-                        json[attr] = computeds[attr].get();
-                    } else {
-                        json[attr] = this.attributes[attr];
-                    }
+                    json[attr] = this.attributes[attr];
                 }
             }
 
@@ -1865,6 +1813,10 @@
          * @returns {Ribs.Model}
          */
         addComputeds: function (key, params) {
+            if (key == null) {
+                return this;
+            }
+
             var computedsDeps = this._ribs.computedsDeps,
                 computedsDepsMap = this._ribs.computedsDepsMap,
                 attrs = commonMethods.getAttrs(key, params),
@@ -1878,11 +1830,6 @@
                     }
 
                     computed = this._ribs.computeds[name] = new Computed(attrs[name], name, this);
-
-                    if (computed._simple) {
-                        continue;
-                    }
-
                     deps = computed.deps;
 
                     for (i = 0, l1 = deps.length; i < l1; i++) {

@@ -478,4 +478,101 @@ QUnit.module('Computeds', function () {
             assert.deepEqual(clonedModel.attributes, {bar1: 1, bar2: 2, comp1: 10, comp2: 20}, 'cloned attributes');
         });
     });
+
+    QUnit.module('Features', function () {
+        QUnit.test('loop', function (assert) {
+            var error;
+
+            try {
+                var model = new (Backbone.Ribs.Model.extend({
+                    computeds: {
+                        comp1: {
+                            deps: 'comp2',
+                            get: function (comp2) {
+                                return comp2 * 10;
+                            }
+                        },
+
+                        comp2: {
+                            deps: 'comp1',
+                            get: function (comp1) {
+                                return comp1 / 10;
+                            }
+                        }
+                    }
+                }))();
+            } catch (e) {
+                error = e.message;
+            }
+
+            assert.equal(error, 'addComputeds(): a circular references in computeds "comp1 <-> comp2"');
+        });
+
+        QUnit.test('set must return array', function (assert) {
+            var error;
+
+            try {
+                var model = new (Backbone.Ribs.Model.extend({
+                    defaults: {
+                        foo: '10',
+                        bar: '20'
+                    },
+
+                    computeds: {
+                        comp1: {
+                            deps: ['foo', 'bar'],
+                            get: function (foo, bar) {
+                                return foo + ';' + bar;
+                            },
+                            set: function (val) {
+                                return val;
+                            }
+                        }
+                    }
+                }))();
+
+                model.set('comp1', '30;40');
+            } catch (e) {
+                error = e.message;
+            }
+
+            assert.equal(error, '`set` computed must return an array of values');
+        });
+
+        QUnit.test('deps to deep', function (assert) {
+            var model = new (Backbone.Ribs.Model.extend({
+                defaults: {
+                    foo: 10
+                },
+
+                computeds: {
+                    comp: {
+                        deps: ['foo.bar.ribs'],
+                        get: function (ribs) {
+                            return ribs + '_ribs';
+                        }
+                    }
+                }
+            }))();
+
+
+            assert.equal(model.get('comp'), 'undefined_ribs');
+        });
+
+        /*QUnit.test('deps is not in attributes', function (assert) {
+            var model = new (Backbone.Ribs.Model.extend({
+                computeds: {
+                    comp: {
+                        deps: ['foo'],
+                        get: function (ribs) {
+                            return ribs + '_ribs';
+                        }
+                    }
+                }
+            }))();
+
+
+            assert.equal(model.get('comp'), 'undefined_ribs');
+        });*/
+    });
 });
