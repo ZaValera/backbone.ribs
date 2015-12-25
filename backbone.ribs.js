@@ -431,8 +431,19 @@
 
         getComputedsToUpdate: function (deps) {
             var computedsDeps = this._ribs.computedsDeps,
+                computeds = this._ribs.computeds,
                 toUpdate = [],
                 prev, dep, index, i;
+
+            if (this._ribs.init) {
+                for (var name in computeds) {
+                    if (computeds.hasOwnProperty(name)) {
+                        toUpdate.push(name);
+                    }
+                }
+
+                return toUpdate;
+            }
 
             if (!deps.length) {
                 return toUpdate;
