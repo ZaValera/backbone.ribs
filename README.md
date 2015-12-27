@@ -50,6 +50,13 @@ v1.0.0
 * Set and Get: in `handlers, computeds and processors` method `set` return value, which will be set to model. `get` participates in the inverse operation.
 * Binding's `filter` renamed to `processor`
 
+v0.5.10 - 27.12.2015
+* Computeds: bug fixes
+
+v0.5.9 - 25.12.2015
+* Bindings: some optimizations
+* Computeds: bug fixes
+
 v0.5.8 - 12.12.2015
 * Bindings: bug fixes
 * Bindings: using `Backbone.Model` for bindings is deprecated (**will be deleted in v1.0.0**)

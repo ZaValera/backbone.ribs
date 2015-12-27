@@ -559,7 +559,7 @@ QUnit.module('Computeds', function () {
             assert.equal(model.get('comp'), 'undefined_ribs');
         });
 
-        /*QUnit.test('deps is not in attributes', function (assert) {
+        QUnit.test('deps is not in attributes', function (assert) {
             var model = new (Backbone.Ribs.Model.extend({
                 computeds: {
                     comp: {
@@ -573,6 +573,6 @@ QUnit.module('Computeds', function () {
 
 
             assert.equal(model.get('comp'), 'undefined_ribs');
-        });*/
+        });
     });
 });

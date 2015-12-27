@@ -516,8 +516,6 @@ require([
 
         v.removeBindings('.foo', ['text']);*/
 
-
-
         var ItemView = Backbone.Ribs.View.extend({
             bindings: {
                 '.bind-input': {
@@ -552,6 +550,23 @@ require([
             }
         });
 
+        var Mts = Backbone.Ribs.Model.extend({
+            defaults: {
+                //foo: 123
+            },
+
+            computeds: {
+                comp: {
+                    deps: ['foo'],
+                    get: function (foo) {
+                        return foo || 'bar';
+                    }
+                }
+            }
+        });
+
+        window.m = new Mts();
+
        /* var View = Backbone.Ribs.View.extend({
             el: '<div></div>',
 
@@ -575,6 +590,6 @@ require([
 
         var col = window.col =  new Backbone.Collection([{id: 1, visible: false}]);*/
 
-        window.view = new ItemView();
+        //window.view = new ItemView();
     });
 });
