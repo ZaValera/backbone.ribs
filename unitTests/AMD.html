@@ -14,6 +14,7 @@
 <script type="text/javascript" src="../vendor/lodash.min.js"></script>
 <script type="text/javascript" src="../vendor/backbone.js"></script>
 <script>
+    window.defineOriginal = window.define;
     window.define = function (deps, callback) {
         window.Ribs = callback(window._, window.Backbone);
     };
@@ -22,7 +23,7 @@
 </script>
 <script type="text/javascript" src="../backbone.ribs.js"></script>
 <script>
-    window.define = undefined;
+    window.define = window.defineOriginal;
 </script>
 <script type="text/javascript" src="amd.js"></script>
 </body>

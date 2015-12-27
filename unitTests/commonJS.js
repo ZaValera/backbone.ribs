@@ -4,5 +4,5 @@
 QUnit.test('CommonJS', function (assert) {
     'use strict';
 
-    assert.equal(typeof window.module.exports.Model, 'function');
+    assert.equal(typeof window.Ribs.Model, 'function');
 });

@@ -14,6 +14,9 @@
 <script type="text/javascript" src="../vendor/lodash.min.js"></script>
 <script type="text/javascript" src="../vendor/backbone.js"></script>
 <script>
+    window.moduleOriginal = window.module;
+    window.requireOriginal = window.require;
+
     window.module = {
         exports: {}
     };
@@ -29,6 +32,11 @@
     }
 </script>
 <script type="text/javascript" src="../backbone.ribs.js"></script>
+<script>
+    window.Ribs = window.module.exports;
+    window.module = window.moduleOriginal;
+    window.require = window.requireOriginal;
+</script>
 <script type="text/javascript" src="commonJS.js"></script>
 </body>
 
