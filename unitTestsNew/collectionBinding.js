@@ -51,7 +51,7 @@ QUnit.module('Collection binding', {
         QUnit.test('init with references', function (assert) {
             var col = new Backbone.Collection([{},{}]);
 
-            var ItemView = Backbone.View.extend({
+            var ItemView = Backbone.Ribs.View.extend({
                 initialize: function () {
                     this.setElement('<div class="item"></div>');
                 }
@@ -402,6 +402,47 @@ QUnit.module('Collection binding', {
 
             assert.equal(res, '2-11-1');
         });
+
+        QUnit.test('init with "waterfallAdding" in add with comparator', function (assert) {
+            var col = new Backbone.Collection();
+
+            var ItemView = Backbone.Ribs.View.extend({
+                initialize: function () {
+                    this.setElement('<div class="item">' + this.model.get('a') + '</div>');
+                }
+            });
+
+            var CollectionView = Backbone.Ribs.View.extend({
+                className: 'col-bind',
+
+                bindings: {
+                    'el': {
+                        collection:{
+                            col: col,
+                            view: ItemView
+                        }
+                    }
+                },
+
+                initialize: function () {
+                    this.$el.appendTo('body');
+                }
+            });
+
+            this.colView = new CollectionView();
+
+            col.comparator = 'a';
+
+            col.add([{id: 0, a: 2},{id: 1, a: 6},{id: 2, a: 4}], {
+                waterfallAdding: true
+            });
+
+            var $items = $('.col-bind .item');
+
+            assert.equal($items.filter(':eq(0)').text(), 2);
+            assert.equal($items.filter(':eq(1)').text(), 4);
+            assert.equal($items.filter(':eq(2)').text(), 6);
+        });
     });
 
     QUnit.module('Methods', function () {
@@ -447,6 +488,20 @@ QUnit.module('Collection binding', {
             }
 
             assert.equal(flag, true);
+        });
+
+        QUnit.test('getCollectionViews() without binding', function (assert) {
+            var CollectionView = Backbone.Ribs.View.extend({
+                className: 'col-bind',
+
+                initialize: function () {
+                    this.$el.appendTo('body');
+                }
+            });
+
+            this.colView = new CollectionView();
+
+            assert.equal(this.colView.getCollectionViews('el'), undefined);
         });
 
         QUnit.test('renderCollection()', function (assert) {

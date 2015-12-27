@@ -646,10 +646,6 @@
             for (i = names.length; i--;) {
                 events = model._ribs.events[names[i]];
 
-                if (!events) {
-                    continue;
-                }
-
                 for (j = events.length; j--;) {
                     var cb = events[j];
 
@@ -2173,9 +2169,9 @@
 
             if (binding && binding.handlers.collection) {
                 return binding.handlers.collection.views;
+            } else {
+                return undefined;
             }
-
-            return undefined;
         },
 
         /**

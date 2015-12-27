@@ -85,7 +85,7 @@ QUnit.module('GET', function () {
         assert.equal(model.get('obj.foo!!.'), '!.bar17', 'Get Object ExclamationDot at last');
     });
 
-    QUnit.test('previousAttributes()', function (assert) {
+    QUnit.test('previousAttributes() with deepPrevious', function (assert) {
         var first = {
                 second: 'bar'
             },
@@ -106,5 +106,40 @@ QUnit.module('GET', function () {
 
         assert.equal(prev.foo === obj, false, 'Deep clone previous');
         assert.equal(prev.foo.first === first, false, 'Deep clone previous second level');
+    });
+
+    QUnit.test('previousAttributes() without deepPrevious', function (assert) {
+        var first = {
+                second: 'bar'
+            },
+            obj = {
+                first: first
+            },
+            model = new (Backbone.Ribs.Model.extend({
+                defaults: {
+                    foo: obj
+                }
+            }))();
+
+        model.set('foo', 'bar');
+
+        var prev = model.previousAttributes();
+
+        assert.equal(prev.foo === obj, true, 'Deep clone previous');
+        assert.equal(prev.foo.first === first, true, 'Deep clone previous second level');
+    });
+
+    QUnit.test('Errors', function (assert) {
+        var error;
+
+        try {
+            var model = new Backbone.Ribs.Model();
+
+            model.get('foo.bar');
+        } catch (e) {
+            error = e.message;
+        }
+
+        assert.deepEqual(error, "can't get `bar` from `foo`, `foo` is undefined");
     });
 });

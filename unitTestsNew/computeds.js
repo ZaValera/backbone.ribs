@@ -443,7 +443,80 @@ QUnit.module('Computeds', function () {
             assert.equal(error, 'addComputeds: computed name "comp2" is already used', 'addComputeds - already used computed error');
         });
 
-        QUnit.test('removeComputeds()', function (assert) {
+        QUnit.test('removeComputeds() all', function (assert) {
+            var model = new (Backbone.Ribs.Model.extend({
+                defaults: {
+                    bar1: 1,
+                    bar2: 2
+                },
+
+                computeds: {
+                    comp1: {
+                        deps: 'bar1',
+                        get: function (bar1) {
+                            return bar1 * 10;
+                        }
+                    },
+
+                    comp2: {
+                        deps: ['bar1', 'bar2'],
+                        get: function (bar1, bar2) {
+                            return bar1 + bar2;
+                        }
+                    }
+                }
+            }))();
+
+            model.removeComputeds();
+            assert.equal(model.get('comp1'), undefined);
+            assert.equal(model.get('comp2'), undefined);
+            model.set('bar1', 3);
+            assert.equal(model.get('comp1'), undefined);
+            assert.equal(model.get('comp2'), undefined);
+        });
+
+        QUnit.test('removeComputeds() multi', function (assert) {
+            var model = new (Backbone.Ribs.Model.extend({
+                defaults: {
+                    bar1: 1,
+                    bar2: 2
+                },
+
+                computeds: {
+                    comp1: {
+                        deps: 'bar1',
+                        get: function (bar1) {
+                            return bar1 * 10;
+                        }
+                    },
+
+                    comp2: {
+                        deps: ['bar1', 'bar2'],
+                        get: function (bar1, bar2) {
+                            return bar1 + bar2;
+                        }
+                    },
+
+                    comp3: {
+                        deps: ['bar1', 'bar2'],
+                        get: function (bar1, bar2) {
+                            return bar1 + bar2;
+                        }
+                    }
+                }
+            }))();
+
+            model.removeComputeds(['comp1', 'comp3']);
+            assert.equal(model.get('comp1'), undefined);
+            assert.equal(model.get('comp2'), 3);
+            assert.equal(model.get('comp3'), undefined);
+            model.set('bar1', 3);
+            assert.equal(model.get('comp1'), undefined);
+            assert.equal(model.get('comp2'), 5);
+            assert.equal(model.get('comp3'), undefined);
+        });
+
+        QUnit.test('removeComputeds() single', function (assert) {
             var model = this.model;
 
             model.addComputeds('comp3', {
@@ -573,6 +646,74 @@ QUnit.module('Computeds', function () {
 
 
             assert.equal(model.get('comp'), 'undefined_ribs');
+        });
+
+        QUnit.test('set in change callback', function (assert) {
+            var model = new (Backbone.Ribs.Model.extend({
+                defaults: {
+                    foo: 10
+                },
+
+                computeds: {
+                    comp: {
+                        deps: ['foo'],
+                        get: function (ribs) {
+                            return ribs * 10;
+                        }
+                    }
+                }
+            }))();
+
+            model.on('change:foo', function () {
+                model.set('foo', 10, {silent: true});
+            });
+
+            model.set('foo', 20);
+
+            assert.deepEqual(model.changed, {});
+        });
+    });
+
+    QUnit.module('Features', function () {
+        QUnit.test('function computed', function (assert) {
+            var error;
+
+            try {
+                new (Backbone.Ribs.Model.extend({
+                    computeds: {
+                        comp1: function () {
+                            return 'foo';
+                        }
+                    }
+                }))();
+            } catch (e) {
+                error = e.message;
+            }
+
+            assert.equal(error, 'init computed: computed \"comp1\" is a function. It is no longer available after v0.4.6');
+        });
+
+        QUnit.test('function computed', function (assert) {
+            var error;
+
+            try {
+                var model = new (Backbone.Ribs.Model.extend({
+                    computeds: {
+                        comp1: {
+                            deps: 'foo',
+                            get: function (foo) {
+                                return foo * 10;
+                            }
+                        }
+                    }
+                }))();
+
+                model.set('comp1', '20');
+            } catch (e) {
+                error = e.message;
+            }
+
+            assert.equal(error, 'set: computed \"comp1\" has no set method');
         });
     });
 });

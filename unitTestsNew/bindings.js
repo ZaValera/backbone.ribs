@@ -7,7 +7,9 @@ QUnit.module('Bindings', {
     afterEach: function () {
         'use strict';
 
-        this.bindingView.remove();
+        if (this.bindingView) {
+            this.bindingView.remove();
+        }
     }
 }, function () {
     'use strict';
@@ -1249,20 +1251,30 @@ QUnit.module('Bindings', {
             assert.equal($second.text(), 'bar', 'Text');
         });
 
-        QUnit.test('updateBindings()', function (assert) {
+        QUnit.test('updateBindings() all', function (assert) {
             var model = new Backbone.Ribs.Model({
-                foo: 'bar'
+                foo: 'bar',
+                cl: true
             });
 
             this.bindingView = new (Backbone.Ribs.View.extend({
                 bindings: {
                     '.bind-text': {
-                        text: 'model.foo'
+                        text: 'model.foo',
+                        classes: {
+                            'test-class': 'model.cl'
+                        }
+                    },
+                    '.bind-class': {
+                        classes: {
+                            'test-class': 'model.cl'
+                        }
                     }
                 },
 
                 el: '<div class="bind">' +
                     '<span class="bind-text">ribs</span>' +
+                    '<span class="bind-class"></span>' +
                 '</div>',
 
                 initialize: function () {
@@ -1272,27 +1284,163 @@ QUnit.module('Bindings', {
             }))();
 
             var $el = $('<span class="bind-text">ribs</span>');
+            var $el2 = $('<span class="bind-class"></span>');
             this.bindingView.$el.append($el);
+            this.bindingView.$el.append($el2);
             assert.equal($el.text(), 'ribs', 'Text');
+            assert.equal($el.hasClass('test-class'), false, 'Class');
+            assert.equal($el2.hasClass('test-class'), false, 'Class');
 
             this.bindingView.updateBindings();
             assert.equal($el.text(), 'bar', 'Text');
+            assert.equal($el.hasClass('test-class'), true, 'Class');
+            assert.equal($el2.hasClass('test-class'), true, 'Class');
         });
 
-        QUnit.test('removeBindings()', function (assert) {
+        QUnit.test('updateBindings() by selector', function (assert) {
             var model = new Backbone.Ribs.Model({
-                foo: 'bar'
+                foo: 'bar',
+                cl: true
             });
 
             this.bindingView = new (Backbone.Ribs.View.extend({
                 bindings: {
                     '.bind-text': {
-                        text: 'model.foo'
+                        text: 'model.foo',
+                        classes: {
+                            'test-class': 'model.cl'
+                        }
+                    },
+                    '.bind-class': {
+                        classes: {
+                            'test-class': 'model.cl'
+                        }
                     }
                 },
 
                 el: '<div class="bind">' +
                     '<span class="bind-text">ribs</span>' +
+                    '<span class="bind-class"></span>' +
+                '</div>',
+
+                initialize: function () {
+                    this.model = model;
+                    this.$el.appendTo('body');
+                }
+            }))();
+
+            var $el = $('<span class="bind-text">ribs</span>');
+            var $el2 = $('<span class="bind-class"></span>');
+            this.bindingView.$el.append($el);
+            this.bindingView.$el.append($el2);
+            assert.equal($el.text(), 'ribs', 'Text');
+            assert.equal($el.hasClass('test-class'), false, 'Class');
+            assert.equal($el2.hasClass('test-class'), false, 'Class');
+
+            this.bindingView.updateBindings('.bind-text');
+            assert.equal($el.text(), 'bar', 'Text');
+            assert.equal($el.hasClass('test-class'), true, 'Class');
+            assert.equal($el2.hasClass('test-class'), false, 'Class');
+        });
+
+        QUnit.test('updateBindings() by type', function (assert) {
+            var model = new Backbone.Ribs.Model({
+                foo: 'bar',
+                cl: true,
+                data: 'foo'
+            });
+
+            this.bindingView = new (Backbone.Ribs.View.extend({
+                bindings: {
+                    '.bind-text': {
+                        text: 'model.foo',
+                        classes: {
+                            'test-class': 'model.cl'
+                        },
+                        attr: {
+                            'data-test': 'model.data'
+                        }
+                    },
+                    '.bind-class': {
+                        text: 'model.foo',
+                        classes: {
+                            'test-class': 'model.cl'
+                        },
+                        attr: {
+                            'data-test': 'model.data'
+                        }
+                    }
+                },
+
+                el: '<div class="bind">' +
+                    '<span class="bind-text">ribs</span>' +
+                    '<span class="bind-class"></span>' +
+                '</div>',
+
+                initialize: function () {
+                    this.model = model;
+                    this.$el.appendTo('body');
+                }
+            }))();
+
+            var $el = $('<span class="bind-text" data-test="ribs">ribs</span>');
+            var $el2 = $('<span class="bind-class" data-test="ribs">ribs</span>');
+            this.bindingView.$el.append($el);
+            this.bindingView.$el.append($el2);
+
+            assert.equal($el.text(), 'ribs', 'Text');
+            assert.equal($el2.text(), 'ribs', 'Text');
+            assert.equal($el.hasClass('test-class'), false, 'Class');
+            assert.equal($el2.hasClass('test-class'), false, 'Class');
+            assert.equal($el.attr('data-test'), 'ribs', 'Attr');
+            assert.equal($el2.attr('data-test'), 'ribs', 'Attr');
+
+            this.bindingView.updateBindings('.bind-text', ['classes', 'text']);
+            assert.equal($el.text(), 'bar', 'Text');
+            assert.equal($el2.text(), 'ribs', 'Text');
+            assert.equal($el.hasClass('test-class'), true, 'Class');
+            assert.equal($el2.hasClass('test-class'), false, 'Class');
+            assert.equal($el.attr('data-test'), 'ribs', 'Attr');
+            assert.equal($el2.attr('data-test'), 'ribs', 'Attr');
+
+            this.bindingView.updateBindings('.bind-class', 'attr');
+            assert.equal($el2.text(), 'ribs', 'Text');
+            assert.equal($el2.hasClass('test-class'), false, 'Class');
+            assert.equal($el.attr('data-test'), 'ribs', 'Attr');
+            assert.equal($el2.attr('data-test'), 'foo', 'Attr');
+
+            model.set('data', 'bar', {silent: true});
+            assert.equal($el.attr('data-test'), 'ribs', 'Attr');
+            assert.equal($el2.attr('data-test'), 'foo', 'Attr');
+            this.bindingView.updateBindings('.bind-text', 'attr');
+            assert.equal($el.attr('data-test'), 'bar', 'Attr');
+            assert.equal($el2.attr('data-test'), 'foo', 'Attr');
+        });
+
+        QUnit.test('removeBindings() all', function (assert) {
+            var model = new Backbone.Ribs.Model({
+                foo: 'bar',
+                cl: true
+            });
+
+            this.bindingView = new (Backbone.Ribs.View.extend({
+                bindings: {
+                    '.bind-text': {
+                        text: 'model.foo',
+                        classes: {
+                            'test-class': 'model.cl'
+                        }
+                    },
+                    '.bind-class': {
+                        classes: {
+                            'test-class': 'model.cl'
+                        }
+                    }
+                },
+
+                el: '<div class="bind">' +
+                    '<span class="bind-text">ribs</span>' +
+                    '<span class="bind-class"></span>' +
                 '</div>',
 
                 initialize: function () {
@@ -1302,12 +1450,132 @@ QUnit.module('Bindings', {
             }))();
 
             var $el = $('.bind-text');
+            var $el2 = $('.bind-class');
 
             assert.equal($el.text(), 'bar', 'Text');
+            assert.equal($el.hasClass('test-class'), true, 'Class');
+            assert.equal($el2.hasClass('test-class'), true, 'Class');
 
             this.bindingView.removeBindings();
             model.set('foo', 'newBar');
+            model.set('cl', false);
             assert.equal($el.text(), 'bar', 'Text');
+            assert.equal($el.hasClass('test-class'), true, 'Class');
+            assert.equal($el2.hasClass('test-class'), true, 'Class');
+        });
+
+        QUnit.test('removeBindings() by selector', function (assert) {
+            var model = new Backbone.Ribs.Model({
+                foo: 'bar',
+                cl: true
+            });
+
+            this.bindingView = new (Backbone.Ribs.View.extend({
+                bindings: {
+                    '.bind-text': {
+                        text: 'model.foo',
+                        classes: {
+                            'test-class': 'model.cl'
+                        }
+                    },
+                    '.bind-class': {
+                        classes: {
+                            'test-class': 'model.cl'
+                        }
+                    }
+                },
+
+                el: '<div class="bind">' +
+                    '<span class="bind-text">ribs</span>' +
+                    '<span class="bind-class"></span>' +
+                '</div>',
+
+                initialize: function () {
+                    this.model = model;
+                    this.$el.appendTo('body');
+                }
+            }))();
+
+            var $el = $('.bind-text');
+            var $el2 = $('.bind-class');
+
+            assert.equal($el.text(), 'bar', 'Text');
+            assert.equal($el.hasClass('test-class'), true, 'Class');
+            assert.equal($el2.hasClass('test-class'), true, 'Class');
+
+            this.bindingView.removeBindings('.bind-text');
+            model.set('foo', 'newBar');
+            model.set('cl', false);
+            assert.equal($el.text(), 'bar', 'Text');
+            assert.equal($el.hasClass('test-class'), true, 'Class');
+            assert.equal($el2.hasClass('test-class'), false, 'Class');
+        });
+
+        QUnit.test('removeBindings() by type', function (assert) {
+            var model = new Backbone.Ribs.Model({
+                foo: 'bar',
+                cl: true,
+                data: 'foo'
+            });
+
+            this.bindingView = new (Backbone.Ribs.View.extend({
+                bindings: {
+                    '.bind-text': {
+                        text: 'model.foo',
+                        classes: {
+                            'test-class': 'model.cl'
+                        },
+                        attr: {
+                            'data-test': 'model.data'
+                        }
+                    },
+                    '.bind-class': {
+                        text: 'model.foo',
+                        classes: {
+                            'test-class': 'model.cl'
+                        },
+                        attr: {
+                            'data-test': 'model.data'
+                        }
+                    }
+                },
+
+                el: '<div class="bind">' +
+                    '<span class="bind-text" data-test="ribs">ribs</span>' +
+                    '<span class="bind-class" data-test="ribs">ribs</span>' +
+                '</div>',
+
+                initialize: function () {
+                    this.model = model;
+                    this.$el.appendTo('body');
+                }
+            }))();
+
+            var $el = $('.bind-text');
+            var $el2 = $('.bind-class');
+
+            assert.equal($el.text(), 'bar', 'Text');
+            assert.equal($el2.text(), 'bar', 'Text');
+            assert.equal($el.hasClass('test-class'), true, 'Class');
+            assert.equal($el2.hasClass('test-class'), true, 'Class');
+            assert.equal($el.attr('data-test'), 'foo', 'Attr');
+            assert.equal($el2.attr('data-test'), 'foo', 'Attr');
+
+            this.bindingView.removeBindings('.bind-text', ['classes', 'text']);
+            model.set('foo', 'newBar');
+            model.set('cl', false);
+            model.set('data', 'bar');
+            assert.equal($el.text(), 'bar', 'Text');
+            assert.equal($el2.text(), 'newBar', 'Text');
+            assert.equal($el.hasClass('test-class'), true, 'Class');
+            assert.equal($el2.hasClass('test-class'), false, 'Class');
+            assert.equal($el.attr('data-test'), 'bar', 'Attr');
+            assert.equal($el2.attr('data-test'), 'bar', 'Attr');
+
+            this.bindingView.removeBindings('.bind-class', 'attr');
+            model.set('data', 'ribs');
+            assert.equal($el2.attr('data-test'), 'bar', 'Attr');
+
         });
 
         QUnit.test('$()', function (assert) {
@@ -1594,6 +1862,397 @@ QUnit.module('Bindings', {
 
             assert.deepEqual(getRes, ['bar', 'ribs']);
             assert.deepEqual(setRes, ['ribsNew']);
+        });
+
+        QUnit.test('binding for empty', function (assert) {
+            var error = false;
+
+            try {
+                var model = new Backbone.Ribs.Model({
+                    foo: 'bar'
+                });
+
+                this.bindingView = new (Backbone.Ribs.View.extend({
+                    bindings: {
+                        '.bind-text': {
+                            text: 'model.foo'
+                        }
+                    },
+
+                    el: '<div class="bind"></div>',
+
+                    initialize: function () {
+                        this.model = model;
+                        this.$el.appendTo('body');
+                    }
+                }))();
+
+                model.set('foo', 'ribs');
+            } catch (e) {
+                error = true;
+            }
+
+            assert.equal(error, false);
+        });
+
+        QUnit.test('add same binding', function (assert) {
+            var model = new Backbone.Ribs.Model({
+                foo: 'bar',
+                data: 'foo'
+            });
+
+            this.bindingView = new (Backbone.Ribs.View.extend({
+                bindings: {
+                    'el': {
+                        text: 'model.foo',
+                        attr: {
+                            'data-test': 'model.data'
+                        }
+                    }
+                },
+
+                el: '<div class="bind" data-test="test"></div>',
+
+                initialize: function () {
+                    this.model = model;
+                    this.$el.appendTo('body');
+                }
+            }))();
+
+            var $el = $('.bind');
+
+            assert.equal($el.text(), 'bar');
+            assert.equal($el.attr('data-test'), 'foo');
+
+            this.bindingView.addBindings('el', {
+                text: {
+                    data: 'model.foo',
+                    processor: function (foo) {
+                        return foo + '_ribs';
+                    }
+                }
+            });
+
+            model.set('data', 'ribs');
+
+            assert.equal($el.text(), 'bar_ribs');
+            assert.equal($el.attr('data-test'), 'ribs');
+        });
+    });
+
+    QUnit.module('Error', function () {
+        QUnit.test('wrong binding - empty data', function (assert) {
+            var error = '';
+
+            try {
+                this.bindingView = new (Backbone.Ribs.View.extend({
+                    el: '<div class="bind"></div>',
+
+                    bindings: {
+                        'el': {
+                            text: {
+                                data: ''
+                            }
+                        }
+                    },
+
+                    initialize: function () {
+                        this.$el.appendTo('body');
+                    }
+                }))();
+            } catch (e) {
+                error = e.message;
+            }
+
+            assert.equal(error, 'wrong binging data - ""');
+        });
+
+        QUnit.test('wrong binding - empty data 2', function (assert) {
+            var error = '';
+
+            try {
+                this.bindingView = new (Backbone.Ribs.View.extend({
+                    el: '<div class="bind"></div>',
+
+                    bindings: {
+                        'el': {
+                            text: {
+                                data: '.'
+                            }
+                        }
+                    },
+
+                    initialize: function () {
+                        this.$el.appendTo('body');
+                    }
+                }))();
+            } catch (e) {
+                error = e.message;
+            }
+
+            assert.equal(error, 'wrong binging data - "."');
+        });
+
+        QUnit.test('wrong binding - empty attr 2', function (assert) {
+            var model = new Backbone.Ribs.Model({
+                foo: 'bar'
+            });
+
+            var error = '';
+
+            try {
+                this.bindingView = new (Backbone.Ribs.View.extend({
+                    el: '<div class="bind"></div>',
+
+                    bindings: {
+                        'el': {
+                            text: {
+                                data: 'model.'
+                            }
+                        }
+                    },
+
+                    initialize: function () {
+                        this.model = model;
+                        this.$el.appendTo('body');
+                    }
+                }))();
+            } catch (e) {
+                error = e.message;
+            }
+
+            assert.equal(error, 'wrong binging data - "model."');
+        });
+
+        QUnit.test('wrong binding - empty binding', function (assert) {
+            var model = new Backbone.Ribs.Model({
+                foo: 10
+            });
+
+            var error = '';
+
+            try {
+                this.bindingView = new (Backbone.Ribs.View.extend({
+                    el: '<div class="bind"></div>',
+
+                    bindings: {
+                        'el': {}
+                    },
+
+                    initialize: function () {
+                        this.model = model;
+                        this.$el.appendTo('body');
+                    }
+                }))();
+            } catch (e) {
+                error = e.message;
+                $('.bind').remove();
+            }
+
+            assert.equal(error, 'wrong binging format for \"el\" - {}');
+        });
+
+        QUnit.test('wrong binding - wrong format', function (assert) {
+            var model = new Backbone.Ribs.Model({
+                foo: 10
+            });
+
+            var error = '';
+
+            try {
+                this.bindingView = new (Backbone.Ribs.View.extend({
+                    el: '<div class="bind"></div>',
+
+                    bindings: {
+                        'el': 'model.foo'
+                    },
+
+                    initialize: function () {
+                        this.model = model;
+                        this.$el.appendTo('body');
+                    }
+                }))();
+            } catch (e) {
+                error = e.message;
+                $('.bind').remove();
+            }
+
+            assert.equal(error, 'wrong binging format for \"el\" - \"model.foo\"');
+        });
+
+        QUnit.test('unknown handler', function (assert) {
+            var model = new Backbone.Ribs.Model({
+                foo: 'bar'
+            });
+
+            var error = '';
+
+            try {
+                this.bindingView = new (Backbone.Ribs.View.extend({
+                    el: '<div class="bind"></div>',
+
+                    bindings: {
+                        'el': {
+                            test: 'model.foo'
+                        }
+                    },
+
+                    initialize: function () {
+                        this.model = model;
+                        this.$el.appendTo('body');
+                    }
+                }))();
+            } catch (e) {
+                error = e.message;
+            }
+
+            assert.equal(error, 'unknown handler type \"test\"');
+        });
+
+        QUnit.test('unknown processor', function (assert) {
+            var model = new Backbone.Ribs.Model({
+                foo: 'bar'
+            });
+
+            var error = '';
+
+            try {
+                this.bindingView = new (Backbone.Ribs.View.extend({
+                    el: '<div class="bind"></div>',
+
+                    bindings: {
+                        'el': {
+                            text: {
+                                data: 'model.foo',
+                                processor: 'test'
+                            }
+                        }
+                    },
+
+                    initialize: function () {
+                        this.model = model;
+                        this.$el.appendTo('body');
+                    }
+                }))();
+            } catch (e) {
+                error = e.message;
+            }
+
+            assert.equal(error, 'unknown processor \"test\"');
+        });
+
+        QUnit.test('wrong data', function (assert) {
+            var model = new Backbone.Ribs.Model({
+                foo: 'bar'
+            });
+
+            var error = '';
+
+            try {
+                this.bindingView = new (Backbone.Ribs.View.extend({
+                    el: '<div class="bind"></div>',
+
+                    bindings: {
+                        'el': {
+                            text: {
+                                data: {
+                                    model: 'foo'
+                                }
+                            }
+                        }
+                    },
+
+                    initialize: function () {
+                        this.model = model;
+                        this.$el.appendTo('body');
+                    }
+                }))();
+            } catch (e) {
+                error = e.message;
+            }
+
+            assert.equal(error, 'wrong binging format {\"data\":{\"model\":\"foo\"}}');
+        });
+
+        QUnit.test('multi binding without set processor', function (assert) {
+            var model = new Backbone.Ribs.Model({
+                foo: 10,
+                bar: 20
+            });
+
+            var error = '';
+
+            try {
+                this.bindingView = new (Backbone.Ribs.View.extend({
+                    el: '<div class="bind"><input class="test-input"></div>',
+
+                    bindings: {
+                        '.test-input': {
+                            value: {
+                                data: ['model.foo', 'model.bar'],
+                                processor: function (foo, bar) {
+                                    return foo + bar;
+                                }
+                            }
+                        }
+                    },
+
+                    initialize: function () {
+                        this.model = model;
+                        this.$el.appendTo('body');
+                    }
+                }))();
+
+                //$('.test-input').val('ribs').change();
+            } catch (e) {
+                error = e.message;
+                $('.bind').remove();
+            }
+
+            assert.equal(error, 'wrong binging format {\"data\":[\"model.foo\",\"model.bar\"]}, `set` processor is required');
+        });
+
+        QUnit.test('multi binding, set processor must return array', function (assert) {
+            var model = new Backbone.Ribs.Model({
+                foo: 10,
+                bar: 20
+            });
+
+            var error = '';
+
+            try {
+                this.bindingView = new (Backbone.Ribs.View.extend({
+                    el: '<div class="bind"><input class="test-input"></div>',
+
+                    bindings: {
+                        '.test-input': {
+                            value: {
+                                data: ['model.foo', 'model.bar'],
+                                processor: {
+                                    get: function (foo, bar) {
+                                        return foo + bar;
+                                    },
+                                    set: function (val) {
+                                        return val;
+                                    }
+                                }
+                            }
+                        }
+                    },
+
+                    initialize: function () {
+                        this.model = model;
+                        this.$el.appendTo('body');
+                    }
+                }))();
+
+                $('.test-input').val('ribs').change();
+            } catch (e) {
+                error = e.message;
+                $('.bind').remove();
+            }
+
+            assert.equal(error, '`set` processor must return an array of values');
         });
     });
 });

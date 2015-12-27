@@ -64,6 +64,8 @@ QUnit.module('SET', function () {
             bar2: {'foo!.bar': 7}
         });
 
+        assert.equal(model.previous(), null, 'previous of undefined');
+
         //Сетим существующее поле
         model.set('foo.bar', 'bar11');
 
@@ -214,5 +216,37 @@ QUnit.module('SET', function () {
         assert.deepEqual(model.changed.foo, {first: {second: 2}});
         assert.equal(model.get('foo.first.second'), 2);
         assert.equal(model.changed['foo.first.second'], 2);
+    });
+
+    QUnit.module('Errors', function () {
+        QUnit.test('deep set', function (assert) {
+            var error;
+
+            try {
+                var model = new Backbone.Ribs.Model();
+
+                model.set('foo.bar', 'ribs');
+            } catch (e) {
+                error = e.message;
+            }
+
+            assert.deepEqual(error, "can't set `bar` to `foo`, `foo` is undefined");
+        });
+
+        QUnit.test('set to elementary', function (assert) {
+            var error;
+
+            try {
+                var model = new Backbone.Ribs.Model({
+                    foo: 'bar'
+                });
+
+                model.set('foo.bar', 'ribs');
+            } catch (e) {
+                error = e.message;
+            }
+
+            assert.deepEqual(error, 'set: can\'t set anything to "foo", typeof == "string"');
+        });
     });
 });
