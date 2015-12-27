@@ -22,7 +22,7 @@
         define(['underscore', 'backbone'], factory);
     } else {
         // Just run it:
-        factory(root._, root.Backbone);
+        root.Ribs = factory(root._, root.Backbone);
     }
 
 }(this, function (_, Backbone) {
@@ -221,63 +221,8 @@
 
             return attrs;
         },
-        reverseElsInDOM: function (view) {
-            var _ribs = view._ribs,
-                bindings = _ribs.bindings,
-                binding, $el, i;
-
-            if (!_ribs.hasInDOMHandler) {
-                return;
-            }
-
-            for (var selector in bindings) {
-                if (bindings.hasOwnProperty(selector)) {
-                    binding = bindings[selector];
-
-                    if ( !binding.hasInDOMHandler ||
-                        selector === 'el' ||
-                        !binding.needBack && !binding.outOfDOM) {
-                        continue;
-                    }
-
-                    $el = binding.$el;
-                    binding.needBack = binding.outOfDOM;
-
-                    $el.toggleClass(hiddenClassName, binding.needBack);
-
-                    for (i = 0; i < $el.length; i++) {
-                        commonMethods.reverseDummy($el[i], binding.dummies[i]);
-                    }
-
-                    binding.outOfDOM = !binding.outOfDOM;
-                }
-            }
-        },
-        reverseDummy: function (el, dummy, shouldByInDom) {
-            if (el.parentNode && !shouldByInDom) {
-                el.parentNode.replaceChild(dummy, el);
-            } else if (dummy.parentNode) {
-                dummy.parentNode.replaceChild(el, dummy);
-            }
-        },
-        updateInDOMInfo: function (view) {
-            var _ribs = view._ribs,
-                bindings = _ribs.bindings,
-                hasInDOMHandler = false;
-
-            for (var s in bindings) {
-                if (bindings.hasOwnProperty(s)) {
-                    if (bindings[s].hasInDOMHandler) {
-                        hasInDOMHandler = true;
-                        break;
-                    }
-                }
-            }
-
-            _ribs.hasInDOMHandler = hasInDOMHandler;
-        },
         addStyle: function () {
-            if (!document) {
+            if (!document || typeof document.createElement !== 'function') {
                 return;
             }
 
@@ -804,33 +749,6 @@
             $el.html(value);
         },
 
-        inDOM: function ($el, value) {
-            var outOfDOM = !value,
-                dummy,
-                el;
-
-            if (this.selector === 'el') {
-                this.view._ribs.outOfDOM = outOfDOM;
-            }
-
-            this.outOfDOM = outOfDOM;
-
-            for (var i = 0; i < $el.length; i++) {
-                el = $el[i];
-                dummy = this.dummies[i];
-
-                if (value) {
-                    if (!el.parentNode && dummy.parentNode) {
-                        dummy.parentNode.replaceChild(el, dummy);
-                    }
-                } else {
-                    if (el.parentNode) {
-                        el.parentNode.replaceChild(dummy, el);
-                    }
-                }
-            }
-        },
-
         toggle: function ($el, value) {
             $el.toggle(!!value);
         },
@@ -884,16 +802,6 @@
             }
         },
 
-        options: {
-            get: function ($el, value) {
-                $el.val(value);
-            },
-
-            set: function ($el) {
-                return $el.val() || [];
-            }
-        },
-
         mod: {
             get: function ($el, value, cl, binding) {
                 var modifier = this.mods[binding];
@@ -912,21 +820,13 @@
 
     //optimized
     var Binding = function (view, selector, bindings) {
-        var hasInDOMHandler = bindings.hasOwnProperty('inDOM'),
-            binding;
+        var binding;
 
         this.cid = _.uniqueId('bind');
         this.selector = selector;
         this.view = view;
         this.mods = {};
-        this.hasInDOMHandler = hasInDOMHandler;
         this.handlers = {};
-
-        if (hasInDOMHandler) {
-            console.warn('Deprecation warning: binding "inDOM" is redundant. Please use binding "toggleByClass".');
-
-            view._ribs.hasInDOMHandler = true;
-        }
 
         this._setEl();
 
@@ -1052,13 +952,13 @@
                 view = new View(_.extend(data, {model: model, collection: collection}));
                 views[model.cid] = view;
 
-                newEl = view instanceof Backbone.Ribs.View ? view.getEl()[0] : view.el;
+                newEl = view.el;
 
                 if (!nextModel) {
                     $el.append(newEl);
                 } else {
                     nextView = views[nextModel.cid];
-                    (nextView instanceof Backbone.Ribs.View ? nextView.getEl() : nextView.$el).before(newEl);
+                    nextView.$el.before(newEl);
                 }
             }
         },
@@ -1086,7 +986,7 @@
                 }
 
                 if (view) {
-                    fragment.appendChild(view instanceof Backbone.Ribs.View ? view.getEl()[0] : view.el);
+                    fragment.appendChild(view.el);
                 }
             }
 
@@ -1246,7 +1146,7 @@
                 changeAttr = changeAttrs[modelName] || (changeAttrs[modelName] = []);
 
                 if (!(model instanceof Ribs.Model || model instanceof Ribs.Collection)) {
-                    console.warn('Deprecation warning: use only "Ribs.Model" or "Ribs.Collectino" for bindings.');
+                    throw new Error('addBindings: use only "Ribs.Model" or "Ribs.Collectino" for bindings.');
                 }
 
                 if (model instanceof Backbone.Collection) {
@@ -1365,26 +1265,6 @@
                     }
 
                     delete handlers[type];
-
-                    if (type === 'inDOM') {
-                        var $el = this.$el,
-                            dummies = this.dummies,
-                            el;
-
-                        for (i = 0, l = $el.length; i < l; i++) {
-                            commonMethods.reverseDummy($el[i], dummies[i], true);
-                        }
-
-                        if (this.selector === 'el') {
-                            this.view._ribs.outOfDOM = false;
-                        }
-
-                        this.hasInDOMHandler = false;
-
-                        commonMethods.updateInDOMInfo(this.view);
-
-                        this.dummies = [];
-                    }
                 }
             }
         },
@@ -1412,12 +1292,9 @@
 
         //optimized
         _setEl: function () {
-            var selector = this.selector,
-                isEl = false,
-                dummy;
+            var selector = this.selector;
 
             if (selector === 'el') {
-                isEl = true;
                 this.$el = this.view.$el;
             } else {
                 this.$el = this.view.$(selector);
@@ -1429,19 +1306,6 @@
             }
 
             this.empty = false;
-
-            if (this.hasInDOMHandler) {
-                if (isEl) {
-                    this.dummies = [this.view._ribs.dummy];
-                } else {
-                    this.dummies = [];
-
-                    for (var i = 0; i < this.$el.length; i++) {
-                        dummy = document.createComment(this.$el[i].tagName);
-                        this.dummies.push(dummy);
-                    }
-                }
-            }
         },
 
         _onsort: function () {
@@ -1941,12 +1805,8 @@
          * @param {object} [options] - hash of options
          */
         constructor: function RibsView(options) {
-            var dummy = document.createComment('');
-
             this._ribs = {
                 _bindings: _.extend({}, _.result(this, 'bindings')),
-                dummy: dummy,
-                $dummy: $(dummy),
                 bindings: {},
                 collections: {}
             };
@@ -1959,56 +1819,6 @@
             if (!this._ribs.preventBindings) {
                 this.applyBindings();
             }
-        },
-
-        /**
-         * Get the descendants of each element in the view's element
-         * @param {string} selector - selector expression to match elements against
-         * @returns {jQuery}
-         */
-        $: function(selector) {
-            var simple = true;
-
-            if (this._ribs.hasInDOMHandler) {
-                var bindings = this._ribs.bindings;
-
-                for (var s in bindings) {
-                    if (bindings.hasOwnProperty(s)) {
-                        if (bindings[s].outOfDOM) {
-                            simple = false;
-                            break;
-                        }
-                    }
-                }
-            }
-
-            if (simple) {
-                return this.$el.find(selector);
-            }
-
-            commonMethods.reverseElsInDOM(this);
-            var res = this.$el.find(selector);
-            commonMethods.reverseElsInDOM(this);
-            return res;
-        },
-
-        /**
-         * Returns the view's element
-         * @returns {jQuery}
-         */
-        getEl: function () {
-            return this._ribs.outOfDOM ? this._ribs.$dummy : this.$el;
-        },
-
-        /**
-         * Append the view's element to passed element
-         * @param {string|Element|jQuery} target - Selector or Element or jQuery
-         * @returns {Ribs.View}
-         */
-        appendTo: function (target) {
-            this.getEl().appendTo(target);
-
-            return this;
         },
 
         /**

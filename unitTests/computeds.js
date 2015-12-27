@@ -679,7 +679,7 @@ QUnit.module('Computeds', function () {
             var error;
 
             try {
-                new (Backbone.Ribs.Model.extend({
+                var model = new (Backbone.Ribs.Model.extend({
                     computeds: {
                         comp1: function () {
                             return 'foo';
@@ -693,7 +693,7 @@ QUnit.module('Computeds', function () {
             assert.equal(error, 'init computed: computed \"comp1\" is a function. It is no longer available after v0.4.6');
         });
 
-        QUnit.test('function computed', function (assert) {
+        QUnit.test('set computed without set method', function (assert) {
             var error;
 
             try {

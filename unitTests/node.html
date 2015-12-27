@@ -13,12 +13,15 @@
 <script type="text/javascript" src="../vendor/jquery-1.9.0.min.js"></script>
 <script type="text/javascript" src="../vendor/lodash.min.js"></script>
 <script type="text/javascript" src="../vendor/backbone.js"></script>
+<script>
+    document.createElementOriginal = document.createElement;
+    document.createElement = null;
+</script>
 <script type="text/javascript" src="../backbone.ribs.js"></script>
-<script type="text/javascript" src="get.js"></script>
-<script type="text/javascript" src="set.js"></script>
-<script type="text/javascript" src="computeds.js"></script>
-<script type="text/javascript" src="bindings.js"></script>
-<script type="text/javascript" src="collectionBinding.js"></script>
-</body> 
+<script>
+    document.createElement = document.createElementOriginal;
+</script>
+<script type="text/javascript" src="node.js"></script>
+</body>
 
 </html>

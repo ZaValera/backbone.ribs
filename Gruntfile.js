@@ -11,10 +11,19 @@ module.exports = function(grunt) {
                     src: ['backbone.ribs.js'],
                     instrumentedFiles: 'temp/',
                     htmlReport: 'report/coverage',
-                    linesThresholdPct: 90
+                    linesThresholdPct: 100,
+                    statementsThresholdPct: 100,
+                    functionsThresholdPct: 100,
+                    branchesThresholdPct: 90
                 }
             },
-            all: ['unitTestsNew/unitTests.html']
+            all: [
+                'unitTests/unitTests.html',
+                'unitTests/commonJSTest.html',
+                'unitTests/amd.html',
+                'unitTests/node.html',
+                'unitTests/ie10.html'
+            ]
         }
     });
 

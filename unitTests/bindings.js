@@ -579,165 +579,6 @@ QUnit.module('Bindings', {
             assert.equal($mod2.hasClass('bind-mod2_empty'), true, 'Multi Mod 2 changed');
             assert.equal($mod2.hasClass('bind-mod2_blocked'), true, 'Multi Mod 3 changed');
         });
-
-        QUnit.test('options', function (assert) {
-            var model = new Backbone.Ribs.Model({
-                optionsSingle: '3',
-                optionsMultiple: ['2', '4']
-            });
-
-            this.bindingView = new (Backbone.Ribs.View.extend({
-                bindings: {
-                    '.bind-options-single': {
-                        options: 'model.optionsSingle'
-                    },
-                    '.bind-options-multiple': {
-                        options: 'model.optionsMultiple'
-                    }
-                },
-
-                el: '<div class="bind">' +
-                    '<select class="bind-options-single">' +
-                        '<option value="1">1</option>' +
-                        '<option value="2">2</option>' +
-                        '<option value="3">3</option>' +
-                        '<option value="4">4</option>' +
-                    '</select>' +
-                    '<select class="bind-options-multiple" multiple>' +
-                        '<option value="1">a</option>' +
-                        '<option value="2">b</option>' +
-                        '<option value="3">c</option>' +
-                        '<option value="4">d</option>' +
-                    '</select>' +
-                '</div>',
-
-                initialize: function () {
-                    this.model = model;
-
-                    this.$el.appendTo('body');
-                }
-            }))();
-
-            var $single = $('.bind-options-single');
-            var $multiple = $('.bind-options-multiple');
-
-            assert.equal($single.val(), '3', 'Single Options');
-            assert.deepEqual($multiple.val(), ['2', '4'], 'Multiple Options');
-
-            model.set('optionsSingle', '2');
-            model.set('optionsMultiple', ['1', '3']);
-            assert.equal($single.val(), '2', 'Single Options changed');
-            assert.deepEqual($multiple.val(), ['1', '3'], 'Multiple Options changed');
-
-            $multiple.val(['2']).change();
-            assert.deepEqual($multiple.val(), ['2'], 'Multiple Options select changed');
-        });
-
-        QUnit.test('inDOM el', function (assert) {
-            var model = new Backbone.Ribs.Model({
-                isVisible: false,
-                text: 'foo'
-            });
-
-            this.bindingView = new (Backbone.Ribs.View.extend({
-                bindings: {
-                    'el': {
-                        inDOM: 'model.isVisible'
-                    }
-                },
-
-                el: '<div class="in-dom">' +
-                    '<div class="in-dom-first">' +
-                        '<div class="in-dom-second">' +
-                            '<span class="in-dom-third"></span>' +
-                        '</div>' +
-                    '</div>' +
-                '</div>',
-
-                initialize: function () {
-                    this.model = model;
-
-                    this.appendTo($('body'));
-                }
-            }))();
-
-            assert.equal($('.in-dom').length, 0, 'el init');
-
-            model.set('isVisible', true);
-            assert.equal($('.in-dom').length, 1, 'el set visible');
-
-            model.set('isVisible', false);
-            assert.equal($('.in-dom').length, 0, 'el set invisible');
-
-            this.bindingView.removeBindings();
-            assert.equal($('.in-dom').length, 1, 'el set visible with removeBindings');
-
-            this.bindingView.addBindings('el', {
-                inDOM: 'model.isVisible'
-            });
-            assert.equal($('.in-dom').length, 0, 'el set invisible with addBindings');
-            assert.equal(this.bindingView.$('.in-dom-first .in-dom-third').length, 1, 'select sub child in invisible el');
-
-            this.bindingView.addBindings('.in-dom-third', {
-                text: 'model.text'
-            });
-            model.set('isVisible', true);
-            assert.equal($('.in-dom-third').text(), 'foo', 'add binding to sub child in invisible el');
-        });
-
-        QUnit.test('inDOM child el', function (assert) {
-            var model = new Backbone.Ribs.Model({
-                second: false,
-                text: 'foo'
-            });
-
-            this.bindingView = new (Backbone.Ribs.View.extend({
-                bindings: {
-                    '.in-dom-second': {
-                        inDOM: 'model.second'
-                    }
-                },
-
-                el: '<div class="in-dom">' +
-                    '<div class="in-dom-first">' +
-                        '<div class="in-dom-second">' +
-                            '<span class="in-dom-third"></span>' +
-                        '</div>' +
-                    '</div>' +
-                '</div>',
-
-                initialize: function () {
-                    this.model = model;
-
-                    this.appendTo($('body'));
-                }
-            }))();
-
-            assert.equal($('.in-dom-second').length, 0, 'child el init');
-
-            model.set('second', true);
-            assert.equal($('.in-dom-second').length, 1, 'child el set visible');
-
-            model.set('second', false);
-            assert.equal($('.in-dom-second').length, 0, 'child el set invisible');
-
-            this.bindingView.removeBindings();
-            assert.equal($('.in-dom-second').length, 1, 'child el set visible with removeBindings');
-
-            this.bindingView.addBindings('.in-dom-second', {
-                inDOM: 'model.second'
-            });
-            assert.equal($('.in-dom-second').length, 0, 'child el set invisible with addBindings');
-            assert.equal(this.bindingView.$('.in-dom-first .in-dom-third').length, 1, 'select sub child in invisible el');
-
-            this.bindingView.addBindings('.in-dom-third', {
-                text: 'model.text'
-            });
-            model.set('second', true);
-            assert.equal($('.in-dom-third').text(), 'foo', 'add binding to sub child in invisible el');
-
-        });
-
     });
 
     QUnit.module('Processors', function () {
@@ -1578,95 +1419,6 @@ QUnit.module('Bindings', {
 
         });
 
-        QUnit.test('$()', function (assert) {
-            var model = new Backbone.Ribs.Model({
-                isVisible: false
-            });
-
-            this.bindingView = new (Backbone.Ribs.View.extend({
-                bindings: {
-                    '.bind-second': {
-                        inDOM: 'model.isVisible'
-                    }
-                },
-
-                el: '<div class="bind-first">' +
-                    '<div class="bind-second">' +
-                        '<div class="bind-third">ribs</div>' +
-                    '</div>' +
-                '</div>',
-
-                initialize: function () {
-                    this.model = model;
-                    this.$el.appendTo('body');
-                }
-            }))();
-
-            var $el1 = $('.bind-second .bind-third');
-            var $el2 = this.bindingView.$('.bind-second .bind-third');
-
-            assert.equal($el1.length, 0);
-            assert.equal($el2.length, 1);
-        });
-
-        QUnit.test('getEl()', function (assert) {
-            var model = new Backbone.Ribs.Model({
-                isVisible: false
-            });
-
-            this.bindingView = new (Backbone.Ribs.View.extend({
-                bindings: {
-                    'el': {
-                        inDOM: 'model.isVisible'
-                    }
-                },
-
-                el: '<div class="bind-first">ribs</div>',
-
-                initialize: function () {
-                    this.model = model;
-                    this.$el.appendTo('body');
-                }
-            }))();
-
-            var $el1 = $('.bind-first');
-            var $el2 = this.bindingView.getEl();
-
-            assert.equal($el1.length, 0);
-            assert.equal($el2.parent()[0], $('body')[0]);
-        });
-
-        QUnit.test('appendTo()', function (assert) {
-            var model = new Backbone.Ribs.Model({
-                isVisible: false
-            });
-
-            this.bindingView = new (Backbone.Ribs.View.extend({
-                bindings: {
-                    'el': {
-                        inDOM: 'model.isVisible'
-                    }
-                },
-
-                el: '<div class="bind-first">ribs</div>',
-
-                initialize: function () {
-                    this.model = model;
-                }
-            }))();
-
-            this.bindingView.appendTo('body');
-
-            var $el;
-
-            $el = $('.bind-first');
-            assert.equal($el.length, 0);
-
-            model.set('isVisible', true);
-            $el = $('.bind-first');
-            assert.equal($el.length, 1);
-        });
-
         QUnit.test('remove()', function (assert) {
             var model = new Backbone.Ribs.Model({
                 foo: 'bar'
@@ -1962,6 +1714,7 @@ QUnit.module('Bindings', {
                 }))();
             } catch (e) {
                 error = e.message;
+                $('.bind').remove();
             }
 
             assert.equal(error, 'wrong binging data - ""');
@@ -1988,6 +1741,7 @@ QUnit.module('Bindings', {
                 }))();
             } catch (e) {
                 error = e.message;
+                $('.bind').remove();
             }
 
             assert.equal(error, 'wrong binging data - "."');
@@ -2019,6 +1773,7 @@ QUnit.module('Bindings', {
                 }))();
             } catch (e) {
                 error = e.message;
+                $('.bind').remove();
             }
 
             assert.equal(error, 'wrong binging data - "model."');
@@ -2104,6 +1859,7 @@ QUnit.module('Bindings', {
                 }))();
             } catch (e) {
                 error = e.message;
+                $('.bind').remove();
             }
 
             assert.equal(error, 'unknown handler type \"test\"');
@@ -2136,6 +1892,7 @@ QUnit.module('Bindings', {
                 }))();
             } catch (e) {
                 error = e.message;
+                $('.bind').remove();
             }
 
             assert.equal(error, 'unknown processor \"test\"');
@@ -2169,6 +1926,7 @@ QUnit.module('Bindings', {
                 }))();
             } catch (e) {
                 error = e.message;
+                $('.bind').remove();
             }
 
             assert.equal(error, 'wrong binging format {\"data\":{\"model\":\"foo\"}}');
@@ -2253,6 +2011,74 @@ QUnit.module('Bindings', {
             }
 
             assert.equal(error, '`set` processor must return an array of values');
+        });
+
+        QUnit.test('Backbone.Model in binding', function (assert) {
+            var model = new Backbone.Model({
+                foo: 'bar'
+            });
+
+            var error = '';
+
+            try {
+                this.bindingView = new (Backbone.Ribs.View.extend({
+                    bindings: {
+                        '.bind-toggle1': {
+                            text: 'model.foo'
+                        }
+                    },
+
+                    el: '<div class="bind">' +
+                        '<div class="bind-test"></div>' +
+                    '</div>',
+
+                    initialize: function () {
+                        this.model = model;
+
+                        this.$el.appendTo('body');
+                    }
+                }))();
+            } catch (e) {
+                error = e.message;
+                $('.bind').remove();
+            }
+
+            assert.equal(error, 'addBindings: use only "Ribs.Model" or "Ribs.Collectino" for bindings.');
+        });
+
+        QUnit.test('Backbone.Collection in binding', function (assert) {
+            var col = new Backbone.Collection([{foo: 'bar'}, {foo: 'ribs'}]);
+            var error = '';
+
+            try {
+                this.bindingView = new (Backbone.Ribs.View.extend({
+                    bindings: {
+                        '.bind-test': {
+                            text: {
+                                data: 'col.foo',
+                                processor: function (foo) {
+                                    return foo.join(',');
+                                }
+                            }
+                        }
+                    },
+
+                    el: '<div class="bind">' +
+                        '<div class="bind-test"></div>' +
+                    '</div>',
+
+                    initialize: function () {
+                        this.col = col;
+
+                        this.$el.appendTo('body');
+                    }
+                }))();
+            } catch (e) {
+                error = e.message;
+                $('.bind').remove();
+            }
+
+            assert.equal(error, 'addBindings: use only "Ribs.Model" or "Ribs.Collectino" for bindings.');
         });
     });
 });
