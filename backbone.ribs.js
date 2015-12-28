@@ -874,12 +874,12 @@
             var mainView = this.view,
                 View = typeof colBind.view === 'string' ? mainView[colBind.view] : colBind.view,
                 collection = typeof colBind.col === 'string' ? mainView[colBind.col] : colBind.col,
-                waterfallAdding = colBind.waterfallAdding,
                 data = colBind.data || {},
                 selector = this.selector,
                 views = {},
-                self = this,
                 $el;
+
+            this.waterfallAdding = colBind.waterfallAdding;
 
             if (selector === 'el') {
                 $el = mainView.$el;
@@ -891,6 +891,7 @@
             collection.on('add', this._onaddView, this);
             collection.on('remove', this._removeView, this);
             collection.on('reset', this._onReset, this);
+            collection.on('update', this._onUpdate, this);
 
             this.handlers.collection = {
                 collection: collection,
@@ -900,33 +901,32 @@
                 views: views
             };
 
-            var colSet = collection.set;
-
-            collection.set = function (models, options) {
-                var res = colSet.apply(collection, arguments),
-                    wfa = waterfallAdding;
-
-                if (options && options.hasOwnProperty('waterfallAdding')) {
-                    wfa = options.waterfallAdding;
-                }
-
-                if (wfa) {
-                    if (self._toAddArr) {
-                        self._addViewsToEl();
-                    }
-                } else {
-                    if (self._toAdd) {
-                        self._fillElByCollection();
-                    }
-                }
-
-                self._toAddArr = undefined;
-                self._toAdd = undefined;
-
-                return res;
-            };
-
             this._fillElByCollection();
+        },
+
+        _onUpdate: function (collection, options) {
+            if (!options.add) {
+                return;
+            }
+
+            var wfa = this.waterfallAdding;
+
+            if (options && options.hasOwnProperty('waterfallAdding')) {
+                wfa = options.waterfallAdding;
+            }
+
+            if (wfa) {
+                if (this._toAddArr) {
+                    this._addViewsToEl();
+                }
+            } else {
+                if (this._toAdd) {
+                    this._fillElByCollection();
+                }
+            }
+
+            this._toAddArr = undefined;
+            this._toAdd = undefined;
         },
 
         _addViewsToEl: function () {
@@ -1954,6 +1954,11 @@
             var bindings = this._ribs.bindings,
                 binding,
                 bindCol;
+
+            if (!(collection instanceof Backbone.Collection) && !selector) {
+                selector = collection;
+                collection = null;
+            }
 
             for (var s in bindings) {
                 if (bindings.hasOwnProperty(s) && (!selector || selector === s)) {
