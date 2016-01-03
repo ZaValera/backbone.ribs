@@ -7,7 +7,9 @@ QUnit.module('Collection binding', {
     afterEach: function () {
         'use strict';
 
-        this.colView.remove();
+        if (this.colView) {
+            this.colView.remove();
+        }
     }
 }, function () {
     'use strict';
@@ -18,7 +20,7 @@ QUnit.module('Collection binding', {
         }
     }, function () {
         QUnit.test('init with string names', function (assert) {
-            var col = new Backbone.Collection([{},{}]);
+            var col = new Backbone.Ribs.Collection([{},{}]);
 
             var ItemView = Backbone.View.extend({
                 el: '<div class="item"></div>'
@@ -49,7 +51,7 @@ QUnit.module('Collection binding', {
         });
 
         QUnit.test('init with references', function (assert) {
-            var col = new Backbone.Collection([{},{}]);
+            var col = new Backbone.Ribs.Collection([{},{}]);
 
             var ItemView = Backbone.Ribs.View.extend({
                 initialize: function () {
@@ -80,7 +82,7 @@ QUnit.module('Collection binding', {
         });
 
         QUnit.test('creation sub views', function (assert) {
-            var col = new Backbone.Collection([{a: 1},{a: 2},{a: 3}]);
+            var col = new Backbone.Ribs.Collection([{a: 1},{a: 2},{a: 3}]);
 
             var ItemView = Backbone.View.extend({
                 initialize: function () {
@@ -117,7 +119,7 @@ QUnit.module('Collection binding', {
         });
 
         QUnit.test('sort views', function (assert) {
-            var col = new Backbone.Collection([{a: 1},{a: 3},{a: 2}]);
+            var col = new Backbone.Ribs.Collection([{a: 1},{a: 3},{a: 2}]);
 
             var ItemView = Backbone.View.extend({
                 initialize: function () {
@@ -165,7 +167,7 @@ QUnit.module('Collection binding', {
         });
 
         QUnit.test('reset views', function (assert) {
-            var col = new Backbone.Collection([{},{},{},{}]);
+            var col = new Backbone.Ribs.Collection([{},{},{},{}]);
 
             var ItemView = Backbone.View.extend({
                 initialize: function () {
@@ -202,7 +204,7 @@ QUnit.module('Collection binding', {
         });
 
         QUnit.test('add views', function (assert) {
-            var col = new Backbone.Collection([{a: 2},{a: 6},{a: 4}]);
+            var col = new Backbone.Ribs.Collection([{a: 2},{a: 6},{a: 4}]);
 
             var ItemView = Backbone.View.extend({
                 initialize: function () {
@@ -242,7 +244,7 @@ QUnit.module('Collection binding', {
         });
 
         QUnit.test('remove view', function (assert) {
-            var col = new Backbone.Collection([{id: 0, a: 2},{id: 1, a: 6},{id: 2, a: 4}]);
+            var col = new Backbone.Ribs.Collection([{id: 0, a: 2},{id: 1, a: 6},{id: 2, a: 4}]);
 
             var ItemView = Backbone.View.extend({
                 initialize: function () {
@@ -281,7 +283,7 @@ QUnit.module('Collection binding', {
         });
 
         QUnit.test('init without "waterfallAdding"', function (assert) {
-            var col = new Backbone.Collection(),
+            var col = new Backbone.Ribs.Collection(),
                 res = '';
 
             var ItemView = Backbone.View.extend({
@@ -321,7 +323,7 @@ QUnit.module('Collection binding', {
         });
 
         QUnit.test('init with "waterfallAdding"', function (assert) {
-            var col = new Backbone.Collection(),
+            var col = new Backbone.Ribs.Collection(),
                 res = '';
 
             var ItemView = Backbone.View.extend({
@@ -362,7 +364,7 @@ QUnit.module('Collection binding', {
         });
 
         QUnit.test('init with "waterfallAdding" in add', function (assert) {
-            var col = new Backbone.Collection(),
+            var col = new Backbone.Ribs.Collection(),
                 res = '';
 
             var ItemView = Backbone.Ribs.View.extend({
@@ -404,7 +406,7 @@ QUnit.module('Collection binding', {
         });
 
         QUnit.test('init with "waterfallAdding" in add with comparator', function (assert) {
-            var col = new Backbone.Collection();
+            var col = new Backbone.Ribs.Collection();
 
             var ItemView = Backbone.Ribs.View.extend({
                 initialize: function () {
@@ -447,7 +449,7 @@ QUnit.module('Collection binding', {
 
     QUnit.module('Methods', function () {
         QUnit.test('getCollectionViews()', function (assert) {
-            var col = new Backbone.Collection([{id: 0, a: 2},{id: 1, a: 6},{id: 2, a: 4}]),
+            var col = new Backbone.Ribs.Collection([{id: 0, a: 2},{id: 1, a: 6},{id: 2, a: 4}]),
                 views = {};
 
             var ItemView = Backbone.View.extend({
@@ -491,7 +493,7 @@ QUnit.module('Collection binding', {
         });
 
         QUnit.test('getCollectionViews() two girls one cup', function (assert) {
-            var col = new Backbone.Collection([{id: 0, a: 2},{id: 1, a: 6},{id: 2, a: 4}]),
+            var col = new Backbone.Ribs.Collection([{id: 0, a: 2},{id: 1, a: 6},{id: 2, a: 4}]),
                 views1 = {},
                 views2 = {};
 
@@ -578,7 +580,7 @@ QUnit.module('Collection binding', {
         });
 
         QUnit.test('renderCollection()', function (assert) {
-            var col = new Backbone.Collection([{id: 0, a: 2},{id: 1, a: 6}]);
+            var col = new Backbone.Ribs.Collection([{id: 0, a: 2},{id: 1, a: 6}]);
 
             var ItemView = Backbone.View.extend({
                 initialize: function () {
@@ -615,8 +617,8 @@ QUnit.module('Collection binding', {
         });
 
         QUnit.test('renderCollection() by collection', function (assert) {
-            var col1 = new Backbone.Collection([{id: 0, a: 2},{id: 1, a: 6}]);
-            var col2 = new Backbone.Collection([{id: 0, a: 3},{id: 1, a: 5}]);
+            var col1 = new Backbone.Ribs.Collection([{id: 0, a: 2},{id: 1, a: 6}]);
+            var col2 = new Backbone.Ribs.Collection([{id: 0, a: 3},{id: 1, a: 5}]);
 
             var ItemView = Backbone.View.extend({
                 initialize: function () {
@@ -666,8 +668,8 @@ QUnit.module('Collection binding', {
         });
 
         QUnit.test('renderCollection() by selector', function (assert) {
-            var col1 = new Backbone.Collection([{id: 0, a: 2},{id: 1, a: 6}]);
-            var col2 = new Backbone.Collection([{id: 0, a: 3},{id: 1, a: 5}]);
+            var col1 = new Backbone.Ribs.Collection([{id: 0, a: 2},{id: 1, a: 6}]);
+            var col2 = new Backbone.Ribs.Collection([{id: 0, a: 3},{id: 1, a: 5}]);
 
             var ItemView = Backbone.View.extend({
                 initialize: function () {
@@ -721,8 +723,8 @@ QUnit.module('Collection binding', {
         });
 
         QUnit.test('renderCollection() by collection and selector', function (assert) {
-            var col1 = new Backbone.Collection([{id: 0, a: 2},{id: 1, a: 6}]);
-            var col2 = new Backbone.Collection([{id: 0, a: 3},{id: 1, a: 5}]);
+            var col1 = new Backbone.Ribs.Collection([{id: 0, a: 2},{id: 1, a: 6}]);
+            var col2 = new Backbone.Ribs.Collection([{id: 0, a: 3},{id: 1, a: 5}]);
 
             var ItemView = Backbone.View.extend({
                 initialize: function () {
@@ -779,6 +781,101 @@ QUnit.module('Collection binding', {
             assert.equal($('.items1 > .item').length, 2, 'after renderCollection1');
             assert.equal($('.items2 > .item').length, 2, 'after renderCollection2');
             assert.equal($('.items3 > .item').length, 3, 'after renderCollection3');
+        });
+
+        QUnit.test('removeBindings() collection binding off', function (assert) {
+            var col = new Backbone.Ribs.Collection([{a: 1},{a: 3},{a: 2}]);
+
+            var ItemView = Backbone.View.extend({
+                initialize: function () {
+                    this.setElement('<div class="item">' + this.model.get('a') + '</div>');
+                }
+            });
+
+            var CollectionView = Backbone.Ribs.View.extend({
+                className: 'col-bind',
+
+                bindings: {
+                    'el': {
+                        collection:{
+                            col: col,
+                            view: ItemView
+                        }
+                    }
+                },
+
+                initialize: function () {
+                    this.$el.appendTo('body');
+                }
+            });
+
+            this.colView = new CollectionView();
+
+            var $items = $('.col-bind .item');
+
+            assert.equal($items.length, 3);
+
+            assert.equal($items.filter(':eq(0)').text(), 1, 'Init 1');
+            assert.equal($items.filter(':eq(1)').text(), 3, 'Init 2');
+            assert.equal($items.filter(':eq(2)').text(), 2, 'Init 3');
+
+            this.colView.removeBindings();
+
+            col.add({a: 4});
+
+            $items = $('.col-bind .item');
+
+            assert.equal($items.length, 0, 'add length');
+
+            col.comparator = 'a';
+            col.sort();
+
+            $items = $('.col-bind .item');
+
+            assert.equal($items.length, 0, 'sort length');
+
+            col.remove(col.at(0));
+
+            $items = $('.col-bind .item');
+
+            assert.equal($items.length, 0, 'remove length');
+
+            col.reset();
+
+            $items = $('.col-bind .item');
+
+            assert.equal($items.length, 0, 'reset length');
+        });
+    });
+
+    QUnit.module('Errors', function () {
+        QUnit.test('Backbone.Collection in collection binding', function (assert) {
+            var col = new Backbone.Collection([{},{}]);
+
+            var CollectionView = Backbone.Ribs.View.extend({
+                bindings: {
+                    'el': {
+                        collection:{
+                            col: col,
+                            view: Backbone.Ribs.View
+                        }
+                    }
+                },
+
+                initialize: function () {
+                    this.$el.appendTo('body');
+                }
+            });
+
+            var error = '';
+
+            try {
+                this.colView = new CollectionView();
+            } catch (e) {
+                error = e.message;
+            }
+
+            assert.equal(error, 'addBindings: use only "Ribs.Collection" for bindings.');
         });
     });
 });

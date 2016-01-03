@@ -410,7 +410,17 @@ QUnit.module('Computeds', function () {
                 }
             });
 
+            model.addComputeds({
+                'comp4': {
+                    deps: 'bar2',
+                    get: function (bar2) {
+                        return bar2 * 100;
+                    }
+                }
+            });
+
             assert.equal(model.get('comp3'), 200);
+            assert.equal(model.get('comp4'), 200);
 
             var error = '';
 
@@ -672,9 +682,7 @@ QUnit.module('Computeds', function () {
 
             assert.deepEqual(model.changed, {});
         });
-    });
 
-    QUnit.module('Features', function () {
         QUnit.test('function computed', function (assert) {
             var error;
 
@@ -714,6 +722,25 @@ QUnit.module('Computeds', function () {
             }
 
             assert.equal(error, 'set: computed \"comp1\" has no set method');
+        });
+
+        QUnit.test('collection.where', function (assert) {
+            var Col = Backbone.Collection.extend({
+                model: Backbone.Ribs.Model.extend({
+                    computeds: {
+                        comp: {
+                            deps: ['first', 'last'],
+                            get: function (first, last) {
+                                return first + last;
+                            }
+                        }
+                    }
+                })
+            });
+
+            var col = new Col([{first: 'a', last: 'b'}, {first: 'c', last: 'd'}, {first: 'a', last: 'b'}]);
+
+            assert.equal(col.where({comp: 'ab'}).length, 2);
         });
     });
 });

@@ -47,6 +47,80 @@
             object: toString.call({})
         };
 
+    var eventMethods = {
+        parseEvents: function (name) {
+            var names;
+
+            if (eventSplitter.test(name)) {
+                names = name.split(eventSplitter);
+            } else {
+                names = [name];
+            }
+
+            return names;
+        },
+        on: function (model, name, callback, context) {
+            var events = model._ribs.events,
+                names = eventMethods.parseEvents(name),
+                eventName, item, i, l;
+
+            for (i = 0, l = names.length; i < l; i++) {
+                eventName = names[i];
+                item = {
+                    callback: callback,
+                    context: context
+                };
+
+                if (!events.hasOwnProperty(eventName)) {
+                    events[eventName] = [item];
+                } else {
+                    events[eventName].push(item);
+                }
+            }
+        },
+        off: function (model, name, callback, context) {
+            var names = eventMethods.parseEvents(name),
+                events, cb, ev, ctx, i, j;
+
+            for (i = names.length; i--;) {
+                events = model._ribs.events[names[i]];
+
+                for (j = events.length; j--;) {
+                    ev = events[j];
+                    cb = ev.callback;
+                    ctx = ev.context;
+
+                    if (cb === callback && (!context || context === ctx)) {
+                        events.splice(j, 1);
+                    }
+                }
+            }
+        },
+        bindingsTrigger: function (name) {
+            var names = eventMethods.parseEvents(name),
+                events = this._ribs.events,
+                length = arguments.length,
+                args = [],
+                item, ev,
+                i, j, l1, l2;
+
+            for (i = 1; i < length; i++) {
+                args[i - 1] = arguments[i];
+            }
+
+            for (i = 0, l1 = names.length; i < l1; i++) {
+                ev = events[names[i]];
+
+                if (ev) {
+                    for (j = 0, l2 = ev.length; j < l2; j++) {
+                        item = ev[j];
+                        item.callback.apply(item.context, args);
+                    }
+                }
+            }
+        }
+    };
+
     var commonMethods = {
         cloneDeep: function cloneDeep(obj) {
             var tag = toString.call(obj),
@@ -238,32 +312,6 @@
             }
 
             document.getElementsByTagName('head')[0].appendChild(style);
-        },
-        eventsApi: function (name) {
-            var names;
-
-            if (eventSplitter.test(name)) {
-                names = name.split(eventSplitter);
-            } else {
-                names = [name];
-            }
-
-            return names;
-        },
-        bindingsTrigger: function (name, model, value, options) {
-            var names = commonMethods.eventsApi(name),
-                events = this._ribs.events,
-                i, j, l1, l2;
-
-            for (i = 0, l1 = names.length; i < l1; i++) {
-                var ev = events[names[i]];
-
-                if (ev) {
-                    for (j = 0, l2 = ev.length; j < l2; j++) {
-                        ev[j](options);
-                    }
-                }
-            }
         }
     };
 
@@ -281,7 +329,6 @@
                 }
             }
         },
-
         initComputeds: function (attrs) {
             var computeds= this._ribs.computeds,
                 realAttrs = [],
@@ -318,7 +365,6 @@
                 this.attributes[attr] = computeds[attr].get();
             }
         },
-
         checkForLoop: function (newComputeds) {
             var computeds = this._ribs.computeds,
                 loopref;
@@ -333,7 +379,6 @@
                 }
             }
         },
-
         convertComputedsToArguments: function (attrs) {
             var newAttrs = {},
                 computeds = this._ribs.computeds,
@@ -380,7 +425,6 @@
 
             return newAttrs;
         },
-
         getComputedsToUpdate: function (deps) {
             var computedsDeps = this._ribs.computedsDeps,
                 toUpdate = [],
@@ -447,7 +491,6 @@
 
             return Array.prototype.concat.apply([], toUpdate);
         },
-
         updateComputeds: function (attrs) {
             var computeds = this._ribs.computeds,
                 computed, attr;
@@ -459,7 +502,6 @@
                 computed.update();
             }
         },
-
         removeComputeds: function (attrs) {
             var names = [],
                 computeds = this._ribs.computeds,
@@ -511,9 +553,8 @@
 
             return this;
         },
-
         trigger: function (name) {
-            var names = commonMethods.eventsApi(name),
+            var names = eventMethods.parseEvents(name),
                 length = names.length,
                 i;
 
@@ -567,40 +608,6 @@
                 ModelProto.trigger.call(this, 'change:' + item.attr, this, item.val, undefined, item.attr);
             }
         },
-
-        on: function (model, name, callback) {
-            var events = model._ribs.events,
-                names = commonMethods.eventsApi(name),
-                eventName, i, l;
-
-            for (i = 0, l = names.length; i < l; i++) {
-                eventName = names[i];
-
-                if (!events.hasOwnProperty(eventName)) {
-                    events[eventName] = [callback];
-                } else {
-                    events[eventName].push(callback);
-                }
-            }
-        },
-
-        off: function (model, name, callback) {
-            var names = commonMethods.eventsApi(name),
-                events, i, j;
-
-            for (i = names.length; i--;) {
-                events = model._ribs.events[names[i]];
-
-                for (j = events.length; j--;) {
-                    var cb = events[j];
-
-                    if (cb === callback) {
-                        events.splice(j, 1);
-                    }
-                }
-            }
-        },
-
         find: function find(name, computed, computeds) {
             var deps = computed.deps,
                 loop = computed.name;
@@ -879,6 +886,10 @@
                 views = {},
                 $el;
 
+            if (!(collection instanceof Ribs.Collection)) {
+                throw new Error('addBindings: use only "Ribs.Collection" for bindings.');
+            }
+
             this.waterfallAdding = colBind.waterfallAdding;
 
             if (selector === 'el') {
@@ -887,11 +898,11 @@
                 $el = mainView.$(selector);
             }
 
-            collection.on('sort', this._onsort, this);
-            collection.on('add', this._onaddView, this);
-            collection.on('remove', this._removeView, this);
-            collection.on('reset', this._onReset, this);
-            collection.on('update', this._onUpdate, this);
+            eventMethods.on(collection, 'sort', this._onsort, this);
+            eventMethods.on(collection, 'add', this._onaddView, this);
+            eventMethods.on(collection, 'update', this._onUpdate, this);
+            eventMethods.on(collection, 'remove', this._removeView, this);
+            eventMethods.on(collection, 'reset', this._onReset, this);
 
             this.handlers.collection = {
                 collection: collection,
@@ -1068,7 +1079,15 @@
 
             //Определяем обработчик события при изменении модели/коллекции
             if (getHandler) {
-                getter = function (options) {
+                getter = function (instance) {
+                    var options;
+
+                    if (instance instanceof Backbone.Collection) {
+                        options = arguments[1];
+                    } else {
+                        options = arguments[2];
+                    }
+
                     if (self.empty || options && options.byBinding === self.cid) {
                         return;
                     }
@@ -1146,7 +1165,7 @@
                 changeAttr = changeAttrs[modelName] || (changeAttrs[modelName] = []);
 
                 if (!(model instanceof Ribs.Model || model instanceof Ribs.Collection)) {
-                    throw new Error('addBindings: use only "Ribs.Model" or "Ribs.Collectino" for bindings.');
+                    throw new Error('addBindings: use only "Ribs.Model" or "Ribs.Collection" for bindings.');
                 }
 
                 if (model instanceof Backbone.Collection) {
@@ -1156,7 +1175,7 @@
                         if (col.indexOf(modelName) === -1) {
                             col.push(modelName);
 
-                            modelMethods.on(model, 'add remove reset sort', getter);
+                            eventMethods.on(model, 'add remove reset sort', getter);
                         }
                     }
                 } else {
@@ -1172,7 +1191,7 @@
                         ch += attrArray[j];
                         changeAttr.push(ch);
 
-                        modelMethods.on(model, 'change:' + ch, getter);
+                        eventMethods.on(model, 'change:' + ch, getter);
                     }
                 }
             }
@@ -1234,14 +1253,14 @@
                                     if (col.indexOf(modelName) === -1) {
                                         col.push(modelName);
 
-                                        modelMethods.off(model, 'add remove reset sort', getter);
+                                        eventMethods.off(model, 'add remove reset sort', getter);
                                     }
                                 }
 
                                 changeAttr = changeAttrs[modelName];
 
                                 for (i = 0, l = changeAttr.length; i < l; i++) {
-                                    modelMethods.off(model, 'change:' + changeAttr[i], getter);
+                                    eventMethods.off(model, 'change:' + changeAttr[i], getter);
                                 }
                             }
                         }
@@ -1252,10 +1271,11 @@
                             views = handler.views,
                             view;
 
-                        collection.off('sort', this._onsort, this);
-                        collection.off('add', this._onaddView, this);
-                        collection.off('remove', this._removeView, this);
-                        collection.off('reset', this._onReset, this);
+                        eventMethods.off(collection, 'sort', this._onsort, this);
+                        eventMethods.off(collection, 'add', this._onaddView, this);
+                        eventMethods.off(collection, 'update', this._onUpdate, this);
+                        eventMethods.off(collection, 'remove', this._removeView, this);
+                        eventMethods.off(collection, 'reset', this._onReset, this);
 
                         for (view in views) {
                             if (views.hasOwnProperty(view)) {
@@ -1577,7 +1597,7 @@
 
                         args = ['change:' + item.attr, this, item.val, options, item.attr];
 
-                        commonMethods.bindingsTrigger.apply(this, args);
+                        eventMethods.bindingsTrigger.apply(this, args);
                         ModelProto.trigger.apply(this, args);
 
                         if (options.propagation) {
@@ -1591,7 +1611,7 @@
                         item = compChanges[i];
                         args = ['change:' + item.attr, this, item.val, options, item.attr];
 
-                        commonMethods.bindingsTrigger.apply(this, args);
+                        eventMethods.bindingsTrigger.apply(this, args);
 
                         ModelProto.trigger.apply(this, args);
                     }
@@ -1616,7 +1636,7 @@
 
         trigger: function (name) {
             modelMethods.trigger.call(this, name);
-            commonMethods.bindingsTrigger.apply(this, arguments);
+            eventMethods.bindingsTrigger.apply(this, arguments);
 
             return ModelProto.trigger.apply(this, arguments);
         },
@@ -2017,7 +2037,7 @@
         },
 
         trigger: function (name) {
-            commonMethods.bindingsTrigger.call(this, name);
+            eventMethods.bindingsTrigger.apply(this, arguments);
 
             return CollectionProto.trigger.apply(this, arguments);
         }

@@ -710,10 +710,6 @@ QUnit.module('Bindings', {
         });
 
         QUnit.test('custom col processor', function (assert) {
-            /*var Col = Backbone.Collection.extend({
-                model: Backbone.Ribs.Model
-            });
-*/
             var col = new Backbone.Ribs.Collection([{a: 2},{a: 4},{a: 3}]);
             var col2 = new Backbone.Ribs.Collection([{b: 7},{b: 5},{b: 6}]);
 
@@ -1419,6 +1415,66 @@ QUnit.module('Bindings', {
 
         });
 
+        QUnit.test('removeBindings() binding off', function (assert) {
+            var col = new Backbone.Ribs.Collection([{a: 2},{a: 4},{a: 3}]);
+
+            this.bindingView = new (Backbone.Ribs.View.extend({
+                bindings: {
+                    '.bind-with-col-processor': {
+                        text: {
+                            data: 'col.a',
+                            processor: 'colProc'
+                        }
+                    }
+                },
+
+                processors: {
+                    colProc: function (a) {
+                        var sum = 0,
+                            l = a.length;
+
+                        for (var i = 0; i < l; i++) {
+                            sum += a[i] * (i + 1);
+                        }
+
+                        return sum;
+                    }
+                },
+
+                el: '<div class="bind">' +
+                    '<span class="bind-with-col-processor">1</span>' +
+                '</div>',
+
+                initialize: function () {
+                    this.col = col;
+
+                    this.$el.appendTo('body');
+                }
+            }))();
+
+            var $el = $('.bind-with-col-processor');
+
+            assert.equal($el.text(), '19', 'init');
+
+            this.bindingView.removeBindings();
+
+            col.at(1).set('a', 5);
+            assert.equal($el.text(), '19', 'change');
+
+            col.add({'a': 4});
+            assert.equal($el.text(), '19', 'add');
+
+            col.remove(col.at(0));
+            assert.equal($el.text(), '19', 'remove');
+
+            col.comparator = 'a';
+            col.sort();
+            assert.equal($el.text(), '19', 'sort');
+
+            col.reset();
+            assert.equal($el.text(), '19', 'reset');
+        });
+
         QUnit.test('remove()', function (assert) {
             var model = new Backbone.Ribs.Model({
                 foo: 'bar'
@@ -1689,6 +1745,42 @@ QUnit.module('Bindings', {
 
             assert.equal($el.text(), 'bar_ribs');
             assert.equal($el.attr('data-test'), 'ribs');
+        });
+
+        QUnit.test('binding with options', function (assert) {
+            var model = new Backbone.Ribs.Model({
+                foo: 'bar'
+            });
+
+            var opt = {};
+
+            this.bindingView = new (Backbone.Ribs.View.extend({
+                bindings: {
+                    '.bind-input': {
+                        value: {
+                            data: 'model.foo',
+                            options: {
+                                test: 'ribs'
+                            }
+                        }
+                    }
+                },
+
+                el: '<div class="bind"><input class="bind-input"></div>',
+
+                initialize: function () {
+                    this.model = model;
+                    this.$el.appendTo('body');
+                }
+            }))();
+
+            model.on('change:foo', function (model, value, options) {
+                opt = options;
+            });
+
+            $('.bind-input').val('newBar').change();
+
+            assert.deepEqual(opt.test, 'ribs');
         });
     });
 
@@ -2043,7 +2135,7 @@ QUnit.module('Bindings', {
                 $('.bind').remove();
             }
 
-            assert.equal(error, 'addBindings: use only "Ribs.Model" or "Ribs.Collectino" for bindings.');
+            assert.equal(error, 'addBindings: use only "Ribs.Model" or "Ribs.Collection" for bindings.');
         });
 
         QUnit.test('Backbone.Collection in binding', function (assert) {
@@ -2078,7 +2170,7 @@ QUnit.module('Bindings', {
                 $('.bind').remove();
             }
 
-            assert.equal(error, 'addBindings: use only "Ribs.Model" or "Ribs.Collectino" for bindings.');
+            assert.equal(error, 'addBindings: use only "Ribs.Model" or "Ribs.Collection" for bindings.');
         });
     });
 });
