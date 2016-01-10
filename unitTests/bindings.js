@@ -1412,7 +1412,71 @@ QUnit.module('Bindings', {
             this.bindingView.removeBindings('.bind-class', 'attr');
             model.set('data', 'ribs');
             assert.equal($el2.attr('data-test'), 'bar', 'Attr');
+        });
 
+        QUnit.test('removeBindings() by hash', function (assert) {
+            var model = new Backbone.Ribs.Model({
+                foo: 'bar',
+                cl: true,
+                data: 'foo'
+            });
+
+            this.bindingView = new (Backbone.Ribs.View.extend({
+                bindings: {
+                    '.bind-text': {
+                        text: 'model.foo',
+                        classes: {
+                            'test-class': 'model.cl'
+                        },
+                        attr: {
+                            'data-test': 'model.data'
+                        }
+                    },
+                    '.bind-class': {
+                        text: 'model.foo',
+                        classes: {
+                            'test-class': 'model.cl'
+                        },
+                        attr: {
+                            'data-test': 'model.data'
+                        }
+                    }
+                },
+
+                el: '<div class="bind">' +
+                '<span class="bind-text" data-test="ribs">ribs</span>' +
+                '<span class="bind-class" data-test="ribs">ribs</span>' +
+                '</div>',
+
+                initialize: function () {
+                    this.model = model;
+                    this.$el.appendTo('body');
+                }
+            }))();
+
+            var $el = $('.bind-text');
+            var $el2 = $('.bind-class');
+
+            assert.equal($el.text(), 'bar', 'Text');
+            assert.equal($el2.text(), 'bar', 'Text');
+            assert.equal($el.hasClass('test-class'), true, 'Class');
+            assert.equal($el2.hasClass('test-class'), true, 'Class');
+            assert.equal($el.attr('data-test'), 'foo', 'Attr');
+            assert.equal($el2.attr('data-test'), 'foo', 'Attr');
+
+            this.bindingView.removeBindings({
+                '.bind-text': ['classes', 'text'],
+                '.bind-class': 'all'
+            });
+            model.set('foo', 'newBar');
+            model.set('cl', false);
+            model.set('data', 'bar');
+            assert.equal($el.text(), 'bar', 'Text');
+            assert.equal($el2.text(), 'bar', 'Text');
+            assert.equal($el.hasClass('test-class'), true, 'Class');
+            assert.equal($el2.hasClass('test-class'), true, 'Class');
+            assert.equal($el.attr('data-test'), 'bar', 'Attr');
+            assert.equal($el2.attr('data-test'), 'foo', 'Attr');
         });
 
         QUnit.test('removeBindings() binding off', function (assert) {
@@ -1516,6 +1580,35 @@ QUnit.module('Bindings', {
     });
 
     QUnit.module('Features', function () {
+        QUnit.test('remove toggleByClass binding', function (assert) {
+            var model = new Backbone.Ribs.Model({
+                toggle: false
+            });
+
+            this.bindingView = new (Backbone.Ribs.View.extend({
+                bindings: {
+                    '.bind-toggle': {
+                        toggleByClass: 'model.toggle'
+                    }
+                },
+
+                el: '<div class="bind">' +
+                '<div class="bind-toggle">1</div>' +
+                '</div>',
+
+                initialize: function () {
+                    this.model = model;
+
+                    this.$el.appendTo('body');
+                }
+            }))();
+
+            assert.equal($('.bind-toggle:visible').length, 0, 'init');
+            this.bindingView.removeBindings();
+
+            assert.equal($('.bind-toggle:visible').length, 1, 'after removeBindings');
+        });
+
         QUnit.test('bindings at first', function (assert) {
             var model = new Backbone.Ribs.Model({
                 foo: 'bar'

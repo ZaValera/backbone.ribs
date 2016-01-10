@@ -1285,6 +1285,10 @@
                     }
 
                     delete handlers[type];
+
+                    if (type === 'toggleByClass') {
+                        this.$el.removeClass(hiddenClassName);
+                    }
                 }
             }
         },
