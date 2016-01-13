@@ -45,6 +45,14 @@ Binding collection is useful in cases when you need to create a view for a colle
 During applying binding, for each model in the collection will be created its own instance of ItemView. The root element of the newly created view will be added inside the element, which selector was described in binding.
 
 ### Change Log
+v1.0.0
+* Ribs.Collection
+* Set and Get: in `handlers, computeds and processors` method `set` return value, which will be set to model. `get` participates in the inverse operation.
+* Binding's `filter` renamed to `processor`
+* Computeds: method `set` of must return an array of values
+* Bindings: binding "inDOM" was removed. Please use binding "toggleByClass".
+* Bindings: binding "options" was removed. Please use binding "value".
+
 v0.5.10 - 27.12.2015
 * Computeds: bug fixes
 

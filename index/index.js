@@ -1,8 +1,6 @@
 ﻿//JSHint settings
 /* globals $: false */
-/* globals Backbone: false */
 /* globals require: false */
-/* globals console: false */
 
 require.config({
     paths: {
@@ -54,72 +52,92 @@ require([
             }
         };
 
-        var MMM = Backbone.Ribs.Model.extend({
+        /*var model = window.model = new Backbone.Ribs.Model();
+
+        model.on('change:foo', function () {
+            model.set('foo.first.second', 2);
+        });
+
+        model.set('foo', {first: {second: 1}});*/
+
+        /*var Model = Backbone.Ribs.Model.extend({
             defaults: {
-                foo: {
-                    bar: 123
-                },
-                test: 456,
-                ribs: 'lala'
+                objects: {
+                    id967: {
+                        status: null,
+                    },
+                    id963: {
+                        status: null,
+                    },
+                }
+            },
+
+            initialize: function () {
+                this.on('change:objects', this.onChangeObjects, this);
+            },
+
+            onChangeObjects: function () {
+                if (window.QQ) {
+                    this.set('objects.id963.status', 'q');
+                }
+            },
+        });
+
+        var model = new Model();
+
+        model.set('objects', {
+            id967: {
+                status: null,
+            },
+        });
+
+        window.QQ = true;
+
+        model.set('objects', {
+            id967: {
+                status: null,
+            },
+            id963: {
+                status: null,
+            },
+        });*/
+
+
+
+/*        var MMM = Backbone.Ribs.Model.extend({
+            defaults: {
+                foo: 'a',
+                bar: 'b'
             },
 
             computeds: {
                 comp: {
-                    deps: ['foo'],
+                    deps: 'foo',
                     get: function (foo) {
-                        return foo.bar;
+                        return foo + '_comp';
+                    },
+                    set: function (val) {
+                        return val.split('_')[0];
                     }
                 },
-
                 comp2: {
-                    deps: ['test'],
-                    get: function (test) {
-                        return test * 10;
-                    }
-                },
-
-                comp3: {
-                    deps: ['comp'],
-                    get: function (comp) {
-                        return comp * 10;
+                    deps: ['foo', 'bar'],
+                    get: function (foo, bar) {
+                        return foo + '_' + bar;
+                    },
+                    set: function (val) {
+                        return null;//val.split('_');
                     }
                 }
             }
         });
 
-        var mmm = window.mmm = new MMM();
+        window.mmm = new MMM();
 
-        mmm.on('change:foo', function () {
-            mmm.set('test', mmm.get('test') + 1);
-        });
-
-        mmm.on('change:test', function () {
-            mmm.trigger('change:ribs');
-        });
-
-
-
-
-
-        mmm.on('change:foo', function (m,v) {
-            console.log('change:foo', v);
-        });
-
-        mmm.on('change:test', function (m,v) {
-            console.log('change:test', v);
-        });
-
-        mmm.on('change:ribs', function (m,v) {
-            console.log('change:ribs', v);
-        });
-
-        mmm.on('change:comp', function (m,v) {
-            console.log('change:comp', v);
-        });
-
-        mmm.on('change:comp2', function (m,v) {
-            console.log('change:comp2', v);
-        });
+        mmm.on('change:foo', function (model, value) {console.log('foo:', value)});
+        mmm.on('change:bar', function (model, value) {console.log('bar:', value)});
+        mmm.on('change:comp', function (model, value) {console.log('comp:', value)});
+        mmm.on('change:comp2', function (model, value) {console.log('comp2:', value)});*/
 
 
         /*var model = window.model = new (Backbone.Ribs.Model.extend(_.cloneDeep(extend)));
@@ -498,17 +516,24 @@ require([
 
         v.removeBindings('.foo', ['text']);*/
 
+        var ItemView = Backbone.Ribs.View.extend({
+            bindings: {
+                '.bind-input': {
+                    value: {
+                        data: ['model.first', 'model.second'],
+                        processor: {
+                            get: function (first, second) {
+                                return first + ';' + second;
+                            },
+                            set: function (val) {
+                                val = val.split(';');
 
-
-        /*var ItemView = Backbone.Ribs.View.extend({
-            /!*bindings: {
-                'el': {
-                    toggleByClass: 'model.visible',
-                    classes: {
-                        'list-item': 'model.list'
+                                return null; //[val[0], val[1]];
+                            }
+                        }
                     }
                 }
-            },*!/
+            },
 
             el: '<span><input class="bind-in"></span>',
 
@@ -523,7 +548,7 @@ require([
 
                 this.$el.appendTo('body');
             }
-        });*/
+        });
 
         var Mts = Backbone.Ribs.Model.extend({
             defaults: {

@@ -13,13 +13,19 @@
 <script type="text/javascript" src="../vendor/jquery-1.9.0.min.js"></script>
 <script type="text/javascript" src="../vendor/lodash.min.js"></script>
 <script type="text/javascript" src="../vendor/backbone.js"></script>
+<script>
+    window.defineOriginal = window.define;
+    window.define = function (deps, callback) {
+        window.Ribs = callback(window._, window.Backbone);
+    };
+
+    window.define.amd = true;
+</script>
 <script type="text/javascript" src="../backbone.ribs.js"></script>
-<script type="text/javascript" src="get.js"></script>
-<script type="text/javascript" src="set.js"></script>
-<script type="text/javascript" src="computeds.js"></script>
-<script type="text/javascript" src="bindings.js"></script>
-<script type="text/javascript" src="collectionBinding.js"></script>
-<script type="text/javascript" src="common.js"></script>
+<script>
+    window.define = window.defineOriginal;
+</script>
+<script type="text/javascript" src="amd.js"></script>
 </body>
 
 </html>
