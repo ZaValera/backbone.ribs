@@ -2,50 +2,103 @@
 Backbone.ribs expands capabilities of Backbone.
 #### Deep Get & Set
 Ribs allow to get and set model attributes on any depth.
+```js
+var model = new Backbone.Ribs.Model({
+    foo: {
+        bar: 'test'
+    }
+});
 
-    var model = new Backbone.Ribs.Model({
-        foo: {
-            bar: 'test'
-        }
-    });
-
-    model.get('foo.bar'); //"test"
-    model.set('foo.bar', 'newValue');
-
+model.get('foo.bar'); //"test"
+model.set('foo.bar', 'newValue');
+```
 #### Computed attributes
 With Ribs you can add computed model attributes.
+```js
+var CompModel = Backbone.Ribs.Model.extend({
+    defaults: {
+        bar: 10,
+        foo: 20
+    },
 
-    var CompModel = Backbone.Ribs.Model.extend({
-        defaults: {
-            bar: 10,
-            foo: 20
-        },
-
-        computeds: {
-            fooBarComp: {
-                deps: ['bar', 'foo'],
-                get: function (bar, foo) {
-                    return bar + '-' + foo;
-                }
+    computeds: {
+        fooBarComp: {
+            deps: ['bar', 'foo'],
+            get: function (bar, foo) {
+                return bar + '-' + foo;
             }
         }
-    });
+    }
+});
 
-    var compModel = new CompModel();
+var compModel = new CompModel();
 
-    compModel.set('bar', 30);
-    compModel.get('fooBarComp'); //30-20
-
+compModel.set('bar', 30);
+compModel.get('fooBarComp'); //30-20
+```
 #### Bindings
 Bindings allow you to set a one-way or two-way binging between the models and the DOM elements.
+```js
+var BindingView = Backbone.Ribs.View.extend({
+    bindings: {
+        'el': {
+            toggle: 'model.isVisible'
+        },
+        '.bind-text': {
+            text: 'model.title'
+        }
+    },
+
+    el: '<div class="bind">' +
+        '<span class="bind-text"></span>' +
+    '</div>',
+
+    initialize: function () {
+        this.model = new Backbone.Ribs.Model({
+            isVisible: true,
+            title: 'Ribs'
+        });
+
+        this.$el.appendTo('body');
+    }
+});
+```
 
 #### Binding Collection
 Binding collection is useful in cases when you need to create a view for a collection - tables, lists and other structures with multiple similar items.
 
 During applying binding, for each model in the collection will be created its own instance of ItemView. The root element of the newly created view will be added inside the element, which selector was described in binding.
+```js
+var ItemView = Backbone.View.extend({
+    initialize: function () {
+        this.setElement('<div class="item">' + this.model.get('a') + '</div>');
+    }
+});
 
+var CollectionView = Backbone.Ribs.View.extend({
+    el: '<div class="col-bind">' +
+        '<div class="items"></div>' +
+    '</div>',
+
+    bindings: {
+        '.items': {
+            collection:{
+                col: 'collection',
+                view: 'ItemView'
+            }
+        }
+    },
+
+    initialize: function () {
+        this.collection = new Backbone.Ribs.Collection([{a: 1},{a: 2},{a: 3}]);
+        this.ItemView = ItemView;
+        
+        this.$el.appendTo('body');
+    }
+});
+```
 ### Change Log
-v1.0.0
+v1.0.0 - 14.01.2016
 * Ribs.Collection
 * Set and Get: in `handlers, computeds and processors` method `set` return value, which will be set to model. `get` participates in the inverse operation.
 * Binding's `filter` renamed to `processor`
