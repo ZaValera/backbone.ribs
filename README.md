@@ -49,6 +49,7 @@ v1.0.0
 * Ribs.Collection
 * Set and Get: in `handlers, computeds and processors` method `set` return value, which will be set to model. `get` participates in the inverse operation.
 * Binding's `filter` renamed to `processor`
+* Computeds: method `set` of must return an array of values
 * Bindings: binding "inDOM" was removed. Please use binding "toggleByClass".
 * Bindings: binding "options" was removed. Please use binding "value".
 
