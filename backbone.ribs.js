@@ -1,4 +1,4 @@
-//     Backbone.Ribs.js 1.0.0
+//     Backbone.Ribs.js 1.0.1
 
 //     (c) 2014 Valeriy Zaytsev
 //     Ribs may be freely distributed under the MIT license.
@@ -31,7 +31,7 @@
     var $ = Backbone.$;
 
     var Ribs = Backbone.Ribs = {
-        version: '1.0.0'
+        version: '1.0.1'
     };
 
     var ViewProto = Backbone.View.prototype;
@@ -296,7 +296,7 @@
             return attrs;
         },
         addStyle: function () {
-            if (!document || typeof document.createElement !== 'function') {
+            if (typeof document === 'undefined' || typeof document.createElement !== 'function') {
                 return;
             }
 

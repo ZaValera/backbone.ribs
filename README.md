@@ -98,6 +98,9 @@ var CollectionView = Backbone.Ribs.View.extend({
 });
 ```
 ### Change Log
+v1.0.1 - 15.01.2016
+* Node.js bug fix
+
 v1.0.0 - 14.01.2016
 * Ribs.Collection
 * Set and Get: in `handlers, computeds and processors` method `set` return value, which will be set to model. `get` participates in the inverse operation.
