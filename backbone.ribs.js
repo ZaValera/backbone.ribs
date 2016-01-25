@@ -1,4 +1,4 @@
-//     Backbone.Ribs.js 0.5.10
+//     Backbone.Ribs.js 0.5.11
 
 //     (c) 2014 Valeriy Zaytsev
 //     Ribs may be freely distributed under the MIT license.
@@ -31,7 +31,7 @@
     var $ = Backbone.$;
 
     var Ribs = Backbone.Ribs = {
-        version: '0.5.10'
+        version: '0.5.11'
     };
 
     var ViewProto = Backbone.View.prototype;
@@ -1331,7 +1331,15 @@
             }
 
             if (getHandler) {
-                this.view.$el.on(events + '.bindingHandlers', this.selector, getter);
+                var selector = this.selector,
+                    $el = this.view.$el;
+
+                if (selector === 'el') {
+                    $el.on(events, setter);
+                } else {
+                    $el.on(events, this.selector, getter);
+                }
+
                 handler.getter = getter;
                 handler.events = events;
             }
@@ -1355,7 +1363,7 @@
                     events = handler.events;
 
                     if (events) {
-                        this.view.$el.off(events + '.bindingHandlers', this.selector, handler.getter);
+                        this.view.$el.off(events, handler.getter);
                     }
 
                     if (typeof setter === 'function') {
