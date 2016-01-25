@@ -1257,6 +1257,7 @@ QUnit.module('Bindings', {
         QUnit.test('removeBindings() all', function (assert) {
             var model = new Backbone.Ribs.Model({
                 foo: 'bar',
+                val: '2',
                 cl: true
             });
 
@@ -1268,7 +1269,10 @@ QUnit.module('Bindings', {
                             'test-class': 'model.cl'
                         }
                     },
-                    '.bind-class': {
+                    '.bind-value': {
+                        value: 'model.val'
+                    },
+                    'el': {
                         classes: {
                             'test-class': 'model.cl'
                         }
@@ -1277,7 +1281,7 @@ QUnit.module('Bindings', {
 
                 el: '<div class="bind">' +
                     '<span class="bind-text">ribs</span>' +
-                    '<span class="bind-class"></span>' +
+                    '<input class="bind-value" value="1"/>' +
                 '</div>',
 
                 initialize: function () {
@@ -1287,18 +1291,25 @@ QUnit.module('Bindings', {
             }))();
 
             var $el = $('.bind-text');
-            var $el2 = $('.bind-class');
+            var $el2 = $('.bind');
+            var $el3 = $('.bind-value');
 
             assert.equal($el.text(), 'bar', 'Text');
+            assert.equal($el3.val(), '2', 'Value');
             assert.equal($el.hasClass('test-class'), true, 'Class');
             assert.equal($el2.hasClass('test-class'), true, 'Class');
 
             this.bindingView.removeBindings();
             model.set('foo', 'newBar');
+            model.set('val', '3');
             model.set('cl', false);
             assert.equal($el.text(), 'bar', 'Text');
+            assert.equal($el3.val(), '2', 'Value');
             assert.equal($el.hasClass('test-class'), true, 'Class');
             assert.equal($el2.hasClass('test-class'), true, 'Class');
+
+            $el3.val('4').change();
+            assert.equal(model.get('val'), '3', 'Value');
         });
 
         QUnit.test('removeBindings() by selector', function (assert) {
@@ -1874,6 +1885,46 @@ QUnit.module('Bindings', {
             $('.bind-input').val('newBar').change();
 
             assert.deepEqual(opt.test, 'ribs');
+        });
+
+        QUnit.test('two way binding to el', function (assert) {
+            var model = new Backbone.Ribs.Model({
+                foo: 'bar'
+            });
+
+            this.bindingView = new (Backbone.Ribs.View.extend({
+                bindings: {
+                    'el': {
+                        value: 'model.foo'
+                    }
+                },
+
+                el: '<input class="bind" value="1"/>',
+
+                initialize: function () {
+                    this.model = model;
+
+                    this.$el.appendTo('body');
+                }
+            }))();
+
+            var $el = $('.bind');
+
+            assert.equal($el.val(), 'bar', 'Text');
+
+            model.set('foo', 'newbar');
+            assert.equal($el.val(), 'newbar', 'Text changed');
+
+            $el.val('barnew').change();
+            assert.equal(model.get('foo'), 'barnew', 'Value input changed');
+
+            this.bindingView.removeBindings();
+
+            model.set('foo', 'ribs');
+            assert.equal($el.val(), 'barnew', 'Text changed after removeBindings');
+
+            $el.val('newribs').change();
+            assert.equal(model.get('foo'), 'ribs', 'Value input changed after removeBindings');
         });
     });
 

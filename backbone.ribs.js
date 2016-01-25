@@ -40,6 +40,7 @@
 
     var eventSplitter = /\s+/;
     var hiddenClassName = '__ribs-hidden';
+    var rootEl = 'el';
 
     var toString = Object.prototype.toString,
         tags = {
@@ -892,7 +893,7 @@
 
             this.waterfallAdding = colBind.waterfallAdding;
 
-            if (selector === 'el') {
+            if (selector === rootEl) {
                 $el = mainView.$el;
             } else {
                 $el = mainView.$(selector);
@@ -1215,7 +1216,15 @@
             }
 
             if (setHandler) {
-                this.view.$el.on(events + '.bindingHandlers', this.selector, setter);
+                var selector = this.selector,
+                    $el = this.view.$el;
+
+                if (selector === rootEl) {
+                    $el.on(events, setter);
+                } else {
+                    $el.on(events, this.selector, setter);
+                }
+
                 handler.setter = setter;
                 handler.events = events;
             }
@@ -1239,7 +1248,7 @@
                     events = handler.events;
 
                     if (events) {
-                        this.view.$el.off(events + '.bindingHandlers', this.selector, handler.setter);
+                        this.view.$el.off(events, handler.setter);
                     }
 
                     if (typeof getter === 'function') {
@@ -1318,7 +1327,7 @@
         _setEl: function () {
             var selector = this.selector;
 
-            if (selector === 'el') {
+            if (selector === rootEl) {
                 this.$el = this.view.$el;
             } else {
                 this.$el = this.view.$(selector);
