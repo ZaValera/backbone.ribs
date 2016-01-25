@@ -1,7 +1,7 @@
 {
   "name": "backbone.ribs",
   "main": "backbone.ribs.js",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Deep get/set, bindings and computed model attributes for Backbone.",
   "moduleType": [
     "amd"

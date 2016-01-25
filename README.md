@@ -98,6 +98,9 @@ var CollectionView = Backbone.Ribs.View.extend({
 });
 ```
 ### Change Log
+v1.0.2 - 25.01.2016
+* Bindings: bug fixes
+
 v1.0.1 - 15.01.2016
 * Node.js bug fix
 
