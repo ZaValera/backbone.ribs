@@ -1,4 +1,4 @@
-//     Backbone.Ribs.js 0.5.11
+//     Backbone.Ribs.js 0.5.12
 
 //     (c) 2014 Valeriy Zaytsev
 //     Ribs may be freely distributed under the MIT license.
@@ -19,7 +19,7 @@
         module.exports = factory(require('underscore'), require('backbone'));
     } else if (typeof define === 'function' && define.amd) {
         // Define as AMD:
-        define(['underscore', 'backbone'], factory);
+        define('ribs', ['underscore', 'backbone'], factory);
     } else {
         // Just run it:
         factory(root._, root.Backbone);
@@ -31,7 +31,7 @@
     var $ = Backbone.$;
 
     var Ribs = Backbone.Ribs = {
-        version: '0.5.11'
+        version: '0.5.12'
     };
 
     var ViewProto = Backbone.View.prototype;
@@ -1105,6 +1105,7 @@
         _fillElByCollection: function (args) {
             var ribsCol = this.handlers.collection,
                 collection = ribsCol.collection,
+                mainView = this.view,
                 views = ribsCol.views,
                 data = ribsCol.data,
                 View = ribsCol.View,
@@ -1122,6 +1123,10 @@
                 if (!view && !args.withoutNewView && (!toAdd || toAdd[cid])) {
                     view = new View(_.extend(data, {model: model, collection: collection}));
                     views[cid] = view;
+
+                    if (typeof mainView.registerView === 'function') {
+                        mainView.registerView(view);
+                    }
                 }
 
                 if (view) {
@@ -1169,7 +1174,19 @@
                         paths.push(commonMethods.splitModelAttr(data[i]));
                     }
                 } else {
-                    throw new Error('wrong binging format ' + JSON.stringify(binding));
+                    var toString = function (some) {
+                        if (typeof some === 'object') {
+                            return JSON.stringify(some, function (key, value) {
+                                if (typeof value === 'function') {
+                                    return value.toString();
+                                }
+                                return value;
+                            });
+                        } else {
+                            return some.toString();
+                        }
+                    };
+                    throw new Error('wrong binging format ' + toString(binding));
                 }
             }
 
@@ -1280,10 +1297,6 @@
                 ch = '';
                 changeAttr = changeAttrs[modelName] || (changeAttrs[modelName] = []);
 
-                if (!(model instanceof Ribs.Model)) {
-                    console.warn('Deprecation warning: use only "Ribs.Model" for bindings.');
-                }
-
                 if (model instanceof Backbone.Collection) {
                     attrs.push(model.pluck(attr));
 
@@ -1335,9 +1348,9 @@
                     $el = this.view.$el;
 
                 if (selector === 'el') {
-                    $el.on(events, setter);
+                    $el.on(events, getter);
                 } else {
-                    $el.on(events, this.selector, getter);
+                    $el.on(events, selector, getter);
                 }
 
                 handler.getter = getter;
@@ -1402,7 +1415,7 @@
 
                         for (view in views) {
                             if (views.hasOwnProperty(view)) {
-                                views[view].remove();
+                                this._removeViewWithUnregister(views[view]);
                             }
                         }
                     }
@@ -1510,8 +1523,18 @@
             var ribsCol = this.handlers.collection,
                 view = ribsCol.views[model.cid];
 
-            view.remove();
+            this._removeViewWithUnregister(view);
             delete ribsCol.views[model.cid];
+        },
+
+        _removeViewWithUnregister: function (view) {
+            var mainView = this.view;
+
+            view.remove();
+
+            if (typeof mainView.unregisterView === 'function') {
+                mainView.unregisterView(view);
+            }
         },
 
         _onReset: function () {
@@ -1521,7 +1544,7 @@
 
             for (view in views) {
                 if (views.hasOwnProperty(view)) {
-                    views[view].remove();
+                    this._removeViewWithUnregister(views[view]);
                 }
             }
 
@@ -1968,6 +1991,14 @@
          * @returns {Object}
          */
         clone: function() {
+            return new this.constructor(this.getCleanAttributes());
+        },
+
+        /**
+         * Return attributes without computed attributes.
+         * @returns {Object}
+         */
+        getCleanAttributes: function () {
             var attrs = this.attributes,
                 newAttrs = {},
                 computeds = this._ribs.computeds;
@@ -1978,7 +2009,7 @@
                 }
             }
 
-            return new this.constructor(newAttrs);
+            return newAttrs;
         },
 
         /**
