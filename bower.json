@@ -1,7 +1,7 @@
 {
   "name": "backbone.ribs",
   "main": "backbone.ribs.js",
-  "version": "0.5.12",
+  "version": "0.5.13",
   "description": "Deep get/set, bindings and computed model attributes for Backbone.",
   "moduleType": [
     "amd"
@@ -17,7 +17,7 @@
   "license": "MIT",
   "homepage": "https://github.com/ZaValera/backbone.ribs",
   "dependencies"  : {
-    "backbone"    : ">=1.1.2",
+    "backbone"    : "1.2.3",
     "jquery"      : ">=1.9.0",
     "underscore"  : ">=1.5.0"
   },
